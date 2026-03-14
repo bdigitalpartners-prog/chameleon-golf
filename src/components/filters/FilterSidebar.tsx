@@ -260,7 +260,7 @@ export function FilterSidebar({ filters, onChange, filterOptions }: FilterSideba
           className="w-full rounded-lg px-3 py-2 text-sm outline-none"
           style={selectStyle}
         >
-          <option value="chameleon-desc">Chameleon Score (High to Low)</option>
+          <option value="chameleon-desc">CF Score (High to Low)</option>
           <option value="name-asc">Name (A-Z)</option>
           <option value="name-desc">Name (Z-A)</option>
           <option value="rank-desc">Most Ranked</option>

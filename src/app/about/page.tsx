@@ -1,14 +1,14 @@
 export default function AboutPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
-      <h1 className="font-display text-3xl font-bold text-stone-900 md:text-4xl">How Chameleon Golf Works</h1>
+      <h1 className="font-display text-3xl font-bold text-stone-900 md:text-4xl">How CourseFACTOR Works</h1>
       <p className="mt-4 text-lg text-stone-600 leading-relaxed">
-        Chameleon Golf aggregates rankings from the world&apos;s most authoritative golf publications and lets you
-        re-weight what matters to you — producing a personalized ranking that adapts like a chameleon.
+        CourseFACTOR aggregates rankings from the world&apos;s most authoritative golf publications and lets you
+        re-weight what matters to you — producing a personalized ranking that factors in what matters to you.
       </p>
 
       <section className="mt-10">
-        <h2 className="font-display text-2xl font-semibold text-stone-900">The Chameleon Score</h2>
+        <h2 className="font-display text-2xl font-semibold text-stone-900">The CF Score</h2>
         <p className="mt-3 text-stone-600 leading-relaxed">
           Every course receives a composite 0-100 score blending two signals:
         </p>

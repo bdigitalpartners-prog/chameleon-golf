@@ -1,4 +1,4 @@
-// Chameleon Golf Theme System
+// CourseFACTOR Theme System
 // 3 presets — Midnight, Fairway, Golden Hour
 
 export type ThemePreset = "midnight" | "fairway" | "golden-hour";

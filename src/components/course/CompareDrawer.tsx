@@ -134,7 +134,7 @@ function CompareModal({ onClose }: { onClose: () => void }) {
     { label: "Par", key: (c) => c.par ? String(c.par) : "—" },
     { label: "Green Fees", key: (c) => c.greenFeeLow ? `${formatCurrency(c.greenFeeLow)}${c.greenFeeHigh && c.greenFeeLow !== c.greenFeeHigh ? ` – ${formatCurrency(c.greenFeeHigh)}` : ""}` : "—" },
     { label: "Walking Policy", key: (c) => c.walkingPolicy ?? "—" },
-    { label: "Chameleon Score", key: (c) => c.chameleonScore ? Math.round(parseFloat(String(c.chameleonScore))).toString() : "—" },
+    { label: "CF Score", key: (c) => c.chameleonScore ? Math.round(parseFloat(String(c.chameleonScore))).toString() : "—" },
     { label: "Rankings", key: (c) => c.rankings?.length > 0 ? c.rankings.map((r: any) => `#${r.rank} ${r.source}`).join(" · ") : "—" },
   ];
 

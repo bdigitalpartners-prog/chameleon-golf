@@ -1,7 +1,7 @@
 import prisma from "./prisma";
 
 /**
- * Compute prestige scores for all courses using the Chameleon Score algorithm.
+ * Compute prestige scores for all courses using the CF Score algorithm.
  *
  * Algorithm:
  * 1. For each ranking entry: entry_points = (100 / rank_position) * list_weight
@@ -19,6 +19,7 @@ export async function computeAllPrestigeScores(): Promise<
     },
   });
 
+  // Group by course -> source -> best score
   const courseSourceBest = new Map<number, Map<string, { points: number; weight: number; bestRank: number }>>();
   const courseListCount = new Map<number, Set<number>>();
 
@@ -43,6 +44,7 @@ export async function computeAllPrestigeScores(): Promise<
     }
   }
 
+  // Compute raw prestige
   const rawScores = new Map<number, { raw: number; components: Record<string, number>; numLists: number; bestRanks: Record<string, number> }>();
   for (const [courseId, sourceMap] of courseSourceBest) {
     let raw = 0;
@@ -57,10 +59,12 @@ export async function computeAllPrestigeScores(): Promise<
     rawScores.set(courseId, { raw, components, numLists: courseListCount.get(courseId)!.size, bestRanks });
   }
 
+  // Find 99th percentile for normalization
   const allRaw = Array.from(rawScores.values()).map((v) => v.raw).sort((a, b) => a - b);
   const p99Index = Math.floor(allRaw.length * 0.99);
   const p99 = allRaw[p99Index] || 1;
 
+  // Normalize to 0-100
   const result = new Map<number, { score: number; components: Record<string, number>; numLists: number; bestRanks: Record<string, number> }>();
   for (const [courseId, { raw, components, numLists, bestRanks }] of rawScores) {
     const normalized = Math.min((raw / p99) * 100, 100);
@@ -75,6 +79,9 @@ export async function computeAllPrestigeScores(): Promise<
   return result;
 }
 
+/**
+ * Map source names to DB field name helpers
+ */
 function getBestRankFields(bestRanks: Record<string, number>) {
   const mapping: Record<string, string> = {
     "Golf Digest": "bestRankGolfDigest",
@@ -105,6 +112,9 @@ function getBestRankFields(bestRanks: Record<string, number>) {
   return result;
 }
 
+/**
+ * Recompute and store CF scores for all courses.
+ */
 export async function recomputeAndStoreScores() {
   const prestigeMap = await computeAllPrestigeScores();
 
@@ -135,6 +145,7 @@ export async function recomputeAndStoreScores() {
     });
   });
 
+  // Batch in chunks of 50
   for (let i = 0; i < upserts.length; i += 50) {
     await Promise.all(upserts.slice(i, i + 50));
   }
@@ -142,6 +153,9 @@ export async function recomputeAndStoreScores() {
   return prestigeMap.size;
 }
 
+/**
+ * Recompute a single course's CF score after a user action.
+ */
 export async function recomputeSingleCourseScore(courseId: number) {
   const entries = await prisma.rankingEntry.findMany({
     where: { courseId, rankPosition: { gt: 0 } },

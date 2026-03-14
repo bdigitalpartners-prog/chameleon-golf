@@ -1,559 +1,640 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
-  Search,
-  MapPin,
-  Star,
-  ChevronRight,
-  Trophy,
-  Loader2,
-  TrendingUp,
-  Globe,
-  Award,
-  Filter,
+  ArrowRight,
   SlidersHorizontal,
+  BarChart3,
+  Trophy,
+  Star,
+  MapPin,
+  Zap,
+  ExternalLink,
+  ChevronRight,
+  Globe,
+  BookOpen,
+  Users,
+  TrendingUp,
+  Award,
 } from "lucide-react";
 
-interface Course {
-  courseId: number;
-  courseName: string;
-  facilityName: string | null;
-  city: string | null;
-  state: string | null;
-  country: string | null;
-  courseStyle: string | null;
-  accessType: string | null;
-  originalArchitect: string | null;
-  yearOpened: number | null;
-  greenFeeLow: string | null;
-  primaryImageUrl: string | null;
-  rankingCount: number;
-  bestRank: number | null;
-}
-
-interface Stats {
-  totalCourses: number;
-  totalRankings: number;
-  totalLists: number;
-  countries: number;
-}
-
-const ACCESS_TYPES = ["Public", "Private", "Resort", "Semi-Private"];
-const STYLES = ["Links", "Parkland", "Desert", "Mountain", "Heathland"];
-const SORT_OPTIONS = [
-  { value: "rankings", label: "Most Ranked" },
-  { value: "best_rank", label: "Best Rank" },
-  { value: "year", label: "Newest" },
-  { value: "name", label: "Name A–Z" },
+// ─── Ranking Sources Data ───────────────────────────────────────
+const RANKING_SOURCES = [
+  {
+    name: "Golf Digest",
+    slug: "golf-digest",
+    logo: "GD",
+    listCount: 12,
+    entryCount: 800,
+    authorityWeight: 1.0,
+    url: "https://www.golfdigest.com/",
+    methodology:
+      "Panel of 2,300+ low-handicap amateur evaluators rate courses on a 1–10 scale across shot values, design variety, resistance to scoring, memorability, aesthetics, conditioning, and ambience. Courses must receive minimum evaluation counts to qualify.",
+    keyLists: [
+      "America's 100 Greatest",
+      "World's 100 Greatest",
+      "America's Second 100 Greatest",
+      "Best in State",
+    ],
+    color: "#c41230",
+    founded: "Since 1966",
+  },
+  {
+    name: "Golfweek",
+    slug: "golfweek",
+    logo: "GW",
+    listCount: 14,
+    entryCount: 750,
+    authorityWeight: 0.95,
+    url: "https://golfweek.usatoday.com/",
+    methodology:
+      "A volunteer rater panel scores courses 1–10 across 10 criteria including routing, conditioning, aesthetics, and challenge. Separate panels rate public, private, and resort courses. The 'Best Modern' list uniquely highlights post-1960 designs.",
+    keyLists: [
+      "Top 200 Classic Courses",
+      "Top 200 Modern Courses",
+      "Best Courses You Can Play",
+      "Top Campus Courses",
+    ],
+    color: "#1e5aa8",
+    founded: "Since 1997",
+  },
+  {
+    name: "GOLF.com / GOLF Magazine",
+    slug: "golf-magazine",
+    logo: "GM",
+    listCount: 8,
+    entryCount: 600,
+    authorityWeight: 0.90,
+    url: "https://golf.com/",
+    methodology:
+      "Expert panelists — including touring pros, architects, and industry insiders — evaluate courses on design, conditioning, variety, memorability, ambience, and resistance to scoring. Strong emphasis on international coverage and the 'Top 100 in the World' list.",
+    keyLists: [
+      "Top 100 Courses in the World",
+      "Top 100 Courses in the U.S.",
+      "Top 100 Courses You Can Play",
+      "Best New Courses",
+    ],
+    color: "#007a33",
+    founded: "Since 1985",
+  },
+  {
+    name: "Top100GolfCourses.com",
+    slug: "top100golf",
+    logo: "T1",
+    listCount: 12,
+    entryCount: 500,
+    authorityWeight: 0.80,
+    url: "https://www.top100golfcourses.com/",
+    methodology:
+      "Crowdsourced global platform where any registered golfer can rate courses across multiple dimensions. Ratings are normalized and weighted by reviewer activity. Largest sample size of any ranking — strong for international courses not covered by U.S.-centric publications.",
+    keyLists: [
+      "World Top 100",
+      "European Top 100",
+      "UK & Ireland Top 100",
+      "Best by Country",
+    ],
+    color: "#ff8c00",
+    founded: "Since 2005",
+  },
 ];
 
-export default function HomePage() {
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [accessFilter, setAccessFilter] = useState<string | null>(null);
-  const [styleFilter, setStyleFilter] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState("rankings");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(24);
-  const [totalCount, setTotalCount] = useState(0);
-  const [showFilters, setShowFilters] = useState(false);
-  const searchRef = useRef<HTMLInputElement>(null);
+export default function LandingPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [activeSource, setActiveSource] = useState(0);
 
-  // Debounce search
+  // Skip landing for logged-in users
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search), 300);
-    return () => clearTimeout(t);
-  }, [search]);
+    if (status === "authenticated") {
+      router.replace("/explore");
+    }
+  }, [status, router]);
 
-  // Reset page on filter/sort change
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, accessFilter, styleFilter, sortBy, pageSize]);
-
-  // Fetch courses
-  useEffect(() => {
-    setLoading(true);
-    const params = new URLSearchParams();
-    if (debouncedSearch) params.set("search", debouncedSearch);
-    if (accessFilter) params.set("access", accessFilter);
-    if (styleFilter) params.set("style", styleFilter);
-    params.set("sort", sortBy);
-    params.set("page", String(page));
-    params.set("pageSize", String(pageSize));
-
-    fetch(`/api/courses?${params}`)
-      .then((r) => r.json())
-      .then((data) => {
-        setCourses(data.courses ?? []);
-        setTotalCount(data.total ?? 0);
-        if (data.stats) setStats(data.stats);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [debouncedSearch, accessFilter, styleFilter, sortBy, page, pageSize]);
-
-  const totalPages = Math.ceil(totalCount / pageSize);
+  // Show nothing while checking auth (prevents flash)
+  if (status === "loading" || status === "authenticated") {
+    return null;
+  }
 
   return (
-    <div
-      className="min-h-screen"
-      style={{ backgroundColor: "var(--cg-bg-primary)" }}
-    >
-      <div className="mx-auto max-w-7xl px-4 py-8">
-        {/* Hero search */}
-        <div className="mb-8">
-          <h1
-            className="font-display text-3xl font-bold md:text-4xl mb-2"
-            style={{ color: "var(--cg-text-primary)" }}
-          >
-            Golf Course Explorer
-          </h1>
-          <p
-            className="text-base mb-6"
-            style={{ color: "var(--cg-text-secondary)" }}
-          >
-            Search and filter{" "}
-            <span style={{ color: "var(--cg-accent)" }}>
-              {stats?.totalCourses?.toLocaleString() ?? "…"}
-            </span>{" "}
-            courses ranked across{" "}
-            <span style={{ color: "var(--cg-accent)" }}>
-              {stats?.totalLists ?? "…"}
-            </span>{" "}
-            lists.
-          </p>
+    <div style={{ backgroundColor: "var(--cg-bg-primary)" }}>
+      {/* ─── HERO ─── */}
+      <section className="relative overflow-hidden">
+        {/* Background gradient effects */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `
+              radial-gradient(ellipse 80% 50% at 50% -20%, var(--cg-accent-glow), transparent),
+              radial-gradient(ellipse 60% 40% at 80% 80%, var(--cg-accent-bg), transparent),
+              var(--cg-bg-primary)
+            `,
+          }}
+        />
+        {/* Subtle grid */}
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: `linear-gradient(var(--cg-text-primary) 1px, transparent 1px),
+              linear-gradient(90deg, var(--cg-text-primary) 1px, transparent 1px)`,
+            backgroundSize: "60px 60px",
+          }}
+        />
 
-          {/* Search bar */}
-          <div className="relative max-w-2xl">
-            <Search
-              className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 pointer-events-none"
-              style={{ color: "var(--cg-text-muted)" }}
-            />
-            <input
-              ref={searchRef}
-              type="text"
-              placeholder="Search by course name, architect, city..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-xl py-3 pl-10 pr-4 text-sm outline-none transition-all"
+        <div className="relative mx-auto max-w-7xl px-4 pt-20 pb-24 sm:pt-28 sm:pb-32">
+          <div className="max-w-3xl">
+            {/* Tag */}
+            <div
+              className="mb-6 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium"
               style={{
-                backgroundColor: "var(--cg-bg-card)",
-                border: "1.5px solid var(--cg-border)",
-                color: "var(--cg-text-primary)",
+                backgroundColor: "var(--cg-accent-bg)",
+                color: "var(--cg-accent)",
+                border: "1px solid var(--cg-accent-muted)",
               }}
-              onFocus={(e) =>
-                (e.currentTarget.style.borderColor = "var(--cg-accent)")
-              }
-              onBlur={(e) =>
-                (e.currentTarget.style.borderColor = "var(--cg-border)")
-              }
-            />
-          </div>
-        </div>
-
-        {/* Stats bar */}
-        {stats && (
-          <div
-            className="mb-6 flex flex-wrap gap-6 text-sm"
-            style={{ color: "var(--cg-text-muted)" }}
-          >
-            <span>
-              <strong style={{ color: "var(--cg-accent)" }}>
-                {stats.totalCourses.toLocaleString()}
-              </strong>{" "}
-              Courses
-            </span>
-            <span>
-              <strong style={{ color: "var(--cg-accent)" }}>
-                {stats.totalRankings.toLocaleString()}
-              </strong>{" "}
-              Rankings
-            </span>
-            <span>
-              <strong style={{ color: "var(--cg-accent)" }}>
-                {stats.totalLists}
-              </strong>{" "}
-              Lists
-            </span>
-            <span>
-              <strong style={{ color: "var(--cg-accent)" }}>
-                {stats.countries}
-              </strong>{" "}
-              Countries
-            </span>
-          </div>
-        )}
-
-        {/* Filter + sort controls */}
-        <div className="mb-6 flex flex-wrap items-center gap-3">
-          {/* Toggle filter panel */}
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors"
-            style={{
-              backgroundColor: showFilters
-                ? "var(--cg-accent-bg)"
-                : "var(--cg-bg-card)",
-              color: showFilters
-                ? "var(--cg-accent)"
-                : "var(--cg-text-secondary)",
-              border: `1px solid ${
-                showFilters ? "var(--cg-accent)" : "var(--cg-border)"
-              }`,
-            }}
-          >
-            <Filter className="h-3.5 w-3.5" />
-            Filters
-            {(accessFilter || styleFilter) && (
-              <span
-                className="ml-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                style={{ backgroundColor: "var(--cg-accent)" }}
-              >
-                {(accessFilter ? 1 : 0) + (styleFilter ? 1 : 0)}
-              </span>
-            )}
-          </button>
-
-          {/* Sort selector */}
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="rounded-lg px-3 py-2 text-sm font-medium outline-none cursor-pointer"
-            style={{
-              backgroundColor: "var(--cg-bg-card)",
-              border: "1px solid var(--cg-border)",
-              color: "var(--cg-text-secondary)",
-            }}
-          >
-            {SORT_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-
-          {/* Result count */}
-          {!loading && (
-            <span
-              className="text-sm ml-auto"
-              style={{ color: "var(--cg-text-muted)" }}
             >
-              {totalCount.toLocaleString()} courses
-            </span>
-          )}
-        </div>
-
-        {/* Expandable filter panel */}
-        {showFilters && (
-          <div
-            className="mb-6 rounded-xl p-4"
-            style={{
-              backgroundColor: "var(--cg-bg-card)",
-              border: "1px solid var(--cg-border)",
-            }}
-          >
-            <div className="flex flex-wrap gap-6">
-              {/* Access type */}
-              <div>
-                <p
-                  className="text-xs font-semibold uppercase tracking-wider mb-2"
-                  style={{ color: "var(--cg-text-muted)" }}
-                >
-                  Access
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {ACCESS_TYPES.map((t) => (
-                    <button
-                      key={t}
-                      onClick={() =>
-                        setAccessFilter(accessFilter === t ? null : t)
-                      }
-                      className="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
-                      style={{
-                        backgroundColor:
-                          accessFilter === t
-                            ? "var(--cg-accent-bg)"
-                            : "var(--cg-bg-tertiary)",
-                        color:
-                          accessFilter === t
-                            ? "var(--cg-accent)"
-                            : "var(--cg-text-secondary)",
-                        border: `1px solid ${
-                          accessFilter === t
-                            ? "var(--cg-accent)"
-                            : "var(--cg-border)"
-                        }`,
-                      }}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Style */}
-              <div>
-                <p
-                  className="text-xs font-semibold uppercase tracking-wider mb-2"
-                  style={{ color: "var(--cg-text-muted)" }}
-                >
-                  Style
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {STYLES.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() =>
-                        setStyleFilter(styleFilter === s ? null : s)
-                      }
-                      className="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
-                      style={{
-                        backgroundColor:
-                          styleFilter === s
-                            ? "var(--cg-accent-bg)"
-                            : "var(--cg-bg-tertiary)",
-                        color:
-                          styleFilter === s
-                            ? "var(--cg-accent)"
-                            : "var(--cg-text-secondary)",
-                        border: `1px solid ${
-                          styleFilter === s
-                            ? "var(--cg-accent)"
-                            : "var(--cg-border)"
-                        }`,
-                      }}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <Zap className="h-3.5 w-3.5" />
+              Rankings that adapt to you
             </div>
 
-            {(accessFilter || styleFilter) && (
-              <button
-                onClick={() => {
-                  setAccessFilter(null);
-                  setStyleFilter(null);
-                }}
-                className="mt-3 text-xs font-medium"
-                style={{ color: "var(--cg-accent)" }}
-              >
-                Clear all filters
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Page size toggle */}
-        <div className="mb-4 flex items-center justify-end gap-2">
-          <span
-            className="text-xs"
-            style={{ color: "var(--cg-text-muted)" }}
-          >
-            Per page:
-          </span>
-          {[12, 24, 48].map((size) => (
-            <button
-              key={size}
-              onClick={() => setPageSize(size)}
-              className="rounded px-2.5 py-1 text-xs font-medium transition-colors"
-              style={{
-                backgroundColor:
-                  pageSize === size
-                    ? "var(--cg-accent-bg)"
-                    : "var(--cg-bg-tertiary)",
-                color:
-                  pageSize === size
-                    ? "var(--cg-accent)"
-                    : "var(--cg-text-muted)",
-                border: `1px solid ${
-                  pageSize === size ? "var(--cg-accent)" : "var(--cg-border)"
-                }`,
-              }}
+            <h1
+              className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl"
+              style={{ color: "var(--cg-text-primary)" }}
             >
-              {size}
-            </button>
-          ))}
-        </div>
+              Every major golf ranking.{" "}
+              <span style={{ color: "var(--cg-accent)" }}>One engine.</span>
+            </h1>
 
-        {/* Course grid */}
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2
-              className="h-8 w-8 animate-spin"
-              style={{ color: "var(--cg-accent)" }}
-            />
-          </div>
-        ) : courses.length === 0 ? (
-          <div
-            className="py-20 text-center"
-            style={{ color: "var(--cg-text-muted)" }}
-          >
-            No courses found.
-          </div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {courses.map((course) => (
+            <p
+              className="mt-6 text-lg leading-relaxed sm:text-xl max-w-2xl"
+              style={{ color: "var(--cg-text-secondary)" }}
+            >
+              CourseFACTOR aggregates Golf Digest, Golfweek, GOLF Magazine, and
+              Top100GolfCourses — then lets you re-weight them based on what matters
+              to you. Explore 46 ranking lists from 4 trusted sources.
+            </p>
+
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
               <Link
-                key={course.courseId}
-                href={`/course/${course.courseId}`}
-                className="group rounded-xl overflow-hidden transition-all hover:-translate-y-0.5"
+                href="/explore"
+                className="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-3.5 text-base font-semibold transition-all hover:-translate-y-0.5"
+                style={{
+                  backgroundColor: "var(--cg-accent)",
+                  color: "var(--cg-text-inverse)",
+                  boxShadow: `0 8px 30px var(--cg-accent-glow)`,
+                }}
+              >
+                Explore 1,499 Courses
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                href="/rankings"
+                className="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-3.5 text-base font-medium transition-all"
+                style={{
+                  border: "1px solid var(--cg-border)",
+                  color: "var(--cg-text-secondary)",
+                }}
+              >
+                Browse All 46 Lists
+                <ChevronRight className="h-4 w-4" />
+              </Link>
+            </div>
+
+            {/* Stats bar */}
+            <div
+              className="mt-10 flex flex-wrap gap-6 text-sm"
+              style={{ color: "var(--cg-text-muted)" }}
+            >
+              <span>
+                <strong style={{ color: "var(--cg-accent)" }}>4</strong> ranking sources
+              </span>
+              <span>
+                <strong style={{ color: "var(--cg-accent)" }}>46</strong> ranking lists
+              </span>
+              <span>
+                <strong style={{ color: "var(--cg-accent)" }}>2,665</strong> ranked entries
+              </span>
+              <span>
+                <strong style={{ color: "var(--cg-accent)" }}>1,499</strong> courses
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── RANKING SOURCES (Main Feature) ─── */}
+      <section id="rankings" className="py-20 sm:py-24" style={{ backgroundColor: "var(--cg-bg-secondary)" }}>
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="text-center mb-12">
+            <h2
+              className="text-2xl font-bold sm:text-3xl lg:text-4xl"
+              style={{ color: "var(--cg-text-primary)" }}
+            >
+              The Sources Behind the Scores
+            </h2>
+            <p
+              className="mt-4 mx-auto max-w-2xl text-base"
+              style={{ color: "var(--cg-text-secondary)" }}
+            >
+              Each ranking publication has its own methodology, panel composition, and
+              criteria. Dig into how they think, why they rank differently, and which
+              one aligns with your values.
+            </p>
+          </div>
+
+          {/* Source Selector Tabs */}
+          <div className="flex flex-wrap justify-center gap-3 mb-10">
+            {RANKING_SOURCES.map((source, i) => (
+              <button
+                key={source.slug}
+                onClick={() => setActiveSource(i)}
+                className="flex items-center gap-2.5 rounded-xl px-5 py-3 text-sm font-semibold transition-all"
+                style={{
+                  backgroundColor: activeSource === i ? "var(--cg-accent-bg)" : "var(--cg-bg-tertiary)",
+                  color: activeSource === i ? "var(--cg-accent)" : "var(--cg-text-secondary)",
+                  border: `1.5px solid ${activeSource === i ? "var(--cg-accent)" : "var(--cg-border)"}`,
+                }}
+              >
+                <span
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold text-white"
+                  style={{ backgroundColor: source.color }}
+                >
+                  {source.logo}
+                </span>
+                <span className="hidden sm:inline">{source.name}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Active Source Detail Card */}
+          {(() => {
+            const s = RANKING_SOURCES[activeSource];
+            return (
+              <div
+                className="rounded-2xl overflow-hidden"
                 style={{
                   backgroundColor: "var(--cg-bg-card)",
                   border: "1px solid var(--cg-border)",
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "var(--cg-accent)";
-                  e.currentTarget.style.backgroundColor =
-                    "var(--cg-bg-card-hover)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "var(--cg-border)";
-                  e.currentTarget.style.backgroundColor = "var(--cg-bg-card)";
-                }}
               >
-                {/* Image */}
+                {/* Header */}
                 <div
-                  className="h-36 overflow-hidden"
-                  style={{ backgroundColor: "var(--cg-bg-tertiary)" }}
+                  className="px-8 py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+                  style={{
+                    borderBottom: "1px solid var(--cg-border)",
+                    background: `linear-gradient(135deg, var(--cg-bg-tertiary), var(--cg-bg-card))`,
+                  }}
                 >
-                  {course.primaryImageUrl ? (
-                    <img
-                      src={course.primaryImageUrl}
-                      alt={course.courseName}
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                  ) : (
+                  <div className="flex items-center gap-4">
                     <div
-                      className="h-full w-full flex items-center justify-center"
-                      style={{ backgroundColor: "var(--cg-bg-secondary)" }}
+                      className="flex h-14 w-14 items-center justify-center rounded-xl text-lg font-bold text-white shadow-lg"
+                      style={{ backgroundColor: s.color }}
                     >
-                      <Globe
-                        className="h-8 w-8"
-                        style={{ color: "var(--cg-border)" }}
-                      />
+                      {s.logo}
                     </div>
-                  )}
+                    <div>
+                      <h3
+                        className="text-xl font-bold"
+                        style={{ color: "var(--cg-text-primary)" }}
+                      >
+                        {s.name}
+                      </h3>
+                      <p className="text-sm" style={{ color: "var(--cg-text-muted)" }}>
+                        {s.founded} · Authority Weight: {s.authorityWeight.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <a
+                      href={s.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+                      style={{
+                        color: "var(--cg-accent)",
+                        border: "1px solid var(--cg-accent-muted)",
+                      }}
+                    >
+                      Visit Source <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  </div>
                 </div>
 
-                {/* Content */}
-                <div className="p-3">
-                  <h3
-                    className="text-sm font-semibold truncate mb-0.5"
-                    style={{ color: "var(--cg-text-primary)" }}
-                  >
-                    {course.courseName}
-                  </h3>
-
-                  {course.facilityName && course.facilityName !== course.courseName && (
-                    <p
-                      className="text-xs truncate mb-1"
-                      style={{ color: "var(--cg-text-muted)" }}
-                    >
-                      {course.facilityName}
-                    </p>
-                  )}
-
-                  <div
-                    className="flex items-center gap-1 text-xs mb-2"
-                    style={{ color: "var(--cg-text-muted)" }}
-                  >
-                    <MapPin className="h-3 w-3 shrink-0" />
-                    <span className="truncate">
-                      {[course.city, course.state, course.country]
-                        .filter(Boolean)
-                        .join(", ") || "Unknown"}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      {course.rankingCount > 0 && (
-                        <span
-                          className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold"
-                          style={{
-                            backgroundColor: "var(--cg-accent-muted)",
-                            color: "var(--cg-accent)",
-                          }}
-                        >
-                          <Trophy className="h-2.5 w-2.5" />
-                          {course.rankingCount === 1
-                            ? "1 list"
-                            : `${course.rankingCount} lists`}
-                        </span>
-                      )}
-                      {course.bestRank && (
-                        <span
-                          className="text-[11px] font-medium"
+                {/* Body */}
+                <div className="p-8">
+                  <div className="grid gap-8 lg:grid-cols-5">
+                    {/* Methodology */}
+                    <div className="lg:col-span-3">
+                      <div className="flex items-center gap-2 mb-3">
+                        <BookOpen className="h-4 w-4" style={{ color: "var(--cg-accent)" }} />
+                        <h4
+                          className="text-sm font-semibold uppercase tracking-wider"
                           style={{ color: "var(--cg-text-muted)" }}
                         >
-                          Best #{course.bestRank}
-                        </span>
-                      )}
+                          Methodology
+                        </h4>
+                      </div>
+                      <p
+                        className="text-base leading-relaxed"
+                        style={{ color: "var(--cg-text-secondary)" }}
+                      >
+                        {s.methodology}
+                      </p>
                     </div>
 
-                    {course.accessType && (
-                      <span
-                        className="text-[10px] font-medium px-1.5 py-0.5 rounded"
-                        style={{
-                          backgroundColor: "var(--cg-bg-tertiary)",
-                          color: "var(--cg-text-muted)",
-                        }}
-                      >
-                        {course.accessType}
-                      </span>
-                    )}
+                    {/* Stats + Key Lists */}
+                    <div className="lg:col-span-2 space-y-6">
+                      {/* Quick stats */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div
+                          className="rounded-xl p-4 text-center"
+                          style={{ backgroundColor: "var(--cg-bg-tertiary)" }}
+                        >
+                          <div className="text-2xl font-bold" style={{ color: "var(--cg-accent)" }}>
+                            {s.listCount}
+                          </div>
+                          <div className="text-xs mt-1" style={{ color: "var(--cg-text-muted)" }}>
+                            Lists
+                          </div>
+                        </div>
+                        <div
+                          className="rounded-xl p-4 text-center"
+                          style={{ backgroundColor: "var(--cg-bg-tertiary)" }}
+                        >
+                          <div className="text-2xl font-bold" style={{ color: "var(--cg-accent)" }}>
+                            ~{s.entryCount}
+                          </div>
+                          <div className="text-xs mt-1" style={{ color: "var(--cg-text-muted)" }}>
+                            Entries
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Key Lists */}
+                      <div>
+                        <h4
+                          className="text-xs font-semibold uppercase tracking-wider mb-3"
+                          style={{ color: "var(--cg-text-muted)" }}
+                        >
+                          Key Lists
+                        </h4>
+                        <div className="space-y-2">
+                          {s.keyLists.map((list) => (
+                            <div
+                              key={list}
+                              className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm"
+                              style={{
+                                backgroundColor: "var(--cg-bg-tertiary)",
+                                color: "var(--cg-text-secondary)",
+                              }}
+                            >
+                              <Trophy className="h-3.5 w-3.5 flex-shrink-0" style={{ color: s.color }} />
+                              {list}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </Link>
+
+                {/* Footer — open access */}
+                <div
+                  className="px-8 py-5 flex items-center justify-between"
+                  style={{
+                    borderTop: "1px solid var(--cg-border)",
+                    backgroundColor: "var(--cg-bg-tertiary)",
+                  }}
+                >
+                  <div className="flex items-center gap-2 text-sm" style={{ color: "var(--cg-text-muted)" }}>
+                    <Trophy className="h-3.5 w-3.5" style={{ color: "var(--cg-accent)" }} />
+                    View every list and every ranked course
+                  </div>
+                  <Link
+                    href="/rankings"
+                    className="text-sm font-medium transition-colors"
+                    style={{ color: "var(--cg-accent)" }}
+                  >
+                    Browse All Lists →
+                  </Link>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      </section>
+
+      {/* ─── HOW IT WORKS ─── */}
+      <section
+        className="py-20 sm:py-24"
+        style={{
+          backgroundColor: "var(--cg-bg-primary)",
+          borderTop: "1px solid var(--cg-border-subtle)",
+        }}
+      >
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="text-center">
+            <h2
+              className="text-2xl font-bold sm:text-3xl"
+              style={{ color: "var(--cg-text-primary)" }}
+            >
+              Not just another ranking. A ranking engine.
+            </h2>
+            <p
+              className="mt-4 mx-auto max-w-2xl text-base"
+              style={{ color: "var(--cg-text-secondary)" }}
+            >
+              Traditional golf rankings are static — one committee's opinion frozen
+              in time. CourseFACTOR is dynamic. It synthesizes multiple sources
+              and your preferences into a score that adapts.
+            </p>
+          </div>
+
+          <div className="mt-16 grid gap-6 sm:grid-cols-3">
+            {[
+              {
+                icon: BarChart3,
+                title: "Aggregated Intelligence",
+                desc: "We pull rankings from 4 trusted publications. Each source is weighted by authority, and the best ranking per source feeds into a composite CF Score.",
+              },
+              {
+                icon: SlidersHorizontal,
+                title: "Your Filters, Your Rankings",
+                desc: "Care more about walkability than exclusivity? Prefer links over parkland? Adjust the sliders and watch rankings shift to reflect what matters to you.",
+              },
+              {
+                icon: Trophy,
+                title: "The CF Score",
+                desc: "Our algorithm combines expert rankings with community ratings, weighted by your profile. A score that factors in what matters to you.",
+              },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className="rounded-2xl p-8 transition-colors"
+                style={{
+                  backgroundColor: "var(--cg-bg-card)",
+                  border: "1px solid var(--cg-border)",
+                }}
+              >
+                <div
+                  className="flex h-12 w-12 items-center justify-center rounded-xl"
+                  style={{ backgroundColor: "var(--cg-accent-bg)", color: "var(--cg-accent)" }}
+                >
+                  <item.icon className="h-6 w-6" />
+                </div>
+                <h3
+                  className="mt-5 text-lg font-semibold"
+                  style={{ color: "var(--cg-text-primary)" }}
+                >
+                  {item.title}
+                </h3>
+                <p
+                  className="mt-3 text-sm leading-relaxed"
+                  style={{ color: "var(--cg-text-secondary)" }}
+                >
+                  {item.desc}
+                </p>
+              </div>
             ))}
           </div>
-        )}
+        </div>
+      </section>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="mt-8 flex items-center justify-center gap-2">
-            <button
-              onClick={() => setPage(Math.max(1, page - 1))}
-              disabled={page === 1}
-              className="rounded-lg px-3 py-2 text-sm font-medium transition-colors disabled:opacity-40"
-              style={{
-                backgroundColor: "var(--cg-bg-card)",
-                border: "1px solid var(--cg-border)",
-                color: "var(--cg-text-secondary)",
-              }}
-            >
-              Previous
-            </button>
+      {/* ─── STATS + FEATURES ─── */}
+      <section
+        className="py-20 sm:py-24"
+        style={{
+          backgroundColor: "var(--cg-bg-secondary)",
+          borderTop: "1px solid var(--cg-border-subtle)",
+        }}
+      >
+        <div className="mx-auto max-w-7xl px-4">
+          <div className="grid gap-16 lg:grid-cols-2 lg:items-center">
+            <div>
+              <h2
+                className="text-2xl font-bold sm:text-3xl"
+                style={{ color: "var(--cg-text-primary)" }}
+              >
+                Everything you need to plan your next round
+              </h2>
+              <p
+                className="mt-4 text-base max-w-lg"
+                style={{ color: "var(--cg-text-secondary)" }}
+              >
+                More than rankings — a complete golf course discovery platform built
+                for serious golfers who travel.
+              </p>
 
-            <span
-              className="text-sm px-4"
-              style={{ color: "var(--cg-text-muted)" }}
-            >
-              Page {page} of {totalPages}
-            </span>
+              <div className="mt-10 space-y-6">
+                {[
+                  {
+                    icon: Star,
+                    title: "Rate & Review",
+                    desc: "Score 10 dimensions — conditioning, design, pace, aesthetics, challenge, value, amenities, walkability, service, and more.",
+                  },
+                  {
+                    icon: MapPin,
+                    title: "Airport Proximity",
+                    desc: "Every course mapped to the nearest commercial, regional, and FBO/private airports within 250 miles.",
+                  },
+                  {
+                    icon: TrendingUp,
+                    title: "Score Verification",
+                    desc: "Post scores with GHIN verification. Screenshots and API cross-referencing ensure every posted score is legitimate.",
+                  },
+                ].map((f) => (
+                  <div key={f.title} className="flex gap-4">
+                    <div
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+                      style={{ backgroundColor: "var(--cg-bg-tertiary)", color: "var(--cg-text-secondary)" }}
+                    >
+                      <f.icon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3
+                        className="text-sm font-semibold"
+                        style={{ color: "var(--cg-text-primary)" }}
+                      >
+                        {f.title}
+                      </h3>
+                      <p
+                        className="mt-1 text-sm"
+                        style={{ color: "var(--cg-text-secondary)" }}
+                      >
+                        {f.desc}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-            <button
-              onClick={() => setPage(Math.min(totalPages, page + 1))}
-              disabled={page === totalPages}
-              className="rounded-lg px-3 py-2 text-sm font-medium transition-colors disabled:opacity-40"
-              style={{
-                backgroundColor: "var(--cg-bg-card)",
-                border: "1px solid var(--cg-border)",
-                color: "var(--cg-text-secondary)",
-              }}
-            >
-              Next
-            </button>
+            {/* Stats grid */}
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { value: "1,499", label: "Ranked Courses" },
+                { value: "4", label: "Ranking Sources" },
+                { value: "46", label: "Ranking Lists" },
+                { value: "714", label: "Airports Mapped" },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="rounded-2xl p-6 text-center"
+                  style={{
+                    backgroundColor: "var(--cg-bg-card)",
+                    border: "1px solid var(--cg-border)",
+                  }}
+                >
+                  <div className="text-3xl font-bold" style={{ color: "var(--cg-accent)" }}>
+                    {stat.value}
+                  </div>
+                  <div className="mt-1 text-sm" style={{ color: "var(--cg-text-muted)" }}>
+                    {stat.label}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      </section>
+
+      {/* ─── CTA ─── */}
+      <section
+        className="py-20 sm:py-24"
+        style={{
+          backgroundColor: "var(--cg-bg-tertiary)",
+          borderTop: "1px solid var(--cg-border-subtle)",
+        }}
+      >
+        <div className="mx-auto max-w-3xl px-4 text-center">
+          <h2
+            className="text-2xl font-bold sm:text-3xl"
+            style={{ color: "var(--cg-text-primary)" }}
+          >
+            Ready to find your next great round?
+          </h2>
+          <p
+            className="mt-4 text-base"
+            style={{ color: "var(--cg-text-secondary)" }}
+          >
+            Browse the world's best courses, filter by what you care about, and
+            discover courses you've never heard of — ranked alongside the ones you have.
+          </p>
+          <Link
+            href="/explore"
+            className="mt-8 inline-flex items-center justify-center gap-2 rounded-xl px-8 py-3.5 text-base font-semibold transition-all hover:-translate-y-0.5"
+            style={{
+              backgroundColor: "var(--cg-accent)",
+              color: "var(--cg-text-inverse)",
+              boxShadow: `0 8px 30px var(--cg-accent-glow)`,
+            }}
+          >
+            Start Exploring
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

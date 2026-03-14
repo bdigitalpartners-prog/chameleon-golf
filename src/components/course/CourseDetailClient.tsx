@@ -260,7 +260,7 @@ export function CourseDetailClient({ course }: { course: any }) {
                   <dd className="font-medium" style={{ color: "var(--cg-text-primary)" }}>
                     {formatCurrency(course.greenFeeLow)}
                     {course.greenFeeHigh && course.greenFeeLow !== course.greenFeeHigh
-                      ? ` \u2013 ${formatCurrency(course.greenFeeHigh)}`
+                      ? ` – ${formatCurrency(course.greenFeeHigh)}`
                       : ""}
                   </dd>
                 </div>
@@ -462,14 +462,14 @@ export function CourseDetailClient({ course }: { course: any }) {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Chameleon Score */}
+          {/* CF Score */}
           {csData && (
             <section style={cardStyle}>
               <h2
                 className="font-display text-lg font-semibold mb-4"
                 style={{ color: "var(--cg-text-primary)" }}
               >
-                Chameleon Score
+                CF Score
               </h2>
               {scoreNum !== null && (
                 <div className="flex items-center gap-4 mb-4">
@@ -540,7 +540,7 @@ export function CourseDetailClient({ course }: { course: any }) {
                   >
                     <div>
                       <div className="font-medium" style={{ color: "var(--cg-text-primary)" }}>
-                        {a.airport.iataCode ? `${a.airport.iataCode} \u2014 ` : ""}{a.airport.airportName}
+                        {a.airport.iataCode ? `${a.airport.iataCode} — ` : ""}{a.airport.airportName}
                       </div>
                       <div className="text-xs" style={{ color: "var(--cg-text-muted)" }}>
                         {a.airport.airportType}

@@ -52,7 +52,7 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
   if (!course) return { title: "Course Not Found" };
   const location = [course.city, course.state, course.country].filter(Boolean).join(", ");
   return {
-    title: `${course.courseName} — Chameleon Golf`,
+    title: `${course.courseName} — CourseFACTOR`,
     description: `Explore rankings, ratings, photos, and airport proximity for ${course.courseName} in ${location}.`,
   };
 }

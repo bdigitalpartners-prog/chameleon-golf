@@ -68,23 +68,23 @@
 }
 
 @layer components {
-  .chameleon-badge {
+  .cf-badge {
     @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
   }
 
-  .chameleon-badge-flagship {
+  .cf-badge-flagship {
     @apply bg-amber-100 text-amber-800;
   }
 
-  .chameleon-badge-major {
+  .cf-badge-major {
     @apply bg-blue-100 text-blue-800;
   }
 
-  .chameleon-badge-regional {
+  .cf-badge-regional {
     @apply bg-stone-100 text-stone-700;
   }
 
-  .chameleon-badge-specialty {
+  .cf-badge-specialty {
     @apply bg-purple-100 text-purple-800;
   }
 
