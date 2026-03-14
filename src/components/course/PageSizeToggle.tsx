@@ -1,46 +1,42 @@
 "use client";
 
-export type PageSize = 25 | 50 | 100 | "all";
-
-const OPTIONS: { label: string; value: PageSize }[] = [
-  { label: "25", value: 25 },
-  { label: "50", value: 50 },
-  { label: "100", value: 100 },
-  { label: "All", value: "all" },
-];
+interface PageSizeToggleProps {
+  pageSize: number;
+  onChange: (size: number) => void;
+  options?: number[];
+}
 
 export function PageSizeToggle({
-  size,
+  pageSize,
   onChange,
-}: {
-  size: PageSize;
-  onChange: (s: PageSize) => void;
-}) {
+  options = [12, 24, 48],
+}: PageSizeToggleProps) {
   return (
-    <div
-      className="inline-flex items-center rounded-lg overflow-hidden"
-      style={{ border: "1px solid var(--cg-border)" }}
-    >
+    <div className="flex items-center gap-2">
       <span
-        className="px-2.5 py-2 text-xs font-medium"
+        className="text-xs"
         style={{ color: "var(--cg-text-muted)" }}
       >
-        Show
+        Per page:
       </span>
-      {OPTIONS.map((opt, i) => (
+      {options.map((size) => (
         <button
-          key={opt.label}
-          onClick={() => onChange(opt.value)}
-          className="px-3 py-2 text-xs font-medium transition-colors"
+          key={size}
+          onClick={() => onChange(size)}
+          className="rounded px-2.5 py-1 text-xs font-medium transition-colors"
           style={{
             backgroundColor:
-              size === opt.value ? "var(--cg-accent-bg)" : "transparent",
+              pageSize === size
+                ? "var(--cg-accent-bg)"
+                : "var(--cg-bg-tertiary)",
             color:
-              size === opt.value ? "var(--cg-accent)" : "var(--cg-text-muted)",
-            borderLeft: "1px solid var(--cg-border)",
+              pageSize === size ? "var(--cg-accent)" : "var(--cg-text-muted)",
+            border: `1px solid ${
+              pageSize === size ? "var(--cg-accent)" : "var(--cg-border)"
+            }`,
           }}
         >
-          {opt.label}
+          {size}
         </button>
       ))}
     </div>

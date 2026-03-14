@@ -1,152 +1,127 @@
 "use client";
 
 import Link from "next/link";
-import { useSession, signIn, signOut } from "next-auth/react";
-import { Search, Menu, X, User } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { SearchOverlay } from "@/components/layout/SearchOverlay";
-import { ThemeSettings } from "@/components/layout/ThemeSettings";
+import { Menu, X, Palette } from "lucide-react";
+import { ThemeSettings } from "./ThemeSettings";
+
+const NAV_LINKS = [
+  { href: "/explore", label: "Explore" },
+  { href: "/rankings", label: "Rankings" },
+  // { href: "/courses", label: "Courses" },
+];
 
 export function Navbar() {
-  const { data: session } = useSession();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-
-  const isAdmin = (session?.user as any)?.role === "admin";
+  const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [themeOpen, setThemeOpen] = useState(false);
 
   return (
     <>
-      <nav
-        className="sticky top-0 z-50 backdrop-blur"
+      <header
+        className="sticky top-0 z-40 border-b"
         style={{
-          backgroundColor: "var(--cg-bg-nav)",
-          borderBottom: "1px solid var(--cg-border)",
+          backgroundColor: "var(--cg-bg-primary)",
+          borderColor: "var(--cg-border)",
         }}
       >
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
-          <Link href="/" className="flex items-center gap-2">
-            <div
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold"
-              style={{ backgroundColor: "var(--cg-accent)", color: "var(--cg-text-inverse)" }}
-            >
-              CG
-            </div>
-            <span
-              className="font-display text-lg font-semibold"
-              style={{ color: "var(--cg-text-primary)" }}
-            >
-              Chameleon Golf
-            </span>
+        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
+          {/* Logo */}
+          <Link
+            href="/"
+            className="font-display text-lg font-bold tracking-tight"
+            style={{ color: "var(--cg-text-primary)" }}
+          >
+            ⛳ Chameleon Golf
           </Link>
 
-          <div className="hidden md:flex items-center gap-6 text-sm font-medium">
-            {[
-              { href: "/explore", label: "Explore" },
-              { href: "/about", label: "How It Works" },
-              ...(session
-                ? [
-                    { href: "/journal", label: "Score Journal" },
-                    { href: "/profile", label: "Profile" },
-                  ]
-                : []),
-              ...(isAdmin ? [{ href: "/admin", label: "Admin" }] : []),
-            ].map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="transition-colors"
-                style={{ color: "var(--cg-text-secondary)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--cg-accent)")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--cg-text-secondary)")}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
+          {/* Desktop nav */}
+          <nav className="hidden md:flex items-center gap-1">
+            {NAV_LINKS.map((link) => {
+              const active = pathname === link.href || pathname.startsWith(link.href + "/");
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
+                  style={{
+                    color: active ? "var(--cg-accent)" : "var(--cg-text-secondary)",
+                    backgroundColor: active ? "var(--cg-accent-bg)" : "transparent",
+                  }}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
+          </nav>
 
+          {/* Right actions */}
           <div className="flex items-center gap-2">
-            <ThemeSettings />
-
+            {/* Theme toggle */}
             <button
-              onClick={() => setSearchOpen(true)}
-              className="rounded-lg p-2 transition-colors"
-              style={{ color: "var(--cg-text-secondary)" }}
+              onClick={() => setThemeOpen(true)}
+              className="flex h-9 w-9 items-center justify-center rounded-lg transition-colors"
+              style={{
+                color: "var(--cg-text-muted)",
+                backgroundColor: "transparent",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--cg-bg-tertiary)";
+                e.currentTarget.style.color = "var(--cg-text-primary)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+                e.currentTarget.style.color = "var(--cg-text-muted)";
+              }}
+              aria-label="Theme settings"
             >
-              <Search className="h-5 w-5" />
+              <Palette className="h-4.5 w-4.5" />
             </button>
 
-            {session ? (
-              <div className="flex items-center gap-2">
-                {session.user?.image ? (
-                  <img src={session.user.image} alt="" className="h-8 w-8 rounded-full" />
-                ) : (
-                  <User className="h-5 w-5" style={{ color: "var(--cg-text-secondary)" }} />
-                )}
-                <button
-                  onClick={() => signOut()}
-                  className="hidden md:block text-sm transition-colors"
-                  style={{ color: "var(--cg-text-muted)" }}
-                >
-                  Sign Out
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => signIn("google")}
-                className="rounded-lg px-4 py-2 text-sm font-medium transition-all"
-                style={{
-                  backgroundColor: "var(--cg-accent)",
-                  color: "var(--cg-text-inverse)",
-                }}
-              >
-                Sign In
-              </button>
-            )}
-
+            {/* Mobile menu button */}
             <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="md:hidden rounded-lg p-2"
+              className="md:hidden flex h-9 w-9 items-center justify-center rounded-lg"
               style={{ color: "var(--cg-text-secondary)" }}
+              onClick={() => setMobileOpen(!mobileOpen)}
             >
-              {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
         </div>
 
-        {menuOpen && (
+        {/* Mobile nav */}
+        {mobileOpen && (
           <div
-            className="px-4 py-3 md:hidden"
+            className="md:hidden border-t px-4 py-3 flex flex-col gap-1"
             style={{
-              borderTop: "1px solid var(--cg-border)",
-              backgroundColor: "var(--cg-bg-secondary)",
+              backgroundColor: "var(--cg-bg-primary)",
+              borderColor: "var(--cg-border)",
             }}
           >
-            <div className="flex flex-col gap-2 text-sm font-medium">
-              {[
-                { href: "/explore", label: "Explore" },
-                { href: "/about", label: "How It Works" },
-                ...(session
-                  ? [
-                      { href: "/journal", label: "Score Journal" },
-                      { href: "/profile", label: "Profile" },
-                    ]
-                  : []),
-                ...(isAdmin ? [{ href: "/admin", label: "Admin" }] : []),
-              ].map((link) => (
+            {NAV_LINKS.map((link) => {
+              const active = pathname === link.href;
+              return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  onClick={() => setMenuOpen(false)}
-                  style={{ color: "var(--cg-text-secondary)" }}
+                  onClick={() => setMobileOpen(false)}
+                  className="px-3 py-2 rounded-md text-sm font-medium"
+                  style={{
+                    color: active ? "var(--cg-accent)" : "var(--cg-text-secondary)",
+                    backgroundColor: active ? "var(--cg-accent-bg)" : "transparent",
+                  }}
                 >
                   {link.label}
                 </Link>
-              ))}
-            </div>
+              );
+            })}
           </div>
         )}
-      </nav>
-      {searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
+      </header>
+
+      {/* Theme settings panel */}
+      <ThemeSettings open={themeOpen} onClose={() => setThemeOpen(false)} />
     </>
   );
 }
