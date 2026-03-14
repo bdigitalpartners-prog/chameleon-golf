@@ -5,7 +5,7 @@ export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
     const page = parseInt(url.searchParams.get("page") ?? "1");
-    const limit = Math.min(parseInt(url.searchParams.get("limit") ?? "24"), 100);
+    const limit = Math.min(parseInt(url.searchParams.get("limit") ?? "24"), 2000);
     const skip = (page - 1) * limit;
 
     const country = url.searchParams.get("country") || undefined;
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
           rankings: {
             include: { list: { include: { source: true } } },
             orderBy: { rankPosition: "asc" },
-            take: 3,
+            take: 3, // top 3 rankings for list view
           },
         },
       }),
@@ -76,6 +76,7 @@ export async function GET(req: NextRequest) {
       primaryImageUrl: c.media[0]?.url ?? null,
       bestRank: c.rankings[0]?.rankPosition ?? null,
       bestSource: c.rankings[0]?.list?.source?.sourceName ?? null,
+      // All rankings for list view tooltip/detail
       rankings: c.rankings.map((r) => ({
         rank: r.rankPosition,
         list: r.list?.listName ?? "",

@@ -5,6 +5,7 @@ import { CourseCard } from "@/components/course/CourseCard";
 import { CourseListRow } from "@/components/course/CourseListRow";
 import { CourseListHeader } from "@/components/course/CourseListHeader";
 import { ViewToggle, ViewMode } from "@/components/course/ViewToggle";
+import { PageSizeToggle, PageSize } from "@/components/course/PageSizeToggle";
 import { FilterSidebar } from "@/components/filters/FilterSidebar";
 import { useCourses } from "@/hooks/useCourses";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
@@ -12,20 +13,13 @@ import type { CourseFilters } from "@/types";
 
 export default function ExplorePage() {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [pageSize, setPageSize] = useState<PageSize>(50);
   const [filters, setFilters] = useState<CourseFilters>({
     page: 1,
-    limit: 24,
+    limit: 50,
     sortBy: "chameleon",
     sortDir: "desc",
   });
-
-  useEffect(() => {
-    setFilters((f) => ({
-      ...f,
-      limit: viewMode === "list" ? 50 : 24,
-      page: 1,
-    }));
-  }, [viewMode]);
 
   const { data, isLoading, error } = useCourses(filters);
 
@@ -45,10 +39,19 @@ export default function ExplorePage() {
     });
   }, []);
 
+  // Persist view + page-size preferences
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("cg-view-mode");
-      if (saved === "list" || saved === "grid") setViewMode(saved);
+      const savedView = localStorage.getItem("cg-view-mode");
+      if (savedView === "list" || savedView === "grid") setViewMode(savedView);
+      const savedSize = localStorage.getItem("cg-page-size");
+      if (savedSize) {
+        const parsed = savedSize === "all" ? "all" as PageSize : parseInt(savedSize) as PageSize;
+        if (parsed === "all" || parsed === 25 || parsed === 50 || parsed === 100) {
+          setPageSize(parsed);
+          setFilters((f) => ({ ...f, limit: parsed === "all" ? 2000 : parsed, page: 1 }));
+        }
+      }
     } catch {}
   }, []);
 
@@ -57,12 +60,20 @@ export default function ExplorePage() {
     try { localStorage.setItem("cg-view-mode", m); } catch {}
   };
 
+  const handlePageSizeChange = (s: PageSize) => {
+    setPageSize(s);
+    const numericLimit = s === "all" ? 2000 : s;
+    setFilters((f) => ({ ...f, limit: numericLimit, page: 1 }));
+    try { localStorage.setItem("cg-page-size", String(s)); } catch {}
+  };
+
   return (
     <div
       className="min-h-screen"
       style={{ backgroundColor: "var(--cg-bg-primary)" }}
     >
       <div className="mx-auto max-w-7xl px-4 py-8">
+        {/* Header */}
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1
@@ -78,14 +89,19 @@ export default function ExplorePage() {
               {data?.total ? `${data.total.toLocaleString()} courses` : "Loading..."} ranked across 4 sources.
             </p>
           </div>
-          <ViewToggle mode={viewMode} onChange={handleViewChange} />
+          <div className="flex items-center gap-3 flex-wrap">
+            <PageSizeToggle size={pageSize} onChange={handlePageSizeChange} />
+            <ViewToggle mode={viewMode} onChange={handleViewChange} />
+          </div>
         </div>
 
         <div className="flex flex-col gap-8 lg:flex-row">
+          {/* Sidebar */}
           <div className="w-full lg:w-72 flex-shrink-0">
             <FilterSidebar filters={filters} onChange={setFilters} filterOptions={filterOptions} />
           </div>
 
+          {/* Results */}
           <div className="flex-1 min-w-0">
             {isLoading && (
               <div className="flex items-center justify-center py-20">
@@ -108,6 +124,7 @@ export default function ExplorePage() {
 
             {data && !isLoading && (
               <>
+                {/* Grid View */}
                 {viewMode === "grid" && (
                   <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
                     {data.items.map((course) => (
@@ -116,6 +133,7 @@ export default function ExplorePage() {
                   </div>
                 )}
 
+                {/* List View */}
                 {viewMode === "list" && (
                   <div
                     className="rounded-xl overflow-hidden"
@@ -144,6 +162,7 @@ export default function ExplorePage() {
                   </div>
                 )}
 
+                {/* Pagination */}
                 {data.totalPages > 1 && (
                   <div className="mt-8 flex items-center justify-center gap-4">
                     <button
@@ -159,6 +178,9 @@ export default function ExplorePage() {
                     </button>
                     <span className="text-sm" style={{ color: "var(--cg-text-muted)" }}>
                       Page {data.page} of {data.totalPages}
+                      <span className="ml-2 opacity-60">
+                        ({data.total.toLocaleString()} courses)
+                      </span>
                     </span>
                     <button
                       disabled={data.page >= data.totalPages}
