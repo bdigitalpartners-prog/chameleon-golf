@@ -142,7 +142,15 @@ export function CourseDetailClient({ course }: { course: any }) {
           className="relative mb-8 aspect-[21/9] overflow-hidden rounded-2xl"
           style={{ backgroundColor: "var(--cg-bg-tertiary)" }}
         >
-          <img src={primaryImage.url} alt={course.courseName} className="h-full w-full object-cover" />
+          <img
+            src={primaryImage.url}
+            alt={course.courseName}
+            className="h-full w-full object-cover"
+            onError={(e) => {
+              const target = e.currentTarget;
+              target.style.display = "none";
+            }}
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
           <div className="absolute bottom-6 left-6 right-6">
             <h1 className="font-display text-3xl font-bold text-white md:text-4xl drop-shadow-lg">
@@ -252,7 +260,7 @@ export function CourseDetailClient({ course }: { course: any }) {
                   <dd className="font-medium" style={{ color: "var(--cg-text-primary)" }}>
                     {formatCurrency(course.greenFeeLow)}
                     {course.greenFeeHigh && course.greenFeeLow !== course.greenFeeHigh
-                      ? ` – ${formatCurrency(course.greenFeeHigh)}`
+                      ? ` \u2013 ${formatCurrency(course.greenFeeHigh)}`
                       : ""}
                   </dd>
                 </div>
@@ -394,6 +402,9 @@ export function CourseDetailClient({ course }: { course: any }) {
                       alt={m.caption || course.courseName}
                       className="h-full w-full object-cover hover:scale-105 transition-transform"
                       loading="lazy"
+                      onError={(e) => {
+                        (e.currentTarget.parentElement as HTMLElement).style.display = "none";
+                      }}
                     />
                   </div>
                 ))}
@@ -529,7 +540,7 @@ export function CourseDetailClient({ course }: { course: any }) {
                   >
                     <div>
                       <div className="font-medium" style={{ color: "var(--cg-text-primary)" }}>
-                        {a.airport.iataCode ? `${a.airport.iataCode} — ` : ""}{a.airport.airportName}
+                        {a.airport.iataCode ? `${a.airport.iataCode} \u2014 ` : ""}{a.airport.airportName}
                       </div>
                       <div className="text-xs" style={{ color: "var(--cg-text-muted)" }}>
                         {a.airport.airportType}
