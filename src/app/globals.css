@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --brand-green: #16a34a;
+    --brand-dark: #14532d;
+    --surface-bg: #fafaf9;
+  }
+
+  body {
+    @apply bg-surface-50 text-stone-900 antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  h1, h2, h3 {
+    @apply font-display;
+  }
+}
+
+@layer components {
+  .chameleon-badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  .chameleon-badge-flagship {
+    @apply bg-amber-100 text-amber-800;
+  }
+
+  .chameleon-badge-major {
+    @apply bg-blue-100 text-blue-800;
+  }
+
+  .chameleon-badge-regional {
+    @apply bg-stone-100 text-stone-700;
+  }
+
+  .chameleon-badge-specialty {
+    @apply bg-purple-100 text-purple-800;
+  }
+
+  .score-ring {
+    @apply inline-flex items-center justify-center rounded-full font-bold;
+  }
+}
