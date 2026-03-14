@@ -2,18 +2,30 @@
 
 import { useState, useEffect } from "react";
 import { CourseCard } from "@/components/course/CourseCard";
+import { CourseListRow } from "@/components/course/CourseListRow";
+import { CourseListHeader } from "@/components/course/CourseListHeader";
+import { ViewToggle, ViewMode } from "@/components/course/ViewToggle";
 import { FilterSidebar } from "@/components/filters/FilterSidebar";
 import { useCourses } from "@/hooks/useCourses";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import type { CourseFilters } from "@/types";
 
 export default function ExplorePage() {
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [filters, setFilters] = useState<CourseFilters>({
     page: 1,
     limit: 24,
     sortBy: "chameleon",
     sortDir: "desc",
   });
+
+  useEffect(() => {
+    setFilters((f) => ({
+      ...f,
+      limit: viewMode === "list" ? 50 : 24,
+      page: 1,
+    }));
+  }, [viewMode]);
 
   const { data, isLoading, error } = useCourses(filters);
 
@@ -25,10 +37,6 @@ export default function ExplorePage() {
   });
 
   useEffect(() => {
-    fetch("/api/courses?limit=1")
-      .then((r) => r.json())
-      .catch(() => null);
-
     setFilterOptions({
       countries: ["United States", "United Kingdom", "Ireland", "Scotland", "Canada", "Australia", "New Zealand", "Japan", "South Korea", "France", "Spain", "Italy", "Germany", "South Africa", "Mexico"],
       states: ["California", "Florida", "New York", "Texas", "Arizona", "North Carolina", "South Carolina", "Georgia", "Oregon", "Michigan", "Hawaii", "New Jersey", "Pennsylvania", "Colorado", "Virginia", "Wisconsin", "Massachusetts", "Ohio", "Illinois", "Nevada"],
@@ -37,26 +45,40 @@ export default function ExplorePage() {
     });
   }, []);
 
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("cg-view-mode");
+      if (saved === "list" || saved === "grid") setViewMode(saved);
+    } catch {}
+  }, []);
+
+  const handleViewChange = (m: ViewMode) => {
+    setViewMode(m);
+    try { localStorage.setItem("cg-view-mode", m); } catch {}
+  };
+
   return (
     <div
       className="min-h-screen"
       style={{ backgroundColor: "var(--cg-bg-primary)" }}
     >
       <div className="mx-auto max-w-7xl px-4 py-8">
-        <div className="mb-8">
-          <h1
-            className="font-display text-3xl font-bold md:text-4xl"
-            style={{ color: "var(--cg-text-primary)" }}
-          >
-            Explore the World&apos;s Best Golf Courses
-          </h1>
-          <p
-            className="mt-2 text-lg"
-            style={{ color: "var(--cg-text-secondary)" }}
-          >
-            {data?.total ? `${data.total.toLocaleString()} courses` : "Loading courses..."} ranked across Golf Digest, Golfweek, GOLF.com & Top100GolfCourses.
-            Adjust filters to find your perfect round.
-          </p>
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1
+              className="font-display text-3xl font-bold md:text-4xl"
+              style={{ color: "var(--cg-text-primary)" }}
+            >
+              Explore Courses
+            </h1>
+            <p
+              className="mt-2 text-base"
+              style={{ color: "var(--cg-text-secondary)" }}
+            >
+              {data?.total ? `${data.total.toLocaleString()} courses` : "Loading..."} ranked across 4 sources.
+            </p>
+          </div>
+          <ViewToggle mode={viewMode} onChange={handleViewChange} />
         </div>
 
         <div className="flex flex-col gap-8 lg:flex-row">
@@ -64,7 +86,7 @@ export default function ExplorePage() {
             <FilterSidebar filters={filters} onChange={setFilters} filterOptions={filterOptions} />
           </div>
 
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {isLoading && (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="h-8 w-8 animate-spin" style={{ color: "var(--cg-accent)" }} />
@@ -86,11 +108,32 @@ export default function ExplorePage() {
 
             {data && !isLoading && (
               <>
-                <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                  {data.items.map((course) => (
-                    <CourseCard key={course.courseId} course={course} />
-                  ))}
-                </div>
+                {viewMode === "grid" && (
+                  <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                    {data.items.map((course) => (
+                      <CourseCard key={course.courseId} course={course} />
+                    ))}
+                  </div>
+                )}
+
+                {viewMode === "list" && (
+                  <div
+                    className="rounded-xl overflow-hidden"
+                    style={{
+                      backgroundColor: "var(--cg-bg-card)",
+                      border: "1px solid var(--cg-border)",
+                    }}
+                  >
+                    <CourseListHeader showRank />
+                    {data.items.map((course, i) => (
+                      <CourseListRow
+                        key={course.courseId}
+                        course={course}
+                        rank={(data.page - 1) * data.limit + i + 1}
+                      />
+                    ))}
+                  </div>
+                )}
 
                 {data.items.length === 0 && (
                   <div

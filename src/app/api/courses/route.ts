@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
       sortBy === "name" ? { courseName: sortDir }
       : sortBy === "fee" ? { greenFeeLow: sortDir }
       : sortBy === "rank" ? { numListsAppeared: sortDir }
-      : { numListsAppeared: "desc" }; // default: most ranked
+      : { numListsAppeared: "desc" };
 
     const [courses, total] = await Promise.all([
       prisma.course.findMany({
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
           rankings: {
             include: { list: { include: { source: true } } },
             orderBy: { rankPosition: "asc" },
-            take: 1,
+            take: 3,
           },
         },
       }),
@@ -61,16 +61,26 @@ export async function GET(req: NextRequest) {
       state: c.state,
       country: c.country,
       courseStyle: c.courseStyle,
+      courseType: c.courseType,
       accessType: c.accessType,
+      par: c.par,
+      numHoles: c.numHoles,
+      yearOpened: c.yearOpened,
+      originalArchitect: c.originalArchitect,
       greenFeeLow: c.greenFeeLow?.toString() ?? null,
       greenFeeHigh: c.greenFeeHigh?.toString() ?? null,
-      originalArchitect: c.originalArchitect,
+      walkingPolicy: c.walkingPolicy,
       numListsAppeared: c.numListsAppeared,
       chameleonScore: c.chameleonScores?.chameleonScore?.toString() ?? null,
       prestigeScore: c.chameleonScores?.prestigeScore?.toString() ?? null,
       primaryImageUrl: c.media[0]?.url ?? null,
       bestRank: c.rankings[0]?.rankPosition ?? null,
       bestSource: c.rankings[0]?.list?.source?.sourceName ?? null,
+      rankings: c.rankings.map((r) => ({
+        rank: r.rankPosition,
+        list: r.list?.listName ?? "",
+        source: r.list?.source?.sourceName ?? "",
+      })),
     }));
 
     return NextResponse.json({ items, total, page, limit, totalPages: Math.ceil(total / limit) });

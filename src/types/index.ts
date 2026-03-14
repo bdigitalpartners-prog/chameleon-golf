@@ -6,15 +6,22 @@ export interface CourseCard {
   state: string | null;
   country: string;
   courseStyle: string | null;
+  courseType: string | null;
   accessType: string | null;
+  par: number | null;
+  numHoles: number | null;
+  yearOpened: number | null;
+  originalArchitect: string | null;
   greenFeeLow: string | null;
   greenFeeHigh: string | null;
-  originalArchitect: string | null;
+  walkingPolicy: string | null;
   numListsAppeared: number | null;
   chameleonScore: number | null;
+  prestigeScore: string | null;
   primaryImageUrl: string | null;
   bestRank: number | null;
   bestSource: string | null;
+  rankings: { rank: number; list: string; source: string }[];
 }
 
 export interface CourseFilters {
