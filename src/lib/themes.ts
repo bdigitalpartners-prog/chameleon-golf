@@ -1,200 +1,169 @@
-export interface Theme {
-  id: string;
+// Chameleon Golf Theme System
+// 3 presets — Midnight, Fairway, Golden Hour
+
+export type ThemePreset = "midnight" | "fairway" | "golden-hour";
+
+export interface ThemeConfig {
   name: string;
-  // Core background layers
-  bgPrimary: string;
-  bgSecondary: string;
-  bgTertiary: string;
-  bgCard: string;
-  bgCardHover: string;
-  // Borders
-  border: string;
-  borderSubtle: string;
-  // Text
-  textPrimary: string;
-  textSecondary: string;
-  textMuted: string;
-  // Accent
-  accent: string;
-  accentBg: string;
-  accentMuted: string;
-  // Status
-  success: string;
-  error: string;
+  label: string;
+  description: string;
+  colors: {
+    // Backgrounds
+    bgPrimary: string;
+    bgSecondary: string;
+    bgTertiary: string;
+    bgCard: string;
+    bgCardHover: string;
+    bgNav: string;
+    bgOverlay: string;
+
+    // Text
+    textPrimary: string;
+    textSecondary: string;
+    textMuted: string;
+    textInverse: string;
+
+    // Accent
+    accent: string;
+    accentHover: string;
+    accentMuted: string;
+    accentBg: string;
+    accentGlow: string;
+
+    // Borders
+    border: string;
+    borderSubtle: string;
+
+    // Status
+    success: string;
+    warning: string;
+    error: string;
+  };
 }
 
-export const THEMES: Theme[] = [
-  {
-    id: "midnight",
-    name: "Midnight",
-    bgPrimary: "#0a0f1a",
-    bgSecondary: "#0f1623",
-    bgTertiary: "#151d2e",
-    bgCard: "#111827",
-    bgCardHover: "#1a2236",
-    border: "#1e2d42",
-    borderSubtle: "#172133",
-    textPrimary: "#e8edf5",
-    textSecondary: "#94a3b8",
-    textMuted: "#4a5a72",
-    accent: "#3b82f6",
-    accentBg: "#1e3a5f",
-    accentMuted: "#1e3a5f",
-    success: "#22c55e",
-    error: "#ef4444",
-  },
-  {
-    id: "forest",
-    name: "Forest",
-    bgPrimary: "#0a1208",
-    bgSecondary: "#0e1a0b",
-    bgTertiary: "#132210",
-    bgCard: "#0f1a0d",
-    bgCardHover: "#182b14",
-    border: "#1e3318",
-    borderSubtle: "#172a12",
-    textPrimary: "#e2eedd",
-    textSecondary: "#86a87e",
-    textMuted: "#4a6644",
-    accent: "#4ade80",
-    accentBg: "#14421e",
-    accentMuted: "#14421e",
-    success: "#22c55e",
-    error: "#ef4444",
-  },
-  {
-    id: "links",
-    name: "Links",
-    bgPrimary: "#f4f0e8",
-    bgSecondary: "#ede8dc",
-    bgTertiary: "#e5dfd0",
-    bgCard: "#faf8f3",
-    bgCardHover: "#f0ece0",
-    border: "#c8bfa8",
-    borderSubtle: "#d8d0bc",
-    textPrimary: "#1a1510",
-    textSecondary: "#5c5040",
-    textMuted: "#8c7c68",
-    accent: "#8b5e3c",
-    accentBg: "#e8d5c0",
-    accentMuted: "#e8d5c0",
-    success: "#3a7d44",
-    error: "#c0392b",
-  },
-  {
-    id: "slate",
-    name: "Slate",
-    bgPrimary: "#0f1117",
-    bgSecondary: "#14171f",
-    bgTertiary: "#1a1d27",
-    bgCard: "#13161e",
-    bgCardHover: "#1c2030",
-    border: "#252a38",
-    borderSubtle: "#1e2230",
-    textPrimary: "#e2e4eb",
-    textSecondary: "#8890a8",
-    textMuted: "#4a5168",
-    accent: "#a78bfa",
-    accentBg: "#2d1f6e",
-    accentMuted: "#2d1f6e",
-    success: "#22c55e",
-    error: "#ef4444",
-  },
-  {
-    id: "ember",
-    name: "Ember",
-    bgPrimary: "#100a06",
-    bgSecondary: "#180e08",
-    bgTertiary: "#20140a",
-    bgCard: "#150c07",
-    bgCardHover: "#1e1208",
-    border: "#2a1a0e",
-    borderSubtle: "#221508",
-    textPrimary: "#f0e6da",
-    textSecondary: "#a08060",
-    textMuted: "#5a3e28",
-    accent: "#f97316",
-    accentBg: "#4a1e08",
-    accentMuted: "#4a1e08",
-    success: "#22c55e",
-    error: "#ef4444",
-  },
-  {
-    id: "arctic",
-    name: "Arctic",
-    bgPrimary: "#f0f4f8",
-    bgSecondary: "#e8edf2",
-    bgTertiary: "#dde3ea",
-    bgCard: "#f8fafc",
-    bgCardHover: "#edf1f5",
-    border: "#b8c4d0",
-    borderSubtle: "#cad4dc",
-    textPrimary: "#0f1923",
-    textSecondary: "#3d5068",
-    textMuted: "#7a8fa4",
-    accent: "#0ea5e9",
-    accentBg: "#c8e8f8",
-    accentMuted: "#c8e8f8",
-    success: "#16a34a",
-    error: "#dc2626",
-  },
-  {
-    id: "obsidian",
-    name: "Obsidian",
-    bgPrimary: "#050507",
-    bgSecondary: "#08080c",
-    bgTertiary: "#0d0d12",
-    bgCard: "#070709",
-    bgCardHover: "#101015",
-    border: "#18181f",
-    borderSubtle: "#111116",
-    textPrimary: "#e8e8f0",
-    textSecondary: "#8080a0",
-    textMuted: "#3a3a50",
-    accent: "#e879f9",
-    accentBg: "#3a0a4a",
-    accentMuted: "#3a0a4a",
-    success: "#22c55e",
-    error: "#ef4444",
-  },
-  {
-    id: "dusk",
-    name: "Dusk",
-    bgPrimary: "#12080e",
-    bgSecondary: "#1a0c14",
-    bgTertiary: "#22101c",
-    bgCard: "#160a11",
-    bgCardHover: "#200e18",
-    border: "#301830",
-    borderSubtle: "#261225",
-    textPrimary: "#f0e4ec",
-    textSecondary: "#a07090",
-    textMuted: "#5a3a54",
-    accent: "#f472b6",
-    accentBg: "#4a0a30",
-    accentMuted: "#4a0a30",
-    success: "#22c55e",
-    error: "#ef4444",
-  },
-];
+export const themePresets: Record<ThemePreset, ThemeConfig> = {
+  midnight: {
+    name: "midnight",
+    label: "Midnight",
+    description: "Sleek black & charcoal with green accents",
+    colors: {
+      bgPrimary: "#0a0a0a",
+      bgSecondary: "#111111",
+      bgTertiary: "#1a1a1a",
+      bgCard: "#141414",
+      bgCardHover: "#1c1c1c",
+      bgNav: "rgba(10, 10, 10, 0.95)",
+      bgOverlay: "rgba(0, 0, 0, 0.7)",
 
-export const DEFAULT_THEME_ID = "midnight";
+      textPrimary: "#f5f5f5",
+      textSecondary: "#a3a3a3",
+      textMuted: "#666666",
+      textInverse: "#0a0a0a",
 
-export function applyTheme(theme: Theme): void {
-  const root = document.documentElement;
-  root.style.setProperty("--cg-bg-primary", theme.bgPrimary);
-  root.style.setProperty("--cg-bg-secondary", theme.bgSecondary);
-  root.style.setProperty("--cg-bg-tertiary", theme.bgTertiary);
-  root.style.setProperty("--cg-bg-card", theme.bgCard);
-  root.style.setProperty("--cg-bg-card-hover", theme.bgCardHover);
-  root.style.setProperty("--cg-border", theme.border);
-  root.style.setProperty("--cg-border-subtle", theme.borderSubtle);
-  root.style.setProperty("--cg-text-primary", theme.textPrimary);
-  root.style.setProperty("--cg-text-secondary", theme.textSecondary);
-  root.style.setProperty("--cg-text-muted", theme.textMuted);
-  root.style.setProperty("--cg-accent", theme.accent);
-  root.style.setProperty("--cg-accent-bg", theme.accentBg);
-  root.style.setProperty("--cg-accent-muted", theme.accentMuted);
-  root.style.setProperty("--cg-success", theme.success);
-  root.style.setProperty("--cg-error", theme.error);
+      accent: "#22c55e",
+      accentHover: "#16a34a",
+      accentMuted: "#166534",
+      accentBg: "rgba(34, 197, 94, 0.1)",
+      accentGlow: "rgba(34, 197, 94, 0.25)",
+
+      border: "#262626",
+      borderSubtle: "#1a1a1a",
+
+      success: "#22c55e",
+      warning: "#eab308",
+      error: "#ef4444",
+    },
+  },
+  fairway: {
+    name: "fairway",
+    label: "Fairway",
+    description: "Dark forest green with turf-inspired tones",
+    colors: {
+      bgPrimary: "#0c1a0f",
+      bgSecondary: "#0f2214",
+      bgTertiary: "#132b18",
+      bgCard: "#0f2214",
+      bgCardHover: "#163320",
+      bgNav: "rgba(12, 26, 15, 0.95)",
+      bgOverlay: "rgba(0, 0, 0, 0.7)",
+
+      textPrimary: "#e8f5e9",
+      textSecondary: "#a5d6a7",
+      textMuted: "#5a7d5e",
+      textInverse: "#0c1a0f",
+
+      accent: "#4caf50",
+      accentHover: "#388e3c",
+      accentMuted: "#1b5e20",
+      accentBg: "rgba(76, 175, 80, 0.12)",
+      accentGlow: "rgba(76, 175, 80, 0.25)",
+
+      border: "#1e3a22",
+      borderSubtle: "#162e1a",
+
+      success: "#66bb6a",
+      warning: "#fdd835",
+      error: "#ef5350",
+    },
+  },
+  "golden-hour": {
+    name: "golden-hour",
+    label: "Golden Hour",
+    description: "Deep navy with warm gold & classic serif accents",
+    colors: {
+      bgPrimary: "#0b0f1a",
+      bgSecondary: "#0f1525",
+      bgTertiary: "#141c30",
+      bgCard: "#111828",
+      bgCardHover: "#182035",
+      bgNav: "rgba(11, 15, 26, 0.95)",
+      bgOverlay: "rgba(0, 0, 0, 0.7)",
+
+      textPrimary: "#f0ead6",
+      textSecondary: "#a8a08e",
+      textMuted: "#5c5647",
+      textInverse: "#0b0f1a",
+
+      accent: "#d4a843",
+      accentHover: "#b8922e",
+      accentMuted: "#7a6120",
+      accentBg: "rgba(212, 168, 67, 0.1)",
+      accentGlow: "rgba(212, 168, 67, 0.25)",
+
+      border: "#242a3a",
+      borderSubtle: "#1a2030",
+
+      success: "#66bb6a",
+      warning: "#d4a843",
+      error: "#ef5350",
+    },
+  },
+};
+
+export const defaultTheme: ThemePreset = "midnight";
+
+// Legacy exports — kept for compatibility, no longer used in UI
+export interface CustomOverrides {
+  accent?: string | null;
+  background?: string | null;
+  card?: string | null;
+  text?: string | null;
+}
+
+export const accentPresets: { name: string; value: string }[] = [];
+export const backgroundPresets: { name: string; value: string }[] = [];
+export const cardPresets: { name: string; value: string }[] = [];
+export const textPresets: { name: string; value: string }[] = [];
+
+export function generateAccentFromHex(hex: string) {
+  return { accent: hex, accentHover: hex, accentMuted: hex, accentBg: hex, accentGlow: hex };
+}
+export function generateBackgroundFromHex(hex: string) {
+  return { bgPrimary: hex, bgSecondary: hex, bgTertiary: hex, bgNav: hex };
+}
+export function generateCardFromHex(hex: string) {
+  return { bgCard: hex, bgCardHover: hex, border: hex, borderSubtle: hex };
+}
+export function generateTextFromHex(hex: string) {
+  return { textPrimary: hex, textSecondary: hex, textMuted: hex };
 }
