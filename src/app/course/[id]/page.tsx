@@ -19,9 +19,9 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
         orderBy: { distanceMiles: "asc" },
         take: 10,
       },
-      chameleonScores: { take: 1 },
+      chameleonScores: true,
       ratings: {
-        where: { isActive: true },
+        where: { isPublished: true },
         include: { user: { select: { name: true, image: true } } },
         orderBy: { createdAt: "desc" },
         take: 20,
