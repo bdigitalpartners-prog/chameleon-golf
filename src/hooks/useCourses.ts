@@ -23,6 +23,23 @@ export function useCourses(filters: CourseFilters) {
   if (filters.feeMax) params.set("feeMax", String(filters.feeMax));
   if (filters.sortBy) params.set("sortBy", filters.sortBy);
   if (filters.sortDir) params.set("sortDir", filters.sortDir);
+  // New filter params
+  if (filters.listId) params.set("listId", String(filters.listId));
+  if (filters.walkingPolicy) params.set("walkingPolicy", filters.walkingPolicy);
+  if (filters.yearMin) params.set("yearMin", String(filters.yearMin));
+  if (filters.yearMax) params.set("yearMax", String(filters.yearMax));
+  if (filters.architect) params.set("architect", filters.architect);
+  // Weight params
+  if (filters.w_expert !== undefined) params.set("w_expert", String(filters.w_expert));
+  if (filters.w_conditioning !== undefined) params.set("w_conditioning", String(filters.w_conditioning));
+  if (filters.w_layout !== undefined) params.set("w_layout", String(filters.w_layout));
+  if (filters.w_aesthetics !== undefined) params.set("w_aesthetics", String(filters.w_aesthetics));
+  if (filters.w_challenge !== undefined) params.set("w_challenge", String(filters.w_challenge));
+  if (filters.w_value !== undefined) params.set("w_value", String(filters.w_value));
+  if (filters.w_walkability !== undefined) params.set("w_walkability", String(filters.w_walkability));
+  if (filters.w_pace !== undefined) params.set("w_pace", String(filters.w_pace));
+  if (filters.w_amenities !== undefined) params.set("w_amenities", String(filters.w_amenities));
+  if (filters.w_service !== undefined) params.set("w_service", String(filters.w_service));
 
   return useQuery<CoursesResponse>({
     queryKey: ["courses", filters],
