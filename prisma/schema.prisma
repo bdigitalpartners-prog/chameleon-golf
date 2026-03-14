@@ -1,0 +1,297 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Course {
+  courseId           Int      @id @default(autoincrement()) @map("course_id")
+  courseName         String   @map("course_name") @db.VarChar(255)
+  facilityName       String?  @map("facility_name") @db.VarChar(255)
+  city               String?  @db.VarChar(100)
+  state              String?  @db.VarChar(100)
+  country            String   @default("United States") @db.VarChar(100)
+  streetAddress      String?  @map("street_address") @db.VarChar(255)
+  zipCode            String?  @map("zip_code") @db.VarChar(20)
+  latitude           Decimal? @db.Decimal(10, 7)
+  longitude          Decimal? @db.Decimal(10, 7)
+  courseType          String?  @map("course_type") @db.VarChar(50)
+  accessType         String?  @map("access_type") @db.VarChar(50)
+  numHoles           Int?     @default(18) @map("num_holes")
+  par                Int?
+  yearOpened         Int?     @map("year_opened")
+  courseStyle         String?  @map("course_style") @db.VarChar(50)
+  originalArchitect  String?  @map("original_architect") @db.VarChar(255)
+  renovationArchitect String? @map("renovation_architect") @db.VarChar(255)
+  renovationYear     Int?     @map("renovation_year")
+  renovationNotes    String?  @map("renovation_notes")
+  websiteUrl         String?  @map("website_url") @db.VarChar(500)
+  phone              String?  @db.VarChar(50)
+  greenFeeLow        Decimal? @map("green_fee_low") @db.Decimal(12, 2)
+  greenFeeHigh       Decimal? @map("green_fee_high") @db.Decimal(12, 2)
+  greenFeeCurrency   String?  @default("USD") @map("green_fee_currency") @db.VarChar(3)
+  walkingPolicy      String?  @map("walking_policy") @db.VarChar(50)
+  numListsAppeared   Int?     @default(0) @map("num_lists_appeared")
+  dataSources        String?  @map("data_sources")
+  isVerified         Boolean  @default(false) @map("is_verified")
+  isEnriched         Boolean  @default(false) @map("is_enriched")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @default(now()) @map("updated_at")
+
+  rankings           RankingEntry[]
+  media              CourseMedia[]
+  airports           CourseAirportProximity[]
+  ratings            UserCourseRating[]
+  scores             PostedScore[]
+  chameleonScores    ChameleonScore[]
+
+  @@map("courses")
+}
+
+model RankingSource {
+  sourceId          Int     @id @default(autoincrement()) @map("source_id")
+  sourceName        String  @unique @map("source_name") @db.VarChar(100)
+  sourceUrl         String? @map("source_url") @db.VarChar(500)
+  methodologyNotes  String? @map("methodology_notes")
+  authorityWeight   Decimal @default(1.0) @map("authority_weight") @db.Decimal(3, 2)
+
+  lists             RankingList[]
+
+  @@map("ranking_sources")
+}
+
+model RankingList {
+  listId           Int      @id @default(autoincrement()) @map("list_id")
+  sourceId         Int      @map("source_id")
+  listName         String   @map("list_name") @db.VarChar(200)
+  listType         String?  @map("list_type") @db.VarChar(50)
+  region           String?  @db.VarChar(100)
+  yearPublished    Int      @map("year_published")
+  cycleLabel       String?  @map("cycle_label") @db.VarChar(50)
+  accessFilter     String?  @map("access_filter") @db.VarChar(50)
+  url              String?  @db.VarChar(500)
+  prestigeTier     String   @default("regional") @map("prestige_tier") @db.VarChar(20)
+  listWeight       Decimal  @default(0.4) @map("list_weight") @db.Decimal(3, 2)
+
+  source           RankingSource @relation(fields: [sourceId], references: [sourceId])
+  entries          RankingEntry[]
+
+  @@unique([sourceId, listName, cycleLabel])
+  @@map("ranking_lists")
+}
+
+model RankingEntry {
+  entryId          Int      @id @default(autoincrement()) @map("entry_id")
+  listId           Int      @map("list_id")
+  courseId          Int      @map("course_id")
+  rankPosition     Int?     @map("rank_position")
+  rankTied         Boolean  @default(false) @map("rank_tied")
+  score            Decimal? @db.Decimal(5, 2)
+  previousRank     Int?     @map("previous_rank")
+  rankChange       Int?     @map("rank_change")
+  notes            String?
+
+  list             RankingList @relation(fields: [listId], references: [listId], onDelete: Cascade)
+  course           Course      @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+
+  @@unique([listId, courseId])
+  @@map("ranking_entries")
+}
+
+model Airport {
+  airportId        Int      @id @default(autoincrement()) @map("airport_id")
+  iataCode         String?  @map("iata_code") @db.VarChar(10)
+  icaoCode         String?  @map("icao_code") @db.VarChar(10)
+  airportName      String   @map("airport_name") @db.VarChar(255)
+  airportType      String   @map("airport_type") @db.VarChar(50)
+  city             String?  @db.VarChar(100)
+  stateProvince    String?  @map("state_province") @db.VarChar(100)
+  country          String?  @db.VarChar(100)
+  latitude         Decimal? @db.Decimal(10, 7)
+  longitude        Decimal? @db.Decimal(10, 7)
+
+  proximity        CourseAirportProximity[]
+
+  @@map("airports")
+}
+
+model CourseAirportProximity {
+  id               Int     @id @default(autoincrement())
+  courseId          Int     @map("course_id")
+  airportId        Int     @map("airport_id")
+  distanceMiles    Decimal @map("distance_miles") @db.Decimal(6, 1)
+  driveTimeMinutes Int?    @map("drive_time_minutes")
+
+  course           Course  @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  airport          Airport @relation(fields: [airportId], references: [airportId])
+
+  @@unique([courseId, airportId])
+  @@map("course_airport_proximity")
+}
+
+model CourseMedia {
+  mediaId          Int      @id @default(autoincrement()) @map("media_id")
+  courseId          Int      @map("course_id")
+  mediaType        String?  @map("media_type") @db.VarChar(20)
+  imageType        String?  @map("image_type") @db.VarChar(30)
+  url              String   @db.VarChar(500)
+  localPath        String?  @map("local_path") @db.VarChar(500)
+  caption          String?  @db.VarChar(500)
+  credit           String?  @db.VarChar(200)
+  sourceName       String?  @map("source_name") @db.VarChar(200)
+  isPrimary        Boolean  @default(false) @map("is_primary")
+  sortOrder        Int      @default(0) @map("sort_order")
+  uploadedBy       String?  @map("uploaded_by")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  course           Course   @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+
+  @@map("course_media")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refreshToken      String? @map("refresh_token")
+  accessToken       String? @map("access_token")
+  expiresAt         Int?    @map("expires_at")
+  tokenType         String? @map("token_type")
+  scope             String?
+  idToken           String? @map("id_token")
+  sessionState      String? @map("session_state")
+
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime? @map("email_verified")
+  image         String?
+  role          String    @default("user") @db.VarChar(20)
+  ghinNumber    String?   @map("ghin_number") @db.VarChar(20)
+  handicapIndex Decimal?  @map("handicap_index") @db.Decimal(4, 1)
+  homeClub      String?   @map("home_club") @db.VarChar(255)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @default(now()) @map("updated_at")
+
+  accounts      Account[]
+  sessions      Session[]
+  ratings       UserCourseRating[]
+  scores        PostedScore[]
+  weightProfiles UserWeightProfile[]
+
+  @@map("users")
+}
+
+model PostedScore {
+  scoreId        Int      @id @default(autoincrement()) @map("score_id")
+  userId         String   @map("user_id")
+  courseId        Int      @map("course_id")
+  datePlayed     DateTime @map("date_played") @db.Date
+  grossScore     Int      @map("gross_score")
+  netScore       Int?     @map("net_score")
+  courseHandicap  Int?     @map("course_handicap")
+  teeBoxPlayed   String?  @map("tee_box_played") @db.VarChar(50)
+  ghinVerified   Boolean  @default(false) @map("ghin_verified")
+  ghinScreenshot String?  @map("ghin_screenshot") @db.VarChar(500)
+  verifiedAt     DateTime? @map("verified_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user           User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course         Course @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+
+  @@unique([userId, courseId, datePlayed])
+  @@map("posted_scores")
+}
+
+model UserCourseRating {
+  ratingId       Int      @id @default(autoincrement()) @map("rating_id")
+  userId         String   @map("user_id")
+  courseId        Int      @map("course_id")
+  overallRating  Decimal  @map("overall_rating") @db.Decimal(3, 1)
+  conditionRating Decimal? @map("condition_rating") @db.Decimal(3, 1)
+  designRating   Decimal? @map("design_rating") @db.Decimal(3, 1)
+  ambienceRating Decimal? @map("ambience_rating") @db.Decimal(3, 1)
+  difficultyRating Decimal? @map("difficulty_rating") @db.Decimal(3, 1)
+  valueRating    Decimal? @map("value_rating") @db.Decimal(3, 1)
+  reviewText     String?  @map("review_text")
+  scoreId        Int?     @map("score_id")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @map("updated_at")
+
+  user           User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course         Course @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+
+  @@map("user_course_ratings")
+}
+
+model ChameleonScore {
+  id             Int      @id @default(autoincrement())
+  courseId        Int      @unique @map("course_id")
+  chameleonScore Decimal  @map("chameleon_score") @db.Decimal(8, 4)
+  componentScores Json?   @map("component_scores") @db.JsonB
+  calculatedAt   DateTime @default(now()) @map("calculated_at")
+
+  course         Course @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+
+  @@map("chameleon_scores")
+}
+
+model RatingHistory {
+  historyId      Int      @id @default(autoincrement()) @map("history_id")
+  ratingId       Int      @map("rating_id")
+  userId         String   @map("user_id")
+  courseId        Int      @map("course_id")
+  overallRating  Decimal  @map("overall_rating") @db.Decimal(3, 1)
+  replacedAt     DateTime @default(now()) @map("replaced_at")
+  reason         String?  @db.VarChar(100)
+
+  @@map("rating_history")
+}
+
+model UserWeightProfile {
+  profileId      Int      @id @default(autoincrement()) @map("profile_id")
+  userId         String?  @map("user_id")
+  profileName    String   @map("profile_name") @db.VarChar(100)
+  description    String?
+  weights        Json     @db.JsonB
+  isSystem       Boolean  @default(false) @map("is_system")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user           User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_weight_profiles")
+}
