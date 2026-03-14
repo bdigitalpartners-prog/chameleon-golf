@@ -89,6 +89,35 @@
   }
 
   .score-ring {
-    @apply inline-flex items-center justify-center rounded-full font-bold;
+    @apply inline-flex flex-col items-center justify-center rounded-full font-bold;
   }
+}
+
+/* Range input custom thumb */
+input[type="range"] {
+  -webkit-appearance: none;
+  height: 20px;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background-color: var(--thumb-color, var(--cg-accent));
+  cursor: pointer;
+  border: 2px solid var(--cg-bg-primary);
+  box-shadow: 0 0 0 1px var(--thumb-color, var(--cg-accent));
+  transition: transform 0.1s;
+}
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background-color: var(--thumb-color, var(--cg-accent));
+  cursor: pointer;
+  border: 2px solid var(--cg-bg-primary);
+  box-shadow: 0 0 0 1px var(--thumb-color, var(--cg-accent));
 }

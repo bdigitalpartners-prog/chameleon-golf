@@ -26,6 +26,9 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
         orderBy: { createdAt: "desc" },
         take: 20,
       },
+      teeBoxes: {
+        orderBy: { totalYardage: "desc" },
+      },
     },
   });
 

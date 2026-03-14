@@ -1,535 +1,258 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
-import {
-  Search,
-  MapPin,
-  Globe,
-  Trophy,
-  Loader2,
-  Filter,
-} from "lucide-react";
-
-interface Course {
-  courseId: number;
-  courseName: string;
-  facilityName: string | null;
-  city: string | null;
-  state: string | null;
-  country: string | null;
-  courseStyle: string | null;
-  accessType: string | null;
-  originalArchitect: string | null;
-  yearOpened: number | null;
-  greenFeeLow: string | null;
-  primaryImageUrl: string | null;
-  rankingCount: number;
-  bestRank: number | null;
-}
-
-interface Stats {
-  totalCourses: number;
-  totalRankings: number;
-  totalLists: number;
-  countries: number;
-}
-
-const ACCESS_TYPES = ["Public", "Private", "Resort", "Semi-Private"];
-const STYLES = ["Links", "Parkland", "Desert", "Mountain", "Heathland"];
-const SORT_OPTIONS = [
-  { value: "rankings", label: "Most Ranked" },
-  { value: "best_rank", label: "Best Rank" },
-  { value: "year", label: "Newest" },
-  { value: "name", label: "Name A–Z" },
-];
+import { useState, useEffect, useCallback } from "react";
+import { CourseCard } from "@/components/course/CourseCard";
+import { CourseListRow } from "@/components/course/CourseListRow";
+import { CourseListHeader } from "@/components/course/CourseListHeader";
+import { ViewToggle, ViewMode } from "@/components/course/ViewToggle";
+import { PageSizeToggle, PageSize } from "@/components/course/PageSizeToggle";
+import { FilterSidebar } from "@/components/filters/FilterSidebar";
+import { WeightSliders } from "@/components/filters/WeightSliders";
+import { CompareDrawer } from "@/components/course/CompareDrawer";
+import { useCourses } from "@/hooks/useCourses";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import type { CourseFilters, WeightSliderValues } from "@/types";
 
 export default function ExplorePage() {
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [accessFilter, setAccessFilter] = useState<string | null>(null);
-  const [styleFilter, setStyleFilter] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState("rankings");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(24);
-  const [totalCount, setTotalCount] = useState(0);
-  const [showFilters, setShowFilters] = useState(false);
-  const searchRef = useRef<HTMLInputElement>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [pageSize, setPageSize] = useState<PageSize>(50);
+  const [activeWeights, setActiveWeights] = useState<WeightSliderValues | null>(null);
+  const [filters, setFilters] = useState<CourseFilters>({
+    page: 1,
+    limit: 50,
+    sortBy: "chameleon",
+    sortDir: "desc",
+  });
+
+  const { data, isLoading, error } = useCourses(filters);
+
+  const [filterOptions, setFilterOptions] = useState({
+    countries: [] as string[],
+    states: [] as string[],
+    styles: [] as string[],
+    accessTypes: [] as string[],
+  });
 
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search), 300);
-    return () => clearTimeout(t);
-  }, [search]);
+    setFilterOptions({
+      countries: ["United States", "United Kingdom", "Ireland", "Scotland", "Canada", "Australia", "New Zealand", "Japan", "South Korea", "France", "Spain", "Italy", "Germany", "South Africa", "Mexico"],
+      states: ["California", "Florida", "New York", "Texas", "Arizona", "North Carolina", "South Carolina", "Georgia", "Oregon", "Michigan", "Hawaii", "New Jersey", "Pennsylvania", "Colorado", "Virginia", "Wisconsin", "Massachusetts", "Ohio", "Illinois", "Nevada"],
+      styles: ["Links", "Parkland", "Desert", "Mountain", "Heathland", "Moorland", "Clifftop", "Woodland", "Tropical"],
+      accessTypes: ["Member Only", "Open to Public", "Resort Guest", "Reciprocal"],
+    });
+  }, []);
 
+  // Persist view + page-size preferences
   useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, accessFilter, styleFilter, sortBy, pageSize]);
+    try {
+      const savedView = localStorage.getItem("cg-view-mode");
+      if (savedView === "list" || savedView === "grid") setViewMode(savedView);
+      const savedSize = localStorage.getItem("cg-page-size");
+      if (savedSize) {
+        const parsed = savedSize === "all" ? "all" as PageSize : parseInt(savedSize) as PageSize;
+        if (parsed === "all" || parsed === 25 || parsed === 50 || parsed === 100) {
+          setPageSize(parsed);
+          setFilters((f) => ({ ...f, limit: parsed === "all" ? 2000 : parsed, page: 1 }));
+        }
+      }
+    } catch {}
+  }, []);
 
-  useEffect(() => {
-    setLoading(true);
-    const params = new URLSearchParams();
-    if (debouncedSearch) params.set("search", debouncedSearch);
-    if (accessFilter) params.set("access", accessFilter);
-    if (styleFilter) params.set("style", styleFilter);
-    params.set("sort", sortBy);
-    params.set("page", String(page));
-    params.set("pageSize", String(pageSize));
+  const handleViewChange = (m: ViewMode) => {
+    setViewMode(m);
+    try { localStorage.setItem("cg-view-mode", m); } catch {}
+  };
 
-    fetch(`/api/courses?${params}`)
-      .then((r) => r.json())
-      .then((data) => {
-        setCourses(data.courses ?? []);
-        setTotalCount(data.total ?? 0);
-        if (data.stats) setStats(data.stats);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [debouncedSearch, accessFilter, styleFilter, sortBy, page, pageSize]);
+  const handlePageSizeChange = (s: PageSize) => {
+    setPageSize(s);
+    const numericLimit = s === "all" ? 2000 : s;
+    setFilters((f) => ({ ...f, limit: numericLimit, page: 1 }));
+    try { localStorage.setItem("cg-page-size", String(s)); } catch {}
+  };
 
-  const totalPages = Math.ceil(totalCount / pageSize);
+  const handleWeightsChange = useCallback((weights: WeightSliderValues | null) => {
+    setActiveWeights(weights);
+    setFilters((prev) => {
+      const next = { ...prev, page: 1 };
+      if (weights) {
+        // Apply weights and switch sort to weighted
+        return {
+          ...next,
+          sortBy: "weighted" as CourseFilters["sortBy"],
+          w_expert: weights.w_expert,
+          w_conditioning: weights.w_conditioning,
+          w_layout: weights.w_layout,
+          w_aesthetics: weights.w_aesthetics,
+          w_challenge: weights.w_challenge,
+          w_value: weights.w_value,
+          w_walkability: weights.w_walkability,
+          w_pace: weights.w_pace,
+          w_amenities: weights.w_amenities,
+          w_service: weights.w_service,
+        };
+      } else {
+        // Clear weights
+        const { w_expert, w_conditioning, w_layout, w_aesthetics, w_challenge, w_value, w_walkability, w_pace, w_amenities, w_service, ...rest } = next;
+        return { ...rest, sortBy: "chameleon" as CourseFilters["sortBy"] };
+      }
+    });
+  }, []);
+
+  const showWeightedScore = activeWeights !== null;
 
   return (
     <div
       className="min-h-screen"
       style={{ backgroundColor: "var(--cg-bg-primary)" }}
     >
-      <div className="mx-auto max-w-7xl px-4 py-8">
-        <div className="mb-8">
-          <h1
-            className="font-display text-3xl font-bold md:text-4xl mb-2"
-            style={{ color: "var(--cg-text-primary)" }}
-          >
-            Explore Courses
-          </h1>
-          <p
-            className="text-base mb-6"
-            style={{ color: "var(--cg-text-secondary)" }}
-          >
-            Search and filter{" "}
-            <span style={{ color: "var(--cg-accent)" }}>
-              {stats?.totalCourses?.toLocaleString() ?? "…"}
-            </span>{" "}
-            courses ranked across{" "}
-            <span style={{ color: "var(--cg-accent)" }}>
-              {stats?.totalLists ?? "…"}
-            </span>{" "}
-            lists.
-          </p>
-
-          <div className="relative max-w-2xl">
-            <Search
-              className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 pointer-events-none"
-              style={{ color: "var(--cg-text-muted)" }}
-            />
-            <input
-              ref={searchRef}
-              type="text"
-              placeholder="Search by course name, architect, city..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-xl py-3 pl-10 pr-4 text-sm outline-none transition-all"
-              style={{
-                backgroundColor: "var(--cg-bg-card)",
-                border: "1.5px solid var(--cg-border)",
-                color: "var(--cg-text-primary)",
-              }}
-              onFocus={(e) =>
-                (e.currentTarget.style.borderColor = "var(--cg-accent)")
-              }
-              onBlur={(e) =>
-                (e.currentTarget.style.borderColor = "var(--cg-border)")
-              }
-            />
-          </div>
-        </div>
-
-        {stats && (
-          <div
-            className="mb-6 flex flex-wrap gap-6 text-sm"
-            style={{ color: "var(--cg-text-muted)" }}
-          >
-            <span>
-              <strong style={{ color: "var(--cg-accent)" }}>
-                {stats.totalCourses.toLocaleString()}
-              </strong>{" "}
-              Courses
-            </span>
-            <span>
-              <strong style={{ color: "var(--cg-accent)" }}>
-                {stats.totalRankings.toLocaleString()}
-              </strong>{" "}
-              Rankings
-            </span>
-            <span>
-              <strong style={{ color: "var(--cg-accent)" }}>
-                {stats.totalLists}
-              </strong>{" "}
-              Lists
-            </span>
-            <span>
-              <strong style={{ color: "var(--cg-accent)" }}>
-                {stats.countries}
-              </strong>{" "}
-              Countries
-            </span>
-          </div>
-        )}
-
-        <div className="mb-6 flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors"
-            style={{
-              backgroundColor: showFilters
-                ? "var(--cg-accent-bg)"
-                : "var(--cg-bg-card)",
-              color: showFilters
-                ? "var(--cg-accent)"
-                : "var(--cg-text-secondary)",
-              border: `1px solid ${
-                showFilters ? "var(--cg-accent)" : "var(--cg-border)"
-              }`,
-            }}
-          >
-            <Filter className="h-3.5 w-3.5" />
-            Filters
-            {(accessFilter || styleFilter) && (
-              <span
-                className="ml-1 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                style={{ backgroundColor: "var(--cg-accent)" }}
-              >
-                {(accessFilter ? 1 : 0) + (styleFilter ? 1 : 0)}
-              </span>
-            )}
-          </button>
-
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="rounded-lg px-3 py-2 text-sm font-medium outline-none cursor-pointer"
-            style={{
-              backgroundColor: "var(--cg-bg-card)",
-              border: "1px solid var(--cg-border)",
-              color: "var(--cg-text-secondary)",
-            }}
-          >
-            {SORT_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-
-          {!loading && (
-            <span
-              className="text-sm ml-auto"
-              style={{ color: "var(--cg-text-muted)" }}
+      <div className="mx-auto max-w-7xl px-4 py-8 pb-24">
+        {/* Header */}
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1
+              className="font-display text-3xl font-bold md:text-4xl"
+              style={{ color: "var(--cg-text-primary)" }}
             >
-              {totalCount.toLocaleString()} courses
-            </span>
-          )}
-        </div>
-
-        {showFilters && (
-          <div
-            className="mb-6 rounded-xl p-4"
-            style={{
-              backgroundColor: "var(--cg-bg-card)",
-              border: "1px solid var(--cg-border)",
-            }}
-          >
-            <div className="flex flex-wrap gap-6">
-              <div>
-                <p
-                  className="text-xs font-semibold uppercase tracking-wider mb-2"
-                  style={{ color: "var(--cg-text-muted)" }}
-                >
-                  Access
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {ACCESS_TYPES.map((t) => (
-                    <button
-                      key={t}
-                      onClick={() =>
-                        setAccessFilter(accessFilter === t ? null : t)
-                      }
-                      className="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
-                      style={{
-                        backgroundColor:
-                          accessFilter === t
-                            ? "var(--cg-accent-bg)"
-                            : "var(--cg-bg-tertiary)",
-                        color:
-                          accessFilter === t
-                            ? "var(--cg-accent)"
-                            : "var(--cg-text-secondary)",
-                        border: `1px solid ${
-                          accessFilter === t
-                            ? "var(--cg-accent)"
-                            : "var(--cg-border)"
-                        }`,
-                      }}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <p
-                  className="text-xs font-semibold uppercase tracking-wider mb-2"
-                  style={{ color: "var(--cg-text-muted)" }}
-                >
-                  Style
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {STYLES.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() =>
-                        setStyleFilter(styleFilter === s ? null : s)
-                      }
-                      className="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
-                      style={{
-                        backgroundColor:
-                          styleFilter === s
-                            ? "var(--cg-accent-bg)"
-                            : "var(--cg-bg-tertiary)",
-                        color:
-                          styleFilter === s
-                            ? "var(--cg-accent)"
-                            : "var(--cg-text-secondary)",
-                        border: `1px solid ${
-                          styleFilter === s
-                            ? "var(--cg-accent)"
-                            : "var(--cg-border)"
-                        }`,
-                      }}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {(accessFilter || styleFilter) && (
-              <button
-                onClick={() => {
-                  setAccessFilter(null);
-                  setStyleFilter(null);
-                }}
-                className="mt-3 text-xs font-medium"
-                style={{ color: "var(--cg-accent)" }}
-              >
-                Clear all filters
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Page size toggle */}
-        <div className="mb-4 flex items-center justify-end gap-2">
-          <span className="text-xs" style={{ color: "var(--cg-text-muted)" }}>
-            Per page:
-          </span>
-          {[12, 24, 48].map((size) => (
-            <button
-              key={size}
-              onClick={() => setPageSize(size)}
-              className="rounded px-2.5 py-1 text-xs font-medium transition-colors"
-              style={{
-                backgroundColor:
-                  pageSize === size
-                    ? "var(--cg-accent-bg)"
-                    : "var(--cg-bg-tertiary)",
-                color:
-                  pageSize === size
-                    ? "var(--cg-accent)"
-                    : "var(--cg-text-muted)",
-                border: `1px solid ${
-                  pageSize === size ? "var(--cg-accent)" : "var(--cg-border)"
-                }`,
-              }}
+              Explore Courses
+            </h1>
+            <p
+              className="mt-2 text-base"
+              style={{ color: "var(--cg-text-secondary)" }}
             >
-              {size}
-            </button>
-          ))}
+              {data?.total ? `${data.total.toLocaleString()} courses` : "Loading..."} ranked across 4 sources.
+              {showWeightedScore && (
+                <span
+                  className="ml-2 rounded-full px-2 py-0.5 text-xs font-semibold"
+                  style={{
+                    backgroundColor: "var(--cg-accent-bg)",
+                    color: "var(--cg-accent)",
+                  }}
+                >
+                  Custom ranking active
+                </span>
+              )}
+            </p>
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <PageSizeToggle size={pageSize} onChange={handlePageSizeChange} />
+            <ViewToggle mode={viewMode} onChange={handleViewChange} />
+          </div>
         </div>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2
-              className="h-8 w-8 animate-spin"
-              style={{ color: "var(--cg-accent)" }}
-            />
+        <div className="flex flex-col gap-8 lg:flex-row">
+          {/* Sidebar */}
+          <div className="w-full lg:w-72 flex-shrink-0">
+            {/* Weight Sliders Panel */}
+            <WeightSliders onChange={handleWeightsChange} />
+            <FilterSidebar filters={filters} onChange={setFilters} filterOptions={filterOptions} />
           </div>
-        ) : courses.length === 0 ? (
-          <div
-            className="py-20 text-center"
-            style={{ color: "var(--cg-text-muted)" }}
-          >
-            No courses found.
-          </div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {courses.map((course) => (
-              <Link
-                key={course.courseId}
-                href={`/course/${course.courseId}`}
-                className="group rounded-xl overflow-hidden transition-all hover:-translate-y-0.5"
+
+          {/* Results */}
+          <div className="flex-1 min-w-0">
+            {isLoading && (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="h-8 w-8 animate-spin" style={{ color: "var(--cg-accent)" }} />
+              </div>
+            )}
+
+            {error && (
+              <div
+                className="rounded-xl p-6 text-center"
                 style={{
-                  backgroundColor: "var(--cg-bg-card)",
-                  border: "1px solid var(--cg-border)",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "var(--cg-accent)";
-                  e.currentTarget.style.backgroundColor =
-                    "var(--cg-bg-card-hover)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "var(--cg-border)";
-                  e.currentTarget.style.backgroundColor = "var(--cg-bg-card)";
+                  backgroundColor: "rgba(239, 68, 68, 0.1)",
+                  border: "1px solid rgba(239, 68, 68, 0.3)",
+                  color: "var(--cg-error)",
                 }}
               >
-                <div
-                  className="h-36 overflow-hidden"
-                  style={{ backgroundColor: "var(--cg-bg-tertiary)" }}
-                >
-                  {course.primaryImageUrl ? (
-                    <img
-                      src={course.primaryImageUrl}
-                      alt={course.courseName}
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div
-                      className="h-full w-full flex items-center justify-center"
-                      style={{ backgroundColor: "var(--cg-bg-secondary)" }}
-                    >
-                      <Globe
-                        className="h-8 w-8"
-                        style={{ color: "var(--cg-border)" }}
+                Failed to load courses. Please try again.
+              </div>
+            )}
+
+            {data && !isLoading && (
+              <>
+                {/* Grid View */}
+                {viewMode === "grid" && (
+                  <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                    {data.items.map((course) => (
+                      <CourseCard
+                        key={course.courseId}
+                        course={course}
+                        showWeightedScore={showWeightedScore}
                       />
-                    </div>
-                  )}
-                </div>
+                    ))}
+                  </div>
+                )}
 
-                <div className="p-3">
-                  <h3
-                    className="text-sm font-semibold truncate mb-0.5"
-                    style={{ color: "var(--cg-text-primary)" }}
-                  >
-                    {course.courseName}
-                  </h3>
-
-                  {course.facilityName &&
-                    course.facilityName !== course.courseName && (
-                      <p
-                        className="text-xs truncate mb-1"
-                        style={{ color: "var(--cg-text-muted)" }}
-                      >
-                        {course.facilityName}
-                      </p>
-                    )}
-
+                {/* List View */}
+                {viewMode === "list" && (
                   <div
-                    className="flex items-center gap-1 text-xs mb-2"
+                    className="rounded-xl overflow-hidden"
+                    style={{
+                      backgroundColor: "var(--cg-bg-card)",
+                      border: "1px solid var(--cg-border)",
+                    }}
+                  >
+                    <CourseListHeader showRank />
+                    {data.items.map((course, i) => (
+                      <CourseListRow
+                        key={course.courseId}
+                        course={course}
+                        rank={(data.page - 1) * data.limit + i + 1}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {data.items.length === 0 && (
+                  <div
+                    className="py-20 text-center"
                     style={{ color: "var(--cg-text-muted)" }}
                   >
-                    <MapPin className="h-3 w-3 shrink-0" />
-                    <span className="truncate">
-                      {[course.city, course.state, course.country]
-                        .filter(Boolean)
-                        .join(", ") || "Unknown"}
-                    </span>
+                    No courses match your filters. Try adjusting or resetting them.
                   </div>
+                )}
 
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      {course.rankingCount > 0 && (
-                        <span
-                          className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold"
-                          style={{
-                            backgroundColor: "var(--cg-accent-muted)",
-                            color: "var(--cg-accent)",
-                          }}
-                        >
-                          <Trophy className="h-2.5 w-2.5" />
-                          {course.rankingCount === 1
-                            ? "1 list"
-                            : `${course.rankingCount} lists`}
-                        </span>
-                      )}
-                      {course.bestRank && (
-                        <span
-                          className="text-[11px] font-medium"
-                          style={{ color: "var(--cg-text-muted)" }}
-                        >
-                          Best #{course.bestRank}
-                        </span>
-                      )}
-                    </div>
-
-                    {course.accessType && (
-                      <span
-                        className="text-[10px] font-medium px-1.5 py-0.5 rounded"
-                        style={{
-                          backgroundColor: "var(--cg-bg-tertiary)",
-                          color: "var(--cg-text-muted)",
-                        }}
-                      >
-                        {course.accessType}
+                {/* Pagination */}
+                {data.totalPages > 1 && (
+                  <div className="mt-8 flex items-center justify-center gap-4">
+                    <button
+                      disabled={data.page <= 1}
+                      onClick={() => setFilters({ ...filters, page: data.page - 1 })}
+                      className="flex items-center gap-1 rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      style={{
+                        border: "1px solid var(--cg-border)",
+                        color: "var(--cg-text-secondary)",
+                      }}
+                    >
+                      <ChevronLeft className="h-4 w-4" /> Previous
+                    </button>
+                    <span className="text-sm" style={{ color: "var(--cg-text-muted)" }}>
+                      Page {data.page} of {data.totalPages}
+                      <span className="ml-2 opacity-60">
+                        ({data.total.toLocaleString()} courses)
                       </span>
-                    )}
+                    </span>
+                    <button
+                      disabled={data.page >= data.totalPages}
+                      onClick={() => setFilters({ ...filters, page: data.page + 1 })}
+                      className="flex items-center gap-1 rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      style={{
+                        border: "1px solid var(--cg-border)",
+                        color: "var(--cg-text-secondary)",
+                      }}
+                    >
+                      Next <ChevronRight className="h-4 w-4" />
+                    </button>
                   </div>
-                </div>
-              </Link>
-            ))}
+                )}
+              </>
+            )}
           </div>
-        )}
-
-        {totalPages > 1 && (
-          <div className="mt-8 flex items-center justify-center gap-2">
-            <button
-              onClick={() => setPage(Math.max(1, page - 1))}
-              disabled={page === 1}
-              className="rounded-lg px-3 py-2 text-sm font-medium transition-colors disabled:opacity-40"
-              style={{
-                backgroundColor: "var(--cg-bg-card)",
-                border: "1px solid var(--cg-border)",
-                color: "var(--cg-text-secondary)",
-              }}
-            >
-              Previous
-            </button>
-
-            <span
-              className="text-sm px-4"
-              style={{ color: "var(--cg-text-muted)" }}
-            >
-              Page {page} of {totalPages}
-            </span>
-
-            <button
-              onClick={() => setPage(Math.min(totalPages, page + 1))}
-              disabled={page === totalPages}
-              className="rounded-lg px-3 py-2 text-sm font-medium transition-colors disabled:opacity-40"
-              style={{
-                backgroundColor: "var(--cg-bg-card)",
-                border: "1px solid var(--cg-border)",
-                color: "var(--cg-text-secondary)",
-              }}
-            >
-              Next
-            </button>
-          </div>
-        )}
+        </div>
       </div>
+
+      {/* Compare Drawer */}
+      <CompareDrawer />
     </div>
   );
 }
