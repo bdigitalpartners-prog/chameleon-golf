@@ -5,6 +5,7 @@ import { useSession, signIn, signOut } from "next-auth/react";
 import { Search, Menu, X, User } from "lucide-react";
 import { useState } from "react";
 import { SearchOverlay } from "@/components/layout/SearchOverlay";
+import { ThemeSettings } from "@/components/layout/ThemeSettings";
 
 export function Navbar() {
   const { data: session } = useSession();
@@ -15,68 +16,132 @@ export function Navbar() {
 
   return (
     <>
-      <nav className="sticky top-0 z-50 border-b border-stone-200 bg-white/95 backdrop-blur">
+      <nav
+        className="sticky top-0 z-50 backdrop-blur"
+        style={{
+          backgroundColor: "var(--cg-bg-nav)",
+          borderBottom: "1px solid var(--cg-border)",
+        }}
+      >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
           <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white font-bold text-sm">CG</div>
-            <span className="font-display text-lg font-semibold text-stone-900">Chameleon Golf</span>
+            <div
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold"
+              style={{ backgroundColor: "var(--cg-accent)", color: "var(--cg-text-inverse)" }}
+            >
+              CG
+            </div>
+            <span
+              className="font-display text-lg font-semibold"
+              style={{ color: "var(--cg-text-primary)" }}
+            >
+              Chameleon Golf
+            </span>
           </Link>
 
-          <div className="hidden md:flex items-center gap-6 text-sm font-medium text-stone-600">
-            <Link href="/" className="hover:text-brand-700 transition-colors">Explore</Link>
-            <Link href="/about" className="hover:text-brand-700 transition-colors">How It Works</Link>
-            {session && (
-              <>
-                <Link href="/journal" className="hover:text-brand-700 transition-colors">Score Journal</Link>
-                <Link href="/profile" className="hover:text-brand-700 transition-colors">Profile</Link>
-              </>
-            )}
-            {isAdmin && (
-              <Link href="/admin" className="hover:text-brand-700 transition-colors">Admin</Link>
-            )}
+          <div className="hidden md:flex items-center gap-6 text-sm font-medium">
+            {[
+              { href: "/explore", label: "Explore" },
+              { href: "/about", label: "How It Works" },
+              ...(session
+                ? [
+                    { href: "/journal", label: "Score Journal" },
+                    { href: "/profile", label: "Profile" },
+                  ]
+                : []),
+              ...(isAdmin ? [{ href: "/admin", label: "Admin" }] : []),
+            ].map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="transition-colors"
+                style={{ color: "var(--cg-text-secondary)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--cg-accent)")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--cg-text-secondary)")}
+              >
+                {link.label}
+              </Link>
+            ))}
           </div>
 
-          <div className="flex items-center gap-3">
-            <button onClick={() => setSearchOpen(true)} className="rounded-lg p-2 text-stone-500 hover:bg-stone-100 transition-colors">
+          <div className="flex items-center gap-2">
+            <ThemeSettings />
+
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="rounded-lg p-2 transition-colors"
+              style={{ color: "var(--cg-text-secondary)" }}
+            >
               <Search className="h-5 w-5" />
             </button>
+
             {session ? (
               <div className="flex items-center gap-2">
                 {session.user?.image ? (
                   <img src={session.user.image} alt="" className="h-8 w-8 rounded-full" />
                 ) : (
-                  <User className="h-5 w-5 text-stone-500" />
+                  <User className="h-5 w-5" style={{ color: "var(--cg-text-secondary)" }} />
                 )}
-                <button onClick={() => signOut()} className="hidden md:block text-sm text-stone-500 hover:text-stone-700">
+                <button
+                  onClick={() => signOut()}
+                  className="hidden md:block text-sm transition-colors"
+                  style={{ color: "var(--cg-text-muted)" }}
+                >
                   Sign Out
                 </button>
               </div>
             ) : (
               <button
                 onClick={() => signIn("google")}
-                className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 transition-colors"
+                className="rounded-lg px-4 py-2 text-sm font-medium transition-all"
+                style={{
+                  backgroundColor: "var(--cg-accent)",
+                  color: "var(--cg-text-inverse)",
+                }}
               >
                 Sign In
               </button>
             )}
-            <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden rounded-lg p-2 text-stone-500 hover:bg-stone-100">
+
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="md:hidden rounded-lg p-2"
+              style={{ color: "var(--cg-text-secondary)" }}
+            >
               {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
           </div>
         </div>
 
         {menuOpen && (
-          <div className="border-t border-stone-200 bg-white px-4 py-3 md:hidden">
-            <div className="flex flex-col gap-2 text-sm font-medium text-stone-600">
-              <Link href="/" onClick={() => setMenuOpen(false)}>Explore</Link>
-              <Link href="/about" onClick={() => setMenuOpen(false)}>How It Works</Link>
-              {session && (
-                <>
-                  <Link href="/journal" onClick={() => setMenuOpen(false)}>Score Journal</Link>
-                  <Link href="/profile" onClick={() => setMenuOpen(false)}>Profile</Link>
-                </>
-              )}
-              {isAdmin && <Link href="/admin" onClick={() => setMenuOpen(false)}>Admin</Link>}
+          <div
+            className="px-4 py-3 md:hidden"
+            style={{
+              borderTop: "1px solid var(--cg-border)",
+              backgroundColor: "var(--cg-bg-secondary)",
+            }}
+          >
+            <div className="flex flex-col gap-2 text-sm font-medium">
+              {[
+                { href: "/explore", label: "Explore" },
+                { href: "/about", label: "How It Works" },
+                ...(session
+                  ? [
+                      { href: "/journal", label: "Score Journal" },
+                      { href: "/profile", label: "Profile" },
+                    ]
+                  : []),
+                ...(isAdmin ? [{ href: "/admin", label: "Admin" }] : []),
+              ].map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMenuOpen(false)}
+                  style={{ color: "var(--cg-text-secondary)" }}
+                >
+                  {link.label}
+                </Link>
+              ))}
             </div>
           </div>
         )}

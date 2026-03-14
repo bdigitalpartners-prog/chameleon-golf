@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { SlidersHorizontal, X, ChevronDown } from "lucide-react";
+import { useState } from "react";
+import { SlidersHorizontal, ChevronDown } from "lucide-react";
 import type { CourseFilters } from "@/types";
 
 interface FilterSidebarProps {
@@ -18,29 +18,48 @@ interface FilterSidebarProps {
 function FilterSection({ title, children, defaultOpen = true }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border-b border-stone-200 py-4">
-      <button onClick={() => setOpen(!open)} className="flex w-full items-center justify-between text-sm font-semibold text-stone-800">
+    <div className="py-4" style={{ borderBottom: "1px solid var(--cg-border)" }}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-center justify-between text-sm font-semibold"
+        style={{ color: "var(--cg-text-primary)" }}
+      >
         {title}
-        <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`} style={{ color: "var(--cg-text-muted)" }} />
       </button>
       {open && <div className="mt-3 space-y-2">{children}</div>}
     </div>
   );
 }
 
+const selectStyle: React.CSSProperties = {
+  backgroundColor: "var(--cg-bg-tertiary)",
+  border: "1px solid var(--cg-border)",
+  color: "var(--cg-text-primary)",
+};
+
+const inputStyle = selectStyle;
+
 export function FilterSidebar({ filters, onChange, filterOptions }: FilterSidebarProps) {
   const update = (partial: Partial<CourseFilters>) => onChange({ ...filters, ...partial, page: 1 });
 
   return (
-    <aside className="w-full rounded-xl border border-stone-200 bg-white p-5">
-      <div className="flex items-center justify-between pb-4 border-b border-stone-200">
-        <div className="flex items-center gap-2 text-sm font-bold text-stone-900">
+    <aside
+      className="w-full rounded-xl p-5"
+      style={{
+        backgroundColor: "var(--cg-bg-card)",
+        border: "1px solid var(--cg-border)",
+      }}
+    >
+      <div className="flex items-center justify-between pb-4" style={{ borderBottom: "1px solid var(--cg-border)" }}>
+        <div className="flex items-center gap-2 text-sm font-bold" style={{ color: "var(--cg-text-primary)" }}>
           <SlidersHorizontal className="h-4 w-4" />
           Filters
         </div>
         <button
           onClick={() => onChange({ page: 1, limit: 24, sortBy: "chameleon", sortDir: "desc" })}
-          className="text-xs text-brand-600 hover:text-brand-700 font-medium"
+          className="text-xs font-medium"
+          style={{ color: "var(--cg-accent)" }}
         >
           Reset All
         </button>
@@ -50,7 +69,8 @@ export function FilterSidebar({ filters, onChange, filterOptions }: FilterSideba
         <select
           value={filters.country ?? ""}
           onChange={(e) => update({ country: e.target.value || undefined, state: undefined })}
-          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+          className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+          style={selectStyle}
         >
           <option value="">All Countries</option>
           {filterOptions.countries.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -62,7 +82,8 @@ export function FilterSidebar({ filters, onChange, filterOptions }: FilterSideba
           <select
             value={filters.state ?? ""}
             onChange={(e) => update({ state: e.target.value || undefined })}
-            className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+            className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+            style={selectStyle}
           >
             <option value="">All States</option>
             {filterOptions.states.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -76,11 +97,12 @@ export function FilterSidebar({ filters, onChange, filterOptions }: FilterSideba
             <button
               key={s}
               onClick={() => update({ courseStyle: filters.courseStyle === s ? undefined : s })}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                filters.courseStyle === s
-                  ? "bg-brand-600 text-white"
-                  : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-              }`}
+              className="rounded-full px-3 py-1 text-xs font-medium transition-colors"
+              style={{
+                backgroundColor: filters.courseStyle === s ? "var(--cg-accent)" : "var(--cg-bg-tertiary)",
+                color: filters.courseStyle === s ? "var(--cg-text-inverse)" : "var(--cg-text-secondary)",
+                border: `1px solid ${filters.courseStyle === s ? "var(--cg-accent)" : "var(--cg-border)"}`,
+              }}
             >
               {s}
             </button>
@@ -94,11 +116,12 @@ export function FilterSidebar({ filters, onChange, filterOptions }: FilterSideba
             <button
               key={a}
               onClick={() => update({ accessType: filters.accessType === a ? undefined : a })}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                filters.accessType === a
-                  ? "bg-brand-600 text-white"
-                  : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-              }`}
+              className="rounded-full px-3 py-1 text-xs font-medium transition-colors"
+              style={{
+                backgroundColor: filters.accessType === a ? "var(--cg-accent)" : "var(--cg-bg-tertiary)",
+                color: filters.accessType === a ? "var(--cg-text-inverse)" : "var(--cg-text-secondary)",
+                border: `1px solid ${filters.accessType === a ? "var(--cg-accent)" : "var(--cg-border)"}`,
+              }}
             >
               {a}
             </button>
@@ -113,15 +136,17 @@ export function FilterSidebar({ filters, onChange, filterOptions }: FilterSideba
             placeholder="Min"
             value={filters.feeMin ?? ""}
             onChange={(e) => update({ feeMin: e.target.value ? parseInt(e.target.value) : undefined })}
-            className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-brand-500"
+            className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+            style={inputStyle}
           />
-          <span className="text-stone-400">—</span>
+          <span style={{ color: "var(--cg-text-muted)" }}>--</span>
           <input
             type="number"
             placeholder="Max"
             value={filters.feeMax ?? ""}
             onChange={(e) => update({ feeMax: e.target.value ? parseInt(e.target.value) : undefined })}
-            className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-brand-500"
+            className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+            style={inputStyle}
           />
         </div>
       </FilterSection>
@@ -133,7 +158,8 @@ export function FilterSidebar({ filters, onChange, filterOptions }: FilterSideba
             const [sortBy, sortDir] = e.target.value.split("-") as [CourseFilters["sortBy"], CourseFilters["sortDir"]];
             update({ sortBy, sortDir });
           }}
-          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+          className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+          style={selectStyle}
         >
           <option value="chameleon-desc">Chameleon Score (High to Low)</option>
           <option value="name-asc">Name (A-Z)</option>
