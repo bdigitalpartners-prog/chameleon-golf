@@ -1,8 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SlidersHorizontal, ChevronDown } from "lucide-react";
 import type { CourseFilters } from "@/types";
+
+interface RankingList {
+  listId: number;
+  listName: string;
+  prestigeTier: string;
+  yearPublished: number;
+  _count: { entries: number };
+}
+
+interface RankingSource {
+  sourceId: number;
+  sourceName: string;
+  lists: RankingList[];
+}
 
 interface FilterSidebarProps {
   filters: CourseFilters;
@@ -43,6 +57,15 @@ const inputStyle = selectStyle;
 export function FilterSidebar({ filters, onChange, filterOptions }: FilterSidebarProps) {
   const update = (partial: Partial<CourseFilters>) => onChange({ ...filters, ...partial, page: 1 });
 
+  const [rankingSources, setRankingSources] = useState<RankingSource[]>([]);
+
+  useEffect(() => {
+    fetch("/api/rankings")
+      .then((r) => r.json())
+      .then((data: RankingSource[]) => setRankingSources(data))
+      .catch(() => {});
+  }, []);
+
   return (
     <aside
       className="w-full rounded-xl p-5"
@@ -57,7 +80,7 @@ export function FilterSidebar({ filters, onChange, filterOptions }: FilterSideba
           Filters
         </div>
         <button
-          onClick={() => onChange({ page: 1, limit: 24, sortBy: "chameleon", sortDir: "desc" })}
+          onClick={() => onChange({ page: 1, limit: filters.limit ?? 24, sortBy: "chameleon", sortDir: "desc" })}
           className="text-xs font-medium"
           style={{ color: "var(--cg-accent)" }}
         >
@@ -129,6 +152,82 @@ export function FilterSidebar({ filters, onChange, filterOptions }: FilterSideba
         </div>
       </FilterSection>
 
+      {/* Ranking List */}
+      <FilterSection title="Ranking List" defaultOpen={false}>
+        <select
+          value={filters.listId ?? ""}
+          onChange={(e) => update({ listId: e.target.value ? parseInt(e.target.value) : undefined })}
+          className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+          style={selectStyle}
+        >
+          <option value="">All Lists</option>
+          {rankingSources.map((source) => (
+            <optgroup key={source.sourceId} label={source.sourceName}>
+              {source.lists.map((list) => (
+                <option key={list.listId} value={list.listId}>
+                  {list.listName} ({list._count.entries})
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+      </FilterSection>
+
+      {/* Walking Policy */}
+      <FilterSection title="Walking Policy" defaultOpen={false}>
+        <div className="flex flex-wrap gap-2">
+          {["Walking Only", "Walking Allowed", "Cart Required"].map((policy) => (
+            <button
+              key={policy}
+              onClick={() => update({ walkingPolicy: filters.walkingPolicy === policy ? undefined : policy })}
+              className="rounded-full px-3 py-1 text-xs font-medium transition-colors"
+              style={{
+                backgroundColor: filters.walkingPolicy === policy ? "var(--cg-accent)" : "var(--cg-bg-tertiary)",
+                color: filters.walkingPolicy === policy ? "var(--cg-text-inverse)" : "var(--cg-text-secondary)",
+                border: `1px solid ${filters.walkingPolicy === policy ? "var(--cg-accent)" : "var(--cg-border)"}`,
+              }}
+            >
+              {policy}
+            </button>
+          ))}
+        </div>
+      </FilterSection>
+
+      {/* Architect */}
+      <FilterSection title="Architect" defaultOpen={false}>
+        <input
+          type="text"
+          placeholder="e.g. Pete Dye, Alister MacKenzie"
+          value={filters.architect ?? ""}
+          onChange={(e) => update({ architect: e.target.value || undefined })}
+          className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+          style={inputStyle}
+        />
+      </FilterSection>
+
+      {/* Year Range */}
+      <FilterSection title="Year Opened" defaultOpen={false}>
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            placeholder="From"
+            value={filters.yearMin ?? ""}
+            onChange={(e) => update({ yearMin: e.target.value ? parseInt(e.target.value) : undefined })}
+            className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+            style={inputStyle}
+          />
+          <span style={{ color: "var(--cg-text-muted)" }}>—</span>
+          <input
+            type="number"
+            placeholder="To"
+            value={filters.yearMax ?? ""}
+            onChange={(e) => update({ yearMax: e.target.value ? parseInt(e.target.value) : undefined })}
+            className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+            style={inputStyle}
+          />
+        </div>
+      </FilterSection>
+
       <FilterSection title="Green Fee Range" defaultOpen={false}>
         <div className="flex items-center gap-2">
           <input
@@ -139,7 +238,7 @@ export function FilterSidebar({ filters, onChange, filterOptions }: FilterSideba
             className="w-full rounded-lg px-3 py-2 text-sm outline-none"
             style={inputStyle}
           />
-          <span style={{ color: "var(--cg-text-muted)" }}>--</span>
+          <span style={{ color: "var(--cg-text-muted)" }}>—</span>
           <input
             type="number"
             placeholder="Max"
