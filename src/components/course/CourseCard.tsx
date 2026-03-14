@@ -66,12 +66,25 @@ export function CourseCard({ course, showWeightedScore }: { course: CourseCardTy
                 alt={course.courseName}
                 className="h-full w-full object-cover transition-transform group-hover:scale-105"
                 loading="lazy"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  target.style.display = "none";
+                  const fallback = target.nextElementSibling as HTMLElement;
+                  if (fallback) fallback.style.display = "flex";
+                }}
               />
-            ) : (
-              <div className="flex h-full items-center justify-center" style={{ color: "var(--cg-text-muted)" }}>
-                <Trophy className="h-12 w-12" />
-              </div>
-            )}
+            ) : null}
+            <div
+              className="flex h-full items-center justify-center"
+              style={{
+                color: "var(--cg-text-muted)",
+                display: course.primaryImageUrl ? "none" : "flex",
+                position: course.primaryImageUrl ? "absolute" : "static",
+                inset: 0,
+              }}
+            >
+              <Trophy className="h-12 w-12" />
+            </div>
             <div className="absolute top-3 right-3">
               <ScoreRing score={displayScore} label={scoreLabel} />
             </div>

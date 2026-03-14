@@ -16,6 +16,7 @@ export function CourseListRow({ course, rank }: { course: CourseCardType; rank?:
         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--cg-bg-card-hover)")}
         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
       >
+        {/* Rank number */}
         {rank !== undefined && (
           <div
             className="w-8 text-center text-sm font-bold tabular-nums flex-shrink-0"
@@ -25,6 +26,7 @@ export function CourseListRow({ course, rank }: { course: CourseCardType; rank?:
           </div>
         )}
 
+        {/* Thumbnail */}
         <div
           className="h-10 w-14 rounded-md overflow-hidden flex-shrink-0"
           style={{ backgroundColor: "var(--cg-bg-tertiary)" }}
@@ -35,14 +37,23 @@ export function CourseListRow({ course, rank }: { course: CourseCardType; rank?:
               alt=""
               className="h-full w-full object-cover"
               loading="lazy"
+              onError={(e) => {
+                const target = e.currentTarget;
+                target.style.display = "none";
+                const fallback = target.nextElementSibling as HTMLElement;
+                if (fallback) fallback.style.display = "flex";
+              }}
             />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <Trophy className="h-4 w-4" style={{ color: "var(--cg-text-muted)" }} />
-            </div>
-          )}
+          ) : null}
+          <div
+            className="flex h-full w-full items-center justify-center"
+            style={{ display: course.primaryImageUrl ? "none" : "flex" }}
+          >
+            <Trophy className="h-4 w-4" style={{ color: "var(--cg-text-muted)" }} />
+          </div>
         </div>
 
+        {/* Name + Location */}
         <div className="min-w-0 flex-1">
           <div
             className="text-sm font-semibold truncate group-hover:underline"
@@ -56,6 +67,7 @@ export function CourseListRow({ course, rank }: { course: CourseCardType; rank?:
           </div>
         </div>
 
+        {/* Style */}
         <div className="hidden sm:block w-20 flex-shrink-0">
           {course.courseStyle && (
             <span
@@ -67,6 +79,7 @@ export function CourseListRow({ course, rank }: { course: CourseCardType; rank?:
           )}
         </div>
 
+        {/* Access */}
         <div className="hidden md:block w-24 flex-shrink-0">
           {course.accessType && (
             <span className="text-xs" style={{ color: "var(--cg-text-muted)" }}>
@@ -75,28 +88,32 @@ export function CourseListRow({ course, rank }: { course: CourseCardType; rank?:
           )}
         </div>
 
+        {/* Architect */}
         <div className="hidden lg:block w-40 flex-shrink-0 truncate">
           <span className="text-xs" style={{ color: "var(--cg-text-muted)" }}>
             {course.originalArchitect
               ? course.originalArchitect.length > 30
                 ? course.originalArchitect.slice(0, 30) + "..."
                 : course.originalArchitect
-              : "—"}
+              : "\u2014"}
           </span>
         </div>
 
+        {/* Year */}
         <div className="hidden lg:block w-12 text-center flex-shrink-0">
           <span className="text-xs tabular-nums" style={{ color: "var(--cg-text-muted)" }}>
-            {course.yearOpened ?? "—"}
+            {course.yearOpened ?? "\u2014"}
           </span>
         </div>
 
+        {/* Fee */}
         <div className="hidden sm:block w-20 text-right flex-shrink-0">
           <span className="text-xs font-medium" style={{ color: "var(--cg-text-secondary)" }}>
-            {course.greenFeeLow ? formatCurrency(course.greenFeeLow) : "—"}
+            {course.greenFeeLow ? formatCurrency(course.greenFeeLow) : "\u2014"}
           </span>
         </div>
 
+        {/* Best Ranking */}
         <div className="w-20 text-right flex-shrink-0">
           {course.bestRank && course.bestSource ? (
             <div className="text-right">
@@ -108,10 +125,11 @@ export function CourseListRow({ course, rank }: { course: CourseCardType; rank?:
               </div>
             </div>
           ) : (
-            <span className="text-xs" style={{ color: "var(--cg-text-muted)" }}>—</span>
+            <span className="text-xs" style={{ color: "var(--cg-text-muted)" }}>\u2014</span>
           )}
         </div>
 
+        {/* Lists count */}
         <div className="w-8 text-center flex-shrink-0">
           <span
             className="text-xs font-semibold tabular-nums"
