@@ -1,15 +1,20 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Chameleon Golf API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: courses
+    description: Golf course operations
+  - name: rounds
+    description: Golf round operations
+  - name: scores
+    description: Score operations
 paths:
   /healthz:
     get:
@@ -24,6 +29,155 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /courses:
+    get:
+      operationId: getCourses
+      tags: [courses]
+      summary: Get all courses
+      responses:
+        "200":
+          description: List of courses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Course"
+    post:
+      operationId: createCourse
+      tags: [courses]
+      summary: Create a course
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCourse"
+      responses:
+        "201":
+          description: Created course
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Course"
+  /courses/{id}:
+    get:
+      operationId: getCourse
+      tags: [courses]
+      summary: Get a course by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Course
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Course"
+        "404":
+          description: Not found
+  /rounds:
+    get:
+      operationId: getRounds
+      tags: [rounds]
+      summary: Get all rounds
+      responses:
+        "200":
+          description: List of rounds
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Round"
+    post:
+      operationId: createRound
+      tags: [rounds]
+      summary: Create a round
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRound"
+      responses:
+        "201":
+          description: Created round
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Round"
+  /rounds/{id}:
+    get:
+      operationId: getRound
+      tags: [rounds]
+      summary: Get a round by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Round with scores
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoundWithScores"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteRound
+      tags: [rounds]
+      summary: Delete a round
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+  /rounds/{id}/scores:
+    post:
+      operationId: saveScores
+      tags: [scores]
+      summary: Save scores for a round
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                scores:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/CreateScore"
+              required:
+                - scores
+      responses:
+        "200":
+          description: Saved scores
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Score"
+
 components:
   schemas:
     HealthStatus:
@@ -33,4 +187,149 @@ components:
           type: string
       required:
         - status
-
+    Course:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        location:
+          type: string
+        holes:
+          type: integer
+        par:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - holes
+        - par
+        - createdAt
+    CreateCourse:
+      type: object
+      properties:
+        name:
+          type: string
+        location:
+          type: string
+        holes:
+          type: integer
+        par:
+          type: integer
+      required:
+        - name
+        - holes
+        - par
+    Round:
+      type: object
+      properties:
+        id:
+          type: integer
+        courseId:
+          type: integer
+        courseName:
+          type: string
+        playerName:
+          type: string
+        date:
+          type: string
+          format: date-time
+        totalScore:
+          type: integer
+        totalPar:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - courseId
+        - playerName
+        - date
+        - createdAt
+    CreateRound:
+      type: object
+      properties:
+        courseId:
+          type: integer
+        playerName:
+          type: string
+        date:
+          type: string
+          format: date-time
+      required:
+        - courseId
+        - playerName
+        - date
+    RoundWithScores:
+      type: object
+      properties:
+        id:
+          type: integer
+        courseId:
+          type: integer
+        courseName:
+          type: string
+        playerName:
+          type: string
+        date:
+          type: string
+          format: date-time
+        totalScore:
+          type: integer
+        totalPar:
+          type: integer
+        scores:
+          type: array
+          items:
+            $ref: "#/components/schemas/Score"
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - courseId
+        - playerName
+        - date
+        - scores
+        - createdAt
+    Score:
+      type: object
+      properties:
+        id:
+          type: integer
+        roundId:
+          type: integer
+        holeNumber:
+          type: integer
+        par:
+          type: integer
+        strokes:
+          type: integer
+        notes:
+          type: string
+      required:
+        - id
+        - roundId
+        - holeNumber
+        - par
+        - strokes
+    CreateScore:
+      type: object
+      properties:
+        holeNumber:
+          type: integer
+        par:
+          type: integer
+        strokes:
+          type: integer
+        notes:
+          type: string
+      required:
+        - holeNumber
+        - par
+        - strokes
