@@ -43,6 +43,71 @@ model Course {
   isEnriched           Boolean  @default(false) @map("is_enriched")
   description          String?
 
+  // Access & Policies
+  email               String?
+  tagline             String?
+  priceTier           String?   @map("price_tier")
+  dressCode           String?   @map("dress_code")
+  caddieAvailability  String?   @map("caddie_availability")
+  caddieFee           String?   @map("caddie_fee")
+  cartPolicy          String?   @map("cart_policy")
+  cartFee             String?   @map("cart_fee")
+  cellPhonePolicy     String?   @map("cell_phone_policy")
+  practiceFacilities  Json?     @map("practice_facilities")
+  clubRentalAvailable Boolean?  @map("club_rental_available")
+  bookingUrl          String?   @map("booking_url") @db.VarChar(500)
+  howToGetOn          String?   @map("how_to_get_on")
+  resortAffiliateAccess String? @map("resort_affiliate_access")
+  guestPolicy         String?   @map("guest_policy")
+
+  // Course Character & Insider Tips
+  signatureHoleNumber  Int?      @map("signature_hole_number")
+  signatureHoleDescription String? @map("signature_hole_description")
+  bestPar3            Json?     @map("best_par3")
+  bestPar4            Json?     @map("best_par4")
+  bestPar5            Json?     @map("best_par5")
+  insiderTips         Json?     @map("insider_tips")
+  courseStrategy       String?   @map("course_strategy")
+  whatToExpect         String?   @map("what_to_expect")
+  bestTimeToPlay      String?   @map("best_time_to_play")
+  paceOfPlayNotes     String?   @map("pace_of_play_notes")
+
+  // Conditions
+  fairwayGrass        String?   @map("fairway_grass")
+  greenGrass          String?   @map("green_grass")
+  greenSpeed          String?   @map("green_speed")
+  aerationSchedule    String?   @map("aeration_schedule")
+  bestConditionMonths String?   @map("best_condition_months")
+  golfSeason          String?   @map("golf_season")
+
+  // Championship & History
+  championshipHistory Json?     @map("championship_history")
+  famousMoments       Json?     @map("famous_moments")
+  upcomingEvents      Json?     @map("upcoming_events")
+
+  // Weather
+  weatherData         Json?     @map("weather_data")
+  bestMonths          Json?     @map("best_months")
+  worstMonths         Json?     @map("worst_months")
+
+  // Architecture
+  architectBio        String?   @map("architect_bio")
+  designPhilosophy    String?   @map("design_philosophy")
+  templateHoles       Json?     @map("template_holes")
+  renovationHistory   Json?     @map("renovation_history")
+
+  // Lodging
+  onSiteLodging       Boolean?  @map("on_site_lodging")
+  resortNameField     String?   @map("resort_name") @db.VarChar(255)
+  resortBookingUrl    String?   @map("resort_booking_url") @db.VarChar(500)
+  stayAndPlayPackages Json?     @map("stay_and_play_packages")
+
+  // Pricing Details
+  greenFeePeak        Decimal?  @map("green_fee_peak") @db.Decimal(12, 2)
+  greenFeeOffPeak     Decimal?  @map("green_fee_off_peak") @db.Decimal(12, 2)
+  greenFeeTwilight    Decimal?  @map("green_fee_twilight") @db.Decimal(12, 2)
+  includesCart        Boolean?  @map("includes_cart")
+
   rankings         RankingEntry[]
   media            CourseMedia[]
   airports         CourseAirportProximity[]
@@ -51,6 +116,14 @@ model Course {
   chameleonScores  ChameleonScore?
   holes            Hole[]
   teeBoxes         TeeBox[]
+
+  // New relations
+  nearbyDining      CourseNearbyDining[]
+  nearbyLodging     CourseNearbyLodging[]
+  nearbyAttractions CourseNearbyAttractions[]
+  wishlists         CourseWishlist[]
+  nearbyCourses     CourseNearbyCourses[] @relation("SourceCourse")
+  nearbyFrom        CourseNearbyCourses[] @relation("NearbyCourse")
 
   @@map("courses")
 }
@@ -224,6 +297,7 @@ model User {
   ratings         UserCourseRating[]
   scores          PostedScore[]
   weightProfiles  UserWeightProfile[]
+  wishlists       CourseWishlist[]
 
   @@map("users")
 }
@@ -420,4 +494,93 @@ model AdminVerificationQueue {
   reviewNotes        String?   @map("review_notes")
 
   @@map("admin_verification_queue")
+}
+
+model CourseNearbyDining {
+  id           Int      @id @default(autoincrement())
+  courseId     Int      @map("course_id")
+  name         String   @db.VarChar(255)
+  cuisineType  String?  @map("cuisine_type") @db.VarChar(100)
+  priceLevel   String?  @map("price_level") @db.VarChar(10)
+  rating       Decimal? @db.Decimal(3, 1)
+  distanceMiles Decimal? @map("distance_miles") @db.Decimal(6, 1)
+  description  String?
+  address      String?
+  phone        String?  @db.VarChar(50)
+  websiteUrl   String?  @map("website_url") @db.VarChar(500)
+  googleMapsUrl String? @map("google_maps_url") @db.VarChar(500)
+  isOnSite     Boolean  @default(false) @map("is_on_site")
+  sortOrder    Int      @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  course       Course   @relation(fields: [courseId], references: [courseId])
+
+  @@map("course_nearby_dining")
+}
+
+model CourseNearbyLodging {
+  id              Int      @id @default(autoincrement())
+  courseId         Int      @map("course_id")
+  name            String   @db.VarChar(255)
+  lodgingType     String?  @map("lodging_type") @db.VarChar(50)
+  priceTier       String?  @map("price_tier") @db.VarChar(10)
+  avgPricePerNight Int?    @map("avg_price_per_night")
+  rating          Decimal? @db.Decimal(3, 1)
+  distanceMiles   Decimal? @map("distance_miles") @db.Decimal(6, 1)
+  description     String?
+  address         String?
+  phone           String?  @db.VarChar(50)
+  websiteUrl      String?  @map("website_url") @db.VarChar(500)
+  bookingUrl      String?  @map("booking_url") @db.VarChar(500)
+  isOnSite        Boolean  @default(false) @map("is_on_site")
+  isPartner       Boolean  @default(false) @map("is_partner")
+  sortOrder       Int      @default(0) @map("sort_order")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  course          Course   @relation(fields: [courseId], references: [courseId])
+
+  @@map("course_nearby_lodging")
+}
+
+model CourseNearbyAttractions {
+  id           Int      @id @default(autoincrement())
+  courseId     Int      @map("course_id")
+  name         String   @db.VarChar(255)
+  category     String?  @db.VarChar(100)
+  description  String?
+  distanceMiles Decimal? @map("distance_miles") @db.Decimal(6, 1)
+  websiteUrl   String?  @map("website_url") @db.VarChar(500)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  course       Course   @relation(fields: [courseId], references: [courseId])
+
+  @@map("course_nearby_attractions")
+}
+
+model CourseWishlist {
+  id        Int      @id @default(autoincrement())
+  userId    String   @map("user_id")
+  courseId   Int      @map("course_id")
+  status    String   @default("want_to_play") @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id])
+  course    Course   @relation(fields: [courseId], references: [courseId])
+
+  @@unique([userId, courseId])
+  @@map("course_wishlists")
+}
+
+model CourseNearbyCourses {
+  id              Int     @id @default(autoincrement())
+  courseId         Int     @map("course_id")
+  nearbyCourseId  Int     @map("nearby_course_id")
+  distanceMiles   Decimal? @map("distance_miles") @db.Decimal(6, 1)
+  driveTimeMinutes Int?   @map("drive_time_minutes")
+
+  course          Course  @relation("SourceCourse", fields: [courseId], references: [courseId])
+  nearbyCourse    Course  @relation("NearbyCourse", fields: [nearbyCourseId], references: [courseId])
+
+  @@unique([courseId, nearbyCourseId])
+  @@map("course_nearby_courses")
 }
