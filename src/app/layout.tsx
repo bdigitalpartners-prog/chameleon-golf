@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Navbar } from "@/components/layout/Navbar";
 import { Providers } from "@/components/layout/Providers";
+import ConciergeWidget from "@/components/concierge/ConciergeWidget";
 
 export const metadata: Metadata = {
   title: "CourseFACTOR — Dynamic Golf Course Rankings",
@@ -51,6 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
             </div>
           </footer>
+          <ConciergeWidget />
         </Providers>
       </body>
     </html>

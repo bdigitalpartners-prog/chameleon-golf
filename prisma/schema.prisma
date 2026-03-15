@@ -584,3 +584,19 @@ model CourseNearbyCourses {
   @@unique([courseId, nearbyCourseId])
   @@map("course_nearby_courses")
 }
+
+model ConciergeUsage {
+  id              Int      @id @default(autoincrement())
+  sessionId       String   @map("session_id") @db.VarChar(100)
+  userIp          String?  @map("user_ip") @db.VarChar(45)
+  inputTokens     Int      @map("input_tokens")
+  outputTokens    Int      @map("output_tokens")
+  estimatedCost   Decimal  @map("estimated_cost") @db.Decimal(10, 6)
+  requestFee      Decimal  @default(0.006) @map("request_fee") @db.Decimal(10, 6)
+  totalCost       Decimal  @map("total_cost") @db.Decimal(10, 6)
+  model           String   @default("sonar-pro") @db.VarChar(50)
+  messagePreview  String?  @map("message_preview") @db.VarChar(200)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("concierge_usage")
+}
