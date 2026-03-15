@@ -23,18 +23,31 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               borderTop: "1px solid var(--cg-border)",
             }}
           >
-            <div className="mx-auto max-w-7xl px-4 text-center text-sm" style={{ color: "var(--cg-text-muted)" }}>
-              &copy; {new Date().getFullYear()} CourseFACTOR. Rankings powered by Golf Digest, Golfweek, GOLF Magazine &amp; Top100GolfCourses.
-              <div className="mt-2">
-                <a
-                  href="https://www.perplexity.ai/computer"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="transition-colors"
-                  style={{ color: "var(--cg-text-muted)" }}
-                >
-                  Created with Perplexity Computer
-                </a>
+            <div className="mx-auto max-w-7xl px-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-center sm:text-left text-sm" style={{ color: "var(--cg-text-muted)" }}>
+                  <div>
+                    &copy; {new Date().getFullYear()} CourseFACTOR. Rankings powered by Golf Digest, Golfweek, GOLF Magazine &amp; Top100GolfCourses.
+                  </div>
+                  <div className="mt-2">
+                    <a
+                      href="https://www.perplexity.ai/computer"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="transition-colors"
+                      style={{ color: "var(--cg-text-muted)" }}
+                    >
+                      Created with Perplexity Computer
+                    </a>
+                  </div>
+                </div>
+                <div className="flex-shrink-0">
+                  <img
+                    src="/powered_by_COURSEfactor_ai.svg"
+                    alt="Powered by COURSEfactor.ai"
+                    className="h-6 w-auto opacity-70"
+                  />
+                </div>
               </div>
             </div>
           </footer>
