@@ -24,19 +24,12 @@ export function Navbar() {
         }}
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
-          <Link href="/" className="flex items-center gap-2">
-            <div
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold"
-              style={{ backgroundColor: "var(--cg-accent)", color: "var(--cg-text-inverse)" }}
-            >
-              CF
-            </div>
-            <span
-              className="font-display text-lg font-semibold"
-              style={{ color: "var(--cg-text-primary)" }}
-            >
-              CourseFACTOR
-            </span>
+          <Link href="/" className="flex items-center">
+            <img
+              src="/golfEQUALIZER_wordmark.svg"
+              alt="golfEQUALIZER"
+              className="h-7 sm:h-8 w-auto"
+            />
           </Link>
 
           <div className="hidden md:flex items-center gap-6 text-sm font-medium">
