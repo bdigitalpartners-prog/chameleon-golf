@@ -902,6 +902,8 @@ export function CourseDetailClient({ course }: { course: any }) {
                         <a
                           key={nc.id}
                           href={`/course/${nearby.courseId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="flex items-center gap-3 rounded-lg p-3 transition-colors hover:opacity-90"
                           style={{ backgroundColor: "var(--cg-bg-secondary)" }}
                         >
@@ -941,7 +943,11 @@ export function CourseDetailClient({ course }: { course: any }) {
                       <div key={lodge.id} className="rounded-lg p-4" style={{ backgroundColor: "var(--cg-bg-secondary)" }}>
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <div>
-                            <div className="font-medium text-sm" style={primaryText}>{lodge.name}</div>
+                            {lodge.websiteUrl ? (
+                              <a href={lodge.websiteUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-sm hover:underline" style={{ color: "var(--cg-accent)" }}>{lodge.name}</a>
+                            ) : (
+                              <div className="font-medium text-sm" style={primaryText}>{lodge.name}</div>
+                            )}
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
                               {lodge.lodgingType && (
                                 <span className="text-[10px] rounded-full px-2 py-0.5 font-medium" style={{
@@ -1008,7 +1014,11 @@ export function CourseDetailClient({ course }: { course: any }) {
                       <div key={dining.id} className="rounded-lg p-4" style={{ backgroundColor: "var(--cg-bg-secondary)" }}>
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <div>
-                            <div className="font-medium text-sm" style={primaryText}>{dining.name}</div>
+                            {dining.websiteUrl ? (
+                              <a href={dining.websiteUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-sm hover:underline" style={{ color: "var(--cg-accent)" }}>{dining.name}</a>
+                            ) : (
+                              <div className="font-medium text-sm" style={primaryText}>{dining.name}</div>
+                            )}
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
                               {dining.cuisineType && (
                                 <span className="text-[10px] rounded-full px-2 py-0.5" style={{
@@ -1071,7 +1081,11 @@ export function CourseDetailClient({ course }: { course: any }) {
                       <div key={attr.id} className="rounded-lg p-3" style={{ backgroundColor: "var(--cg-bg-secondary)" }}>
                         <div className="flex items-start justify-between gap-2">
                           <div>
-                            <div className="font-medium text-sm" style={primaryText}>{attr.name}</div>
+                            {attr.websiteUrl ? (
+                              <a href={attr.websiteUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-sm hover:underline" style={{ color: "var(--cg-accent)" }}>{attr.name}</a>
+                            ) : (
+                              <div className="font-medium text-sm" style={primaryText}>{attr.name}</div>
+                            )}
                             {attr.category && (
                               <span className="text-[10px] rounded-full px-2 py-0.5 mt-1 inline-block" style={{
                                 backgroundColor: "var(--cg-bg-tertiary)", color: "var(--cg-text-secondary)", border: "1px solid var(--cg-border)",
