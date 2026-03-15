@@ -41,6 +41,7 @@ model Course {
   updatedAt            DateTime @default(now()) @map("updated_at")
   isVerified           Boolean  @default(false) @map("is_verified")
   isEnriched           Boolean  @default(false) @map("is_enriched")
+  description          String?
 
   rankings         RankingEntry[]
   media            CourseMedia[]

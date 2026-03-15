@@ -195,6 +195,24 @@ export function CourseDetailClient({ course }: { course: any }) {
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-8">
+          {/* Course Description */}
+          {course.description && (
+            <section style={cardStyle}>
+              <h2
+                className="font-display text-xl font-semibold mb-3"
+                style={{ color: "var(--cg-text-primary)" }}
+              >
+                About {course.courseName}
+              </h2>
+              <p
+                className="text-sm leading-relaxed"
+                style={{ color: "var(--cg-text-secondary)", lineHeight: "1.75" }}
+              >
+                {course.description}
+              </p>
+            </section>
+          )}
+
           {/* Course Info */}
           <section style={cardStyle}>
             <h2

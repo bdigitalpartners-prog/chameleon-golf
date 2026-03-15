@@ -47,12 +47,12 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
   if (isNaN(courseId)) return { title: "Course Not Found" };
   const course = await prisma.course.findUnique({
     where: { courseId },
-    select: { courseName: true, city: true, state: true, country: true },
+    select: { courseName: true, city: true, state: true, country: true, description: true },
   });
   if (!course) return { title: "Course Not Found" };
   const location = [course.city, course.state, course.country].filter(Boolean).join(", ");
   return {
-    title: `${course.courseName} — CourseFACTOR`,
-    description: `Explore rankings, ratings, photos, and airport proximity for ${course.courseName} in ${location}.`,
+    title: `${course.courseName} — golfEQUALIZER`,
+    description: course.description || `Explore rankings, ratings, photos, and airport proximity for ${course.courseName} in ${location}.`,
   };
 }
