@@ -10,7 +10,7 @@ export function CourseListHeader({ showRank }: { showRank?: boolean }) {
       }}
     >
       {showRank && <div className="w-8 text-center">#</div>}
-      <div className="w-14 flex-shrink-0" />
+      <div className="w-14 flex-shrink-0" /> {/* thumbnail */}
       <div className="min-w-0 flex-1">Course</div>
       <div className="hidden sm:block w-20 flex-shrink-0">Style</div>
       <div className="hidden md:block w-24 flex-shrink-0">Access</div>

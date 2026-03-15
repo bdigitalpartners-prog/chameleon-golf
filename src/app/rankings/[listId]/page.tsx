@@ -388,14 +388,14 @@ export default function ListDetailPage() {
                   ) : (
                     <div className="h-full w-full flex items-center justify-center">
                       <ImageIcon
-                        className="h-3.5 w-3.5"
+                        className="h-4 w-4"
                         style={{ color: "var(--cg-text-muted)" }}
                       />
                     </div>
                   )}
                 </div>
 
-                <div className="min-w-0 flex-1">
+                <div className="flex-1 min-w-0">
                   <div
                     className="text-sm font-semibold truncate"
                     style={{ color: "var(--cg-text-primary)" }}
@@ -407,11 +407,23 @@ export default function ListDetailPage() {
                     style={{ color: "var(--cg-text-muted)" }}
                   >
                     {[course.city, course.state].filter(Boolean).join(", ")}
+                    {course.greenFeeLow
+                      ? ` · $${course.greenFeeLow}`
+                      : ""}
                   </div>
                 </div>
               </div>
             </Link>
           ))}
+
+          {data.courses.length === 0 && (
+            <div
+              className="py-16 text-center"
+              style={{ color: "var(--cg-text-muted)" }}
+            >
+              No courses found for this list.
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -95,21 +95,21 @@ export function CourseListRow({ course, rank }: { course: CourseCardType; rank?:
               ? course.originalArchitect.length > 30
                 ? course.originalArchitect.slice(0, 30) + "..."
                 : course.originalArchitect
-              : "\u2014"}
+              : "—"}
           </span>
         </div>
 
         {/* Year */}
         <div className="hidden lg:block w-12 text-center flex-shrink-0">
           <span className="text-xs tabular-nums" style={{ color: "var(--cg-text-muted)" }}>
-            {course.yearOpened ?? "\u2014"}
+            {course.yearOpened ?? "—"}
           </span>
         </div>
 
         {/* Fee */}
         <div className="hidden sm:block w-20 text-right flex-shrink-0">
           <span className="text-xs font-medium" style={{ color: "var(--cg-text-secondary)" }}>
-            {course.greenFeeLow ? formatCurrency(course.greenFeeLow) : "\u2014"}
+            {course.greenFeeLow ? formatCurrency(course.greenFeeLow) : "—"}
           </span>
         </div>
 
@@ -125,7 +125,7 @@ export function CourseListRow({ course, rank }: { course: CourseCardType; rank?:
               </div>
             </div>
           ) : (
-            <span className="text-xs" style={{ color: "var(--cg-text-muted)" }}>\u2014</span>
+            <span className="text-xs" style={{ color: "var(--cg-text-muted)" }}>—</span>
           )}
         </div>
 
