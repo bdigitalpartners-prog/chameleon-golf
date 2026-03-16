@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { checkAdminAuth } from "@/lib/admin-auth";
+import { calculateEnrichmentPct } from "@/lib/course-enrichment";
 
 export const dynamic = "force-dynamic";
 
@@ -38,11 +39,26 @@ export async function GET(request: NextRequest) {
           accessType: true,
           courseType: true,
           description: true,
-          insiderTips: true,
-          nearbyDining: { select: { id: true } },
-          nearbyLodging: { select: { id: true } },
-          nearbyAttractions: { select: { id: true } },
-          media: { select: { mediaId: true } },
+          par: true,
+          yearOpened: true,
+          originalArchitect: true,
+          courseStyle: true,
+          greenFeeLow: true,
+          greenFeeHigh: true,
+          walkingPolicy: true,
+          dressCode: true,
+          caddieAvailability: true,
+          practiceFacilities: true,
+          bestTimeToPlay: true,
+          bestMonths: true,
+          golfSeason: true,
+          averageRoundTime: true,
+          fairwayGrass: true,
+          greenGrass: true,
+          websiteUrl: true,
+          phone: true,
+          latitude: true,
+          streetAddress: true,
           chameleonScores: { select: { chameleonScore: true } },
         },
         orderBy: { courseName: "asc" },
@@ -52,21 +68,7 @@ export async function GET(request: NextRequest) {
       prisma.course.count({ where }),
     ]);
 
-    const enrichmentFields = [
-      "description",
-      "insiderTips",
-    ] as const;
-
     const coursesWithEnrichment = courses.map((c) => {
-      let filled = 0;
-      const total = 6; // description, insiderTips, dining, lodging, attractions, media
-      if (c.description) filled++;
-      if (c.insiderTips) filled++;
-      if (c.nearbyDining.length > 0) filled++;
-      if (c.nearbyLodging.length > 0) filled++;
-      if (c.nearbyAttractions.length > 0) filled++;
-      if (c.media.length > 0) filled++;
-
       return {
         courseId: c.courseId,
         courseName: c.courseName,
@@ -77,7 +79,7 @@ export async function GET(request: NextRequest) {
         chameleonScore: c.chameleonScores
           ? Number(c.chameleonScores.chameleonScore)
           : null,
-        enrichmentPct: Math.round((filled / total) * 100),
+        enrichmentPct: calculateEnrichmentPct(c as any),
       };
     });
 
