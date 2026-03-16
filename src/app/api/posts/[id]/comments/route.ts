@@ -6,6 +6,8 @@ import { withCircleAuth } from "@/lib/circle-auth";
 import { createNotification } from "@/lib/notifications";
 import { processMentions } from "@/lib/feed";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }

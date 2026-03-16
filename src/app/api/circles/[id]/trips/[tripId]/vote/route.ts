@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { withCircleAuth } from "@/lib/circle-auth";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * POST — Vote on a trip course (toggle: voting again removes the vote)
  * Body: { courseId, vote (1 or -1), comment? }

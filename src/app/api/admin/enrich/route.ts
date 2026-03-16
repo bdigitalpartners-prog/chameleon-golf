@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Bulk enrichment endpoint — accepts an array of course updates.
  * POST /api/admin/enrich

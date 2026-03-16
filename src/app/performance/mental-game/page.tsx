@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import { Brain } from "lucide-react";
 import { CategoryPageLayout } from "../CategoryPageLayout";
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: "The Mental Game — Performance Center — golfEQUALIZER",
   description: "Pre-round routines, course management, pressure performance, and deliberate practice strategies.",

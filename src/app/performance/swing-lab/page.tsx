@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import { Crosshair } from "lucide-react";
 import { CategoryPageLayout } from "../CategoryPageLayout";
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: "The Swing Lab — Performance Center — golfEQUALIZER",
   description: "Swing fundamentals, common fixes, club-specific tips, and a drills library to build a repeatable, powerful golf swing.",

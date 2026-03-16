@@ -5,6 +5,8 @@ import prisma from "@/lib/prisma";
 import { withCircleAuth } from "@/lib/circle-auth";
 import { recalculateAllConsensus } from "@/lib/consensus";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET — Circle consensus analysis
  * Query: sort (agreement|divergence|score), page, limit, refresh (boolean)

@@ -7,6 +7,8 @@ import { calculateLeaderboard, updateHeadToHead } from "@/lib/game-scoring";
 import { fanOutToCircle } from "@/lib/feed";
 import { createNotification } from "@/lib/notifications";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest, { params }: { params: { id: string; gameId: string } }) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
+export const dynamic = 'force-dynamic';
+
 const VALID_STEPS = ["profileComplete", "tagsSelected", "friendsAdded", "circleJoined", "coursesRated"] as const;
 
 export async function PATCH(request: NextRequest) {

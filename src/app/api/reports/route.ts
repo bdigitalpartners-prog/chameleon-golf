@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
+export const dynamic = 'force-dynamic';
+
 const VALID_CONTENT_TYPES = ["POST", "COMMENT", "THREAD", "REPLY"];
 const VALID_REASONS = ["SPAM", "INAPPROPRIATE", "HARASSMENT", "OTHER"];
 

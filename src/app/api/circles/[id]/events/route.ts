@@ -6,6 +6,8 @@ import { withCircleAuth } from "@/lib/circle-auth";
 import { fanOutToCircle } from "@/lib/feed";
 import { createNotification } from "@/lib/notifications";
 
+export const dynamic = 'force-dynamic';
+
 // GET — List events
 export async function GET(
   req: NextRequest,

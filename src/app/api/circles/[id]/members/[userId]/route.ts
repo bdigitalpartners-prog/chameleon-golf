@@ -5,6 +5,8 @@ import { authOptions } from "@/lib/auth";
 import { withCircleAuth } from "@/lib/circle-auth";
 import { createNotification } from "@/lib/notifications";
 
+export const dynamic = 'force-dynamic';
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string; userId: string } }

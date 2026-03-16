@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { ArticlePage } from "@/components/performance/ArticlePage";
 
+export const dynamic = 'force-dynamic';
+
 interface Props {
   params: { slug: string };
 }
