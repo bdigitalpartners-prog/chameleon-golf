@@ -165,6 +165,37 @@ function SubHeading({ children }: { children: React.ReactNode }) {
   );
 }
 
+/* ─── Intelligence Note Card ─── */
+
+const NOTE_ICONS: Record<string, React.ReactNode> = {
+  Calendar: <Calendar className="h-4 w-4" />,
+  Lightbulb: <Lightbulb className="h-4 w-4" />,
+  Map: <Map className="h-4 w-4" />,
+  Flag: <Flag className="h-4 w-4" />,
+  Compass: <Compass className="h-4 w-4" />,
+  DollarSign: <DollarSign className="h-4 w-4" />,
+};
+
+function IntelligenceNoteCard({ note }: { note: { id: number; category: string; title: string; content: string; icon?: string | null } }) {
+  const icon = note.icon ? NOTE_ICONS[note.icon] || <Lightbulb className="h-4 w-4" /> : <Lightbulb className="h-4 w-4" />;
+
+  return (
+    <div
+      className="rounded-xl p-4 flex flex-col gap-2"
+      style={{
+        backgroundColor: "var(--cg-bg-secondary)",
+        border: "1px solid var(--cg-border)",
+      }}
+    >
+      <div className="flex items-center gap-2">
+        <span style={{ color: "var(--cg-accent)" }}>{icon}</span>
+        <h4 className="text-sm font-semibold" style={primaryText}>{note.title}</h4>
+      </div>
+      <p className="text-xs leading-relaxed" style={secondaryText}>{note.content}</p>
+    </div>
+  );
+}
+
 /* ─── Weather Bar Chart ─── */
 
 function WeatherChart({ weatherData }: { weatherData: Record<string, any> }) {
@@ -613,6 +644,26 @@ export function CourseDetailClient({ course }: { course: any }) {
                       </div>
                     ))}
                   </div>
+                </section>
+              )}
+
+              {/* Course Intelligence */}
+              {course.intelligenceNotes?.length > 0 && (
+                <section style={cardStyle}>
+                  <div className="flex items-center justify-between mb-5">
+                    <SectionHeading icon={<Lightbulb className="h-5 w-5" style={{ color: "#4ade80" }} />}>
+                      Course Intelligence
+                    </SectionHeading>
+                    <PoweredByBadge variant="intelligence" />
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {course.intelligenceNotes.map((note: any) => (
+                      <IntelligenceNoteCard key={note.id} note={note} />
+                    ))}
+                  </div>
+                  <p className="text-[10px] mt-4 text-center" style={mutedText}>
+                    AI-generated insights based on course data. Always verify details with the course directly.
+                  </p>
                 </section>
               )}
             </div>

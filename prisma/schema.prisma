@@ -147,6 +147,9 @@ model Course {
   conditionReports    ConditionReport[]
   circleEvents        CircleEvent[]
 
+  // Course Intelligence
+  intelligenceNotes   CourseIntelligenceNote[]
+
   @@map("courses")
 }
 
@@ -984,6 +987,37 @@ model Mention {
   @@index([mentionedUserId])
   @@index([postId])
   @@index([commentId])
+}
+
+// ============================================================
+// Course Intelligence Notes
+// ============================================================
+
+enum IntelligenceNoteCategory {
+  BEST_TIME_TO_VISIT
+  INSIDER_TIP
+  SIMILAR_COURSES
+  COURSE_STRATEGY
+  WHAT_TO_EXPECT
+  ACCESS_GUIDE
+}
+
+model CourseIntelligenceNote {
+  id          Int                       @id @default(autoincrement())
+  courseId    Int                       @map("course_id")
+  category   IntelligenceNoteCategory
+  title      String                    @db.VarChar(255)
+  content    String                    @db.Text
+  icon       String?                   @db.VarChar(50)
+  generatedAt DateTime                 @default(now()) @map("generated_at")
+  source     String                    @default("COURSEfactor.ai") @db.VarChar(100)
+  isVisible  Boolean                   @default(true) @map("is_visible")
+
+  course     Course                    @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+
+  @@unique([courseId, category])
+  @@index([courseId])
+  @@map("course_intelligence_notes")
 }
 
 // ============================================================
