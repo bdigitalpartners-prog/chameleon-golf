@@ -10,6 +10,7 @@ import {
 import { formatCurrency } from "@/lib/utils";
 import { CoursePlaceholder } from "./CoursePlaceholder";
 import { CircleRatingsSection } from "./CircleRatingsSection";
+import { PoweredByBadge } from "@/components/brand/PoweredByBadge";
 
 /* ─── Shared Styles ─── */
 
@@ -674,6 +675,9 @@ export function CourseDetailClient({ course }: { course: any }) {
                         );
                       })}
                     </div>
+                    <div className="mt-4 flex justify-center">
+                      <PoweredByBadge variant="ratings" />
+                    </div>
                   </>
                 ) : (
                   <p className="text-sm text-center py-4" style={mutedText}>
@@ -859,6 +863,11 @@ export function CourseDetailClient({ course }: { course: any }) {
                 <p className="text-sm leading-relaxed" style={secondaryText}>{course.paceOfPlayNotes}</p>
               </section>
             )}
+
+            {/* Course Intelligence badge */}
+            <div className="flex justify-end">
+              <PoweredByBadge variant="intelligence" />
+            </div>
           </div>
         )}
 
@@ -1159,6 +1168,9 @@ export function CourseDetailClient({ course }: { course: any }) {
                   <ScoreDimRow label="Pace of Play" value={radarScores.avgPace ?? null} />
                   <ScoreDimRow label="Amenities" value={radarScores.avgAmenities ?? null} />
                   <ScoreDimRow label="Service" value={radarScores.avgService ?? null} />
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <PoweredByBadge variant="ratings" />
                 </div>
               </section>
             )}

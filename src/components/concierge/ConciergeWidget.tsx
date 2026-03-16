@@ -13,7 +13,7 @@ const WELCOME_MESSAGE: Message = {
   id: "welcome",
   role: "assistant",
   content:
-    "Hi! I'm the GolfEQ Concierge. Ask me about any golf course — rankings, green fees, trip planning, or course comparisons. What can I help you with?",
+    "Hi! I'm the golfEQUALIZER AI Concierge. Ask me about any golf course — rankings, green fees, trip planning, or course comparisons. What can I help you with?",
 };
 
 function generateSessionId(): string {
@@ -189,10 +189,10 @@ export default function ConciergeWidget() {
                 className="text-sm font-semibold leading-tight"
                 style={{ color: "var(--cg-text-primary)", fontFamily: "Inter, sans-serif" }}
               >
-                GolfEQ Concierge
+                golfEQUALIZER AI Concierge
               </h3>
               <p className="text-xs" style={{ color: "var(--cg-text-muted)" }}>
-                Powered by AI &bull; Ask me anything about golf courses
+                Ask me anything about golf courses
               </p>
             </div>
           </div>
@@ -270,7 +270,7 @@ export default function ConciergeWidget() {
           </button>
         </div>
 
-        {/* Powered by Perplexity */}
+        {/* Powered by COURSEfactor.ai */}
         <div
           className="flex-shrink-0 px-4 py-1.5 text-center"
           style={{
@@ -278,15 +278,11 @@ export default function ConciergeWidget() {
             borderTop: "1px solid var(--cg-border-subtle)",
           }}
         >
-          <a
-            href="https://www.perplexity.ai"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[10px] transition-colors hover:underline"
-            style={{ color: "var(--cg-text-muted)" }}
-          >
-            Powered by Perplexity
-          </a>
+          <span className="text-[10px]" style={{ fontFamily: "Inter, sans-serif" }}>
+            <span style={{ color: "var(--cg-text-muted)" }}>powered by </span>
+            <span style={{ color: "var(--cg-text-secondary)", fontWeight: 800 }}>COURSE</span>
+            <span style={{ color: "var(--cg-text-muted)", fontWeight: 300 }}>factor.ai</span>
+          </span>
         </div>
       </div>
 

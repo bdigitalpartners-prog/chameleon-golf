@@ -25,12 +25,20 @@ export function Navbar() {
         }}
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
-          <Link href="/" className="flex items-center">
+          <Link href="/" className="flex items-center gap-2">
             <img
               src="/golfEQUALIZER_wordmark.svg"
               alt="golfEQUALIZER"
               className="h-7 sm:h-8 w-auto"
             />
+            <span
+              className="hidden sm:inline-flex items-center gap-0.5 text-[9px] tracking-wide opacity-60"
+              style={{ fontFamily: "Inter, sans-serif" }}
+            >
+              <span style={{ color: "var(--cg-text-muted)", fontWeight: 300 }}>powered by</span>
+              <span style={{ color: "var(--cg-text-secondary)", fontWeight: 800 }}>COURSE</span>
+              <span style={{ color: "var(--cg-text-muted)", fontWeight: 300 }}>factor.ai</span>
+            </span>
           </Link>
 
           <div className="hidden md:flex items-center gap-6 text-sm font-medium">
