@@ -21,7 +21,18 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
+  events: {
+    async createUser({ user }) {
+      // Auto-create UserProfile on first Google sign-in
+      await prisma.userProfile.create({
+        data: {
+          userId: user.id,
+          avatarUrl: user.image ?? undefined,
+        },
+      });
+    },
+  },
   pages: {
-    signIn: "/",
+    signIn: "/auth/signin",
   },
 };

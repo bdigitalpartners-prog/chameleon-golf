@@ -2,11 +2,114 @@
 
 import Link from "next/link";
 import { useSession, signIn, signOut } from "next-auth/react";
-import { Search, Menu, X, User } from "lucide-react";
-import { useState } from "react";
+import { Search, Menu, X, User, ChevronDown } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 import { SearchOverlay } from "@/components/layout/SearchOverlay";
 import { ThemeSettings } from "@/components/layout/ThemeSettings";
 import { NotificationBell } from "@/components/layout/NotificationBell";
+
+function UserDropdown({ session }: { session: any }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 transition-colors"
+        style={{ color: "var(--cg-text-secondary)" }}
+      >
+        {session.user?.image ? (
+          <img
+            src={session.user.image}
+            alt=""
+            className="h-8 w-8 rounded-full ring-2"
+            style={{ ringColor: "var(--cg-accent)" } as any}
+          />
+        ) : (
+          <div
+            className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold"
+            style={{
+              backgroundColor: "var(--cg-accent)",
+              color: "var(--cg-text-inverse)",
+            }}
+          >
+            {session.user?.name?.charAt(0)?.toUpperCase() ?? "U"}
+          </div>
+        )}
+        <ChevronDown className="h-3.5 w-3.5 hidden md:block" />
+      </button>
+
+      {open && (
+        <div
+          className="absolute right-0 mt-2 w-48 rounded-lg py-1 shadow-xl"
+          style={{
+            backgroundColor: "var(--cg-bg-card)",
+            border: "1px solid var(--cg-border)",
+          }}
+        >
+          <div
+            className="px-3 py-2 text-xs truncate"
+            style={{
+              color: "var(--cg-text-muted)",
+              borderBottom: "1px solid var(--cg-border)",
+            }}
+          >
+            {session.user?.email}
+          </div>
+          {[
+            { href: "/profile", label: "Profile" },
+            { href: "/settings/profile", label: "Settings" },
+          ].map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setOpen(false)}
+              className="block px-3 py-2 text-sm transition-colors"
+              style={{ color: "var(--cg-text-secondary)" }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--cg-bg-card-hover)";
+                e.currentTarget.style.color = "var(--cg-accent)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+                e.currentTarget.style.color = "var(--cg-text-secondary)";
+              }}
+            >
+              {item.label}
+            </Link>
+          ))}
+          <button
+            onClick={() => signOut({ callbackUrl: "/" })}
+            className="w-full px-3 py-2 text-left text-sm transition-colors"
+            style={{
+              color: "var(--cg-text-muted)",
+              borderTop: "1px solid var(--cg-border)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "var(--cg-bg-card-hover)";
+              e.currentTarget.style.color = "var(--cg-error, #ef4444)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "transparent";
+              e.currentTarget.style.color = "var(--cg-text-muted)";
+            }}
+          >
+            Sign Out
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function Navbar() {
   const { data: session } = useSession();
@@ -84,20 +187,7 @@ export function Navbar() {
             </button>
 
             {session ? (
-              <div className="flex items-center gap-2">
-                {session.user?.image ? (
-                  <img src={session.user.image} alt="" className="h-8 w-8 rounded-full" />
-                ) : (
-                  <User className="h-5 w-5" style={{ color: "var(--cg-text-secondary)" }} />
-                )}
-                <button
-                  onClick={() => signOut()}
-                  className="hidden md:block text-sm transition-colors"
-                  style={{ color: "var(--cg-text-muted)" }}
-                >
-                  Sign Out
-                </button>
-              </div>
+              <UserDropdown session={session} />
             ) : (
               <button
                 onClick={() => signIn("google")}
@@ -141,6 +231,7 @@ export function Navbar() {
                       { href: "/circles", label: "Circles" },
                       { href: "/journal", label: "Score Journal" },
                       { href: "/profile", label: "Profile" },
+                      { href: "/settings/profile", label: "Settings" },
                     ]
                   : []),
                 ...(isAdmin ? [{ href: "/admin", label: "Admin" }] : []),
@@ -154,6 +245,23 @@ export function Navbar() {
                   {link.label}
                 </Link>
               ))}
+              {session ? (
+                <button
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  className="text-left"
+                  style={{ color: "var(--cg-text-muted)" }}
+                >
+                  Sign Out
+                </button>
+              ) : (
+                <button
+                  onClick={() => signIn("google")}
+                  className="text-left"
+                  style={{ color: "var(--cg-accent)" }}
+                >
+                  Sign In
+                </button>
+              )}
             </div>
           </div>
         )}
