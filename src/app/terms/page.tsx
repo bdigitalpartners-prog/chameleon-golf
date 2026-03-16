@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Terms of Service — golfEQUALIZER",
   description: "Terms of Service for golfEQUALIZER — rules and conditions for using our platform.",

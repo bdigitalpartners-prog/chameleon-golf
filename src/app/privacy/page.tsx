@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Privacy Policy — golfEQUALIZER",
   description: "Privacy Policy for golfEQUALIZER — how we collect, use, and protect your data.",

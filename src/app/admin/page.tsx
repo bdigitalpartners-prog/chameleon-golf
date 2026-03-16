@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState, useEffect } from "react";
 import { MapPin, Users, Star, MessageCircle, DollarSign, Plus, CheckCircle, ArrowRight } from "lucide-react";
 
