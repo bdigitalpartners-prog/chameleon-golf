@@ -29,6 +29,13 @@ export default async function ArchitectDetailPage({ params }: Props) {
 
   if (!architect) notFound();
 
+  const signatureCourses = Array.isArray(architect.signatureCourses)
+    ? (architect.signatureCourses as string[])
+    : [];
+  const notableFeatures = Array.isArray(architect.notableFeatures)
+    ? (architect.notableFeatures as string[])
+    : [];
+
   const courses = await prisma.course.findMany({
     where: { originalArchitect: architect.name },
     select: {
@@ -167,8 +174,7 @@ export default async function ArchitectDetailPage({ params }: Props) {
 
         <div className="grid gap-6 md:grid-cols-2 mb-6">
           {/* Signature Courses */}
-          {architect.signatureCourses &&
-            architect.signatureCourses.length > 0 && (
+          {signatureCourses.length > 0 && (
               <section style={cardStyle}>
                 <h2
                   className="mb-3 text-lg font-semibold"
@@ -177,7 +183,7 @@ export default async function ArchitectDetailPage({ params }: Props) {
                   Signature Courses
                 </h2>
                 <ul className="space-y-1.5">
-                  {architect.signatureCourses.map((course) => (
+                  {signatureCourses.map((course) => (
                     <li
                       key={course}
                       className="text-sm"
@@ -191,8 +197,7 @@ export default async function ArchitectDetailPage({ params }: Props) {
             )}
 
           {/* Notable Features */}
-          {architect.notableFeatures &&
-            architect.notableFeatures.length > 0 && (
+          {notableFeatures.length > 0 && (
               <section style={cardStyle}>
                 <h2
                   className="mb-3 text-lg font-semibold"
@@ -201,7 +206,7 @@ export default async function ArchitectDetailPage({ params }: Props) {
                   Notable Design Features
                 </h2>
                 <div className="flex flex-wrap gap-2">
-                  {architect.notableFeatures.map((feature) => (
+                  {notableFeatures.map((feature) => (
                     <span
                       key={feature}
                       className="rounded-full px-3 py-1 text-xs font-medium"
