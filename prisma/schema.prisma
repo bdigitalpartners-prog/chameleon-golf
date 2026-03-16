@@ -78,6 +78,9 @@ model Course {
   bestTimeToPlay      String?   @map("best_time_to_play")
   paceOfPlayNotes     String?   @map("pace_of_play_notes")
 
+  // Round & Pace
+  averageRoundTime    String?   @map("average_round_time") @db.VarChar(50)
+
   // Conditions
   fairwayGrass        String?   @map("fairway_grass")
   greenGrass          String?   @map("green_grass")
