@@ -21,6 +21,7 @@ import {
   Users,
   TrendingUp,
   Award,
+  Mail,
 } from "lucide-react";
 
 // ─── Ranking Sources Data ───────────────────────────────────────
@@ -102,6 +103,130 @@ const RANKING_SOURCES = [
     founded: "Since 2005",
   },
 ];
+
+function WaitlistCTA() {
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [position, setPosition] = useState<number | null>(null);
+  const [error, setError] = useState("");
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    if (!email.trim()) return;
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), source: "homepage" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Something went wrong.");
+        return;
+      }
+      setPosition(data.position);
+      setSuccess(true);
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <section
+      className="py-16 sm:py-20"
+      style={{
+        backgroundColor: "var(--cg-bg-primary)",
+        borderTop: "1px solid var(--cg-border-subtle)",
+      }}
+    >
+      <div className="mx-auto max-w-2xl px-4 text-center">
+        <div
+          className="mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium"
+          style={{
+            backgroundColor: "rgba(1, 105, 111, 0.1)",
+            color: "#01696F",
+            border: "1px solid rgba(1, 105, 111, 0.4)",
+          }}
+        >
+          <Mail className="h-3 w-3" />
+          Early Access
+        </div>
+        <h2
+          className="text-2xl font-bold sm:text-3xl"
+          style={{ color: "var(--cg-text-primary)" }}
+        >
+          Get early access to{" "}
+          <span style={{ color: "#01696F" }}>personalized rankings</span>
+        </h2>
+        <p
+          className="mt-3 text-base"
+          style={{ color: "var(--cg-text-secondary)" }}
+        >
+          Join the waitlist for Chameleon Golf — course rankings that adapt to
+          what matters to you.
+        </p>
+
+        {success ? (
+          <div className="mt-6">
+            <p className="text-lg font-semibold" style={{ color: "#01696F" }}>
+              You're in! You're #{position} on the waitlist.
+            </p>
+            <Link
+              href="/waitlist"
+              className="mt-3 inline-flex items-center gap-1 text-sm font-medium transition-colors"
+              style={{ color: "#01696F" }}
+            >
+              Learn more about Chameleon Golf
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        ) : (
+          <form
+            onSubmit={handleSubmit}
+            className="mt-6 flex flex-col sm:flex-row gap-3 max-w-md mx-auto"
+          >
+            <input
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="flex-1 rounded-xl px-4 py-3 text-sm outline-none placeholder:opacity-50"
+              style={{
+                backgroundColor: "var(--cg-bg-tertiary)",
+                color: "var(--cg-text-primary)",
+                border: "1px solid var(--cg-border)",
+              }}
+              required
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              className="rounded-xl px-6 py-3 text-sm font-semibold transition-all hover:-translate-y-0.5 disabled:opacity-60 whitespace-nowrap"
+              style={{
+                backgroundColor: "#01696F",
+                color: "#ffffff",
+                boxShadow: "0 8px 30px rgba(1, 105, 111, 0.25)",
+              }}
+            >
+              {loading ? "Joining..." : "Get Early Access"}
+            </button>
+          </form>
+        )}
+        {error && (
+          <p className="mt-2 text-sm" style={{ color: "var(--cg-error)" }}>
+            {error}
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
 
 export default function LandingPage() {
   const { data: session, status } = useSession();
@@ -600,6 +725,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ─── WAITLIST CTA ─── */}
+      <WaitlistCTA />
 
       {/* ─── CTA ─── */}
       <section
