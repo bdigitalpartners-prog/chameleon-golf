@@ -1,299 +1,315 @@
-import prisma from "./prisma";
-
 /**
- * golfEQUALIZER Score Engine
- * ==========================
- * Computes the Equalizer Score (0-100) for every course based on:
- *   60% Expert Prestige Score (from 46 ranking lists across 4 sources)
- *   40% Community Ratings (when available)
+ * golfEQUALIZER — Client-safe Score Types & Pure Functions
+ * =========================================================
+ * Shared types, dimension metadata, preset profiles, and pure scoring
+ * functions used by client components (CourseRanker) and server code.
  *
- * Prestige Algorithm:
- * 1. Each of 46 lists is classified into a prestige tier (Flagship 1.0, Major 0.7, Regional 0.4, Specialty 0.2)
- * 2. rank_score = 100 * (1 - (rank - 1) / list_size) — linear decay from #1 (100) to #last (≈0)
- * 3. Per source: take BEST (rank_score * tier_weight) across all that source's lists
- * 4. prestige = weighted avg across sources (by source authority) + breadth bonus (0-10 for 1-4 sources)
+ * NO Prisma / DB imports — safe for "use client" bundles.
+ * Server-only DB operations live in chameleon-score-server.ts.
  */
 
-// Prestige tier classification for all 46 lists
-const TIER_MAP: Record<number, string> = {
-  // Golf Digest (source 1)
-  6: "flagship",  // America's 100 Greatest
-  3: "major",     // America's Second 100 Greatest
-  5: "major",     // America's 100 Greatest Public
+// ── Dimension keys ──────────────────────────────────────────────────────────
 
-  // Golfweek (source 2)
-  4: "flagship",  // Best Classic
-  2: "flagship",  // Best Modern
-  1: "major",     // Best Resort
-  7: "major",     // Best Public Access
+export type DimensionKey =
+  | "design"
+  | "conditions"
+  | "challenge"
+  | "scenery"
+  | "value"
+  | "amenities"
+  | "accessibility"
+  | "prestige"
+  | "vibe";
 
-  // GOLF Magazine (source 3)
-  46: "flagship", // Top 100 in the World
-  45: "flagship", // Top 100 You Can Play
+export type DimensionWeights = Record<DimensionKey, number>;
+export type DimensionScores = Record<DimensionKey, number>;
 
-  // Top100GolfCourses.com (source 4)
-  42: "flagship", // World Top 100
-  12: "major", 15: "major", 11: "major", 9: "major", 10: "major", // Major regionals
-  35: "major", 26: "major", // Value/Pay & Play
-  8: "regional", 14: "regional", 16: "regional", 17: "regional", 13: "regional",
-  18: "regional", 21: "regional", 43: "regional",
-  44: "specialty", 20: "specialty", 22: "specialty", 19: "specialty",
-  23: "specialty", 24: "specialty", 25: "specialty", 27: "specialty",
-  31: "specialty", 32: "specialty", 41: "specialty",
-  28: "specialty", 29: "specialty", 30: "specialty", 33: "specialty",
-  34: "specialty", 36: "specialty", 37: "specialty", 38: "specialty",
-  39: "specialty", 40: "specialty",
+// ── Default weights (all equal at 5) ────────────────────────────────────────
+
+export const DEFAULT_DIMENSION_WEIGHTS: DimensionWeights = {
+  design: 5,
+  conditions: 5,
+  challenge: 5,
+  scenery: 5,
+  value: 5,
+  amenities: 5,
+  accessibility: 5,
+  prestige: 5,
+  vibe: 5,
 };
 
-const TIER_WEIGHTS: Record<string, number> = {
-  flagship: 1.0,
-  major: 0.7,
-  regional: 0.4,
-  specialty: 0.2,
-};
+// ── Dimension metadata for UI ───────────────────────────────────────────────
 
-function rankToScore(rank: number, listSize: number): number {
-  if (!rank || rank <= 0) return 0;
-  return Math.max(0, 100 * (1 - (rank - 1) / listSize));
-}
+export const DIMENSION_META: {
+  key: DimensionKey;
+  label: string;
+  icon: string;
+  description: string;
+}[] = [
+  {
+    key: "design",
+    label: "Design / Layout",
+    icon: "Compass",
+    description: "Architecture, routing, strategic variety, and design pedigree",
+  },
+  {
+    key: "conditions",
+    label: "Conditions",
+    icon: "Sprout",
+    description: "Turf quality, green speed, maintenance, and course presentation",
+  },
+  {
+    key: "challenge",
+    label: "Challenge",
+    icon: "Target",
+    description: "Slope/course rating, strategic demand, risk-reward balance",
+  },
+  {
+    key: "scenery",
+    label: "Scenery / Aesthetics",
+    icon: "Mountain",
+    description: "Visual beauty, landscape setting, and wow factor",
+  },
+  {
+    key: "value",
+    label: "Value",
+    icon: "DollarSign",
+    description: "Quality relative to green fee — bang for the buck",
+  },
+  {
+    key: "amenities",
+    label: "Amenities",
+    icon: "Coffee",
+    description: "Practice facilities, clubhouse, dining, pro shop",
+  },
+  {
+    key: "accessibility",
+    label: "Accessibility / Walkability",
+    icon: "DoorOpen",
+    description: "Walking policy, terrain, ease of access for all golfers",
+  },
+  {
+    key: "prestige",
+    label: "Prestige / Rankings",
+    icon: "Award",
+    description: "Expert ranking authority — Golf Digest, Golfweek, GOLF Mag, Top100GC",
+  },
+  {
+    key: "vibe",
+    label: "Vibe / Service",
+    icon: "Smile",
+    description: "Staff friendliness, pace management, overall atmosphere",
+  },
+];
 
-/**
- * Map source names to DB field name helpers
- */
-function getBestRankFields(bestRanks: Record<string, number>) {
-  const mapping: Record<string, string> = {
-    "Golf Digest": "bestRankGolfDigest",
-    "Golfweek": "bestRankGolfweek",
-    "GOLF Magazine / GOLF.com": "bestRankGolfMag",
-    "Top100GolfCourses.com": "bestRankTop100gc",
-  };
+// ── Preset weight profiles ──────────────────────────────────────────────────
 
-  const result: Record<string, number | null> = {
-    bestRankGolfDigest: null,
-    bestRankGolfweek: null,
-    bestRankGolfMag: null,
-    bestRankTop100gc: null,
-  };
-
-  for (const [sourceName, rank] of Object.entries(bestRanks)) {
-    for (const [pattern, field] of Object.entries(mapping)) {
-      if (sourceName.includes(pattern) || pattern.includes(sourceName)) {
-        const current = result[field];
-        if (current === null || rank < current) {
-          result[field] = rank;
-        }
-      }
-    }
-  }
-
-  return result;
-}
-
-/**
- * Compute prestige scores for all courses.
- */
-export async function computeAllPrestigeScores(): Promise<
-  Map<number, { score: number; numLists: number; bestRanks: Record<string, number> }>
-> {
-  const entries = await prisma.rankingEntry.findMany({
-    where: { rankPosition: { gt: 0 } },
-    include: {
-      list: { include: { source: true } },
+export const PRESET_PROFILES: {
+  id: string;
+  label: string;
+  description: string;
+  weights: DimensionWeights;
+}[] = [
+  {
+    id: "balanced",
+    label: "Balanced",
+    description: "Equal weight across all dimensions",
+    weights: { ...DEFAULT_DIMENSION_WEIGHTS },
+  },
+  {
+    id: "purist",
+    label: "Purist",
+    description: "Prioritize design, challenge, and conditions",
+    weights: {
+      design: 9,
+      conditions: 8,
+      challenge: 9,
+      scenery: 5,
+      value: 2,
+      amenities: 2,
+      accessibility: 3,
+      prestige: 7,
+      vibe: 3,
     },
-  });
+  },
+  {
+    id: "bucket-list",
+    label: "Bucket List",
+    description: "Famous, prestigious, visually stunning courses",
+    weights: {
+      design: 7,
+      conditions: 5,
+      challenge: 4,
+      scenery: 9,
+      value: 2,
+      amenities: 6,
+      accessibility: 3,
+      prestige: 10,
+      vibe: 6,
+    },
+  },
+  {
+    id: "value-seeker",
+    label: "Value Seeker",
+    description: "Best quality relative to price",
+    weights: {
+      design: 6,
+      conditions: 7,
+      challenge: 5,
+      scenery: 5,
+      value: 10,
+      amenities: 4,
+      accessibility: 7,
+      prestige: 2,
+      vibe: 5,
+    },
+  },
+  {
+    id: "weekend-warrior",
+    label: "Weekend Warrior",
+    description: "Great experience, walkable, good amenities",
+    weights: {
+      design: 5,
+      conditions: 7,
+      challenge: 4,
+      scenery: 7,
+      value: 6,
+      amenities: 8,
+      accessibility: 9,
+      prestige: 3,
+      vibe: 8,
+    },
+  },
+];
 
-  // Count list sizes
-  const listSizes = new Map<number, number>();
-  for (const entry of entries) {
-    listSizes.set(entry.listId, (listSizes.get(entry.listId) || 0) + 1);
-  }
+// ── Pure scoring functions (client-safe) ────────────────────────────────────
 
-  // Group by course
-  const courseEntries = new Map<number, Array<{ listId: number; rank: number; sourceId: number; sourceName: string; authorityWeight: number }>>();
-  const courseListCount = new Map<number, Set<number>>();
-
-  for (const entry of entries) {
-    if (!entry.rankPosition) continue;
-    const cid = entry.courseId;
-    if (!courseEntries.has(cid)) {
-      courseEntries.set(cid, []);
-      courseListCount.set(cid, new Set());
-    }
-    courseListCount.get(cid)!.add(entry.listId);
-    courseEntries.get(cid)!.push({
-      listId: entry.listId,
-      rank: entry.rankPosition,
-      sourceId: entry.list.sourceId,
-      sourceName: entry.list.source.sourceName,
-      authorityWeight: Number(entry.list.source.authorityWeight),
-    });
-  }
-
-  const result = new Map<number, { score: number; numLists: number; bestRanks: Record<string, number> }>();
-
-  for (const [courseId, entryList] of courseEntries) {
-    // Per-source best weighted score
-    const sourceBest = new Map<string, { weightedScore: number; bestRank: number; authorityWeight: number }>();
-
-    for (const { listId, rank, sourceName, authorityWeight } of entryList) {
-      const tier = TIER_MAP[listId] || "regional";
-      const tierWeight = TIER_WEIGHTS[tier] || 0.4;
-      const listSize = listSizes.get(listId) || 100;
-      const weighted = rankToScore(rank, listSize) * tierWeight;
-
-      const current = sourceBest.get(sourceName);
-      if (!current || weighted > current.weightedScore) {
-        sourceBest.set(sourceName, { weightedScore: weighted, bestRank: rank, authorityWeight });
-      }
-    }
-
-    // Weighted average across sources
-    let totalWeight = 0;
-    let totalScore = 0;
-    const bestRanks: Record<string, number> = {};
-
-    for (const [sourceName, { weightedScore, bestRank, authorityWeight }] of sourceBest) {
-      totalWeight += authorityWeight;
-      totalScore += weightedScore * authorityWeight;
-      bestRanks[sourceName] = bestRank;
-    }
-
-    let prestige = totalWeight > 0 ? totalScore / totalWeight : 0;
-
-    // Breadth bonus: appearing on more sources is a quality signal
-    const numSources = sourceBest.size;
-    const breadthBonus = Math.min(10, (numSources - 1) * 3.33);
-    prestige = Math.min(100, prestige + breadthBonus);
-
-    result.set(courseId, {
-      score: Math.round(prestige * 100) / 100,
-      numLists: courseListCount.get(courseId)!.size,
-      bestRanks,
-    });
-  }
-
-  return result;
+interface CourseDataForScoring {
+  accessType: string | null;
+  greenFeeLow: number | null;
+  greenFeeHigh: number | null;
+  practiceFacilities: unknown;
+  walkingPolicy: string | null;
+  yearOpened: number | null;
+  renovationYear: number | null;
+  originalArchitect: string | null;
+  maxSlopeRating: number | null;
+  maxCourseRating: number | null;
 }
 
 /**
- * Recompute and store Equalizer scores for all courses.
+ * Heuristically compute dimension scores (0–100) from raw course data.
+ * Used as fallback when pre-computed DB scores are unavailable.
  */
-export async function recomputeAndStoreScores() {
-  const prestigeMap = await computeAllPrestigeScores();
+export function computeDimensionScores(
+  course: CourseDataForScoring,
+  prestigeScore: number
+): DimensionScores {
+  // Design: prestigious architects + age + renovations signal good design
+  let design = 50;
+  if (course.originalArchitect) {
+    const arch = course.originalArchitect.toLowerCase();
+    const eliteArchitects = [
+      "alister mackenzie", "a.w. tillinghast", "donald ross", "c.b. macdonald",
+      "seth raynor", "pete dye", "jack nicklaus", "tom fazio", "robert trent jones",
+      "tom doak", "bill coore", "ben crenshaw", "gil hanse", "george thomas",
+    ];
+    if (eliteArchitects.some((a) => arch.includes(a))) design += 25;
+    else design += 10;
+  }
+  if (course.yearOpened && course.yearOpened < 1940) design += 10;
+  if (course.renovationYear && course.renovationYear > 2010) design += 5;
+  design = Math.min(100, Math.max(0, design));
 
-  // Also update prestige tiers in ranking_lists
-  for (const [listId, tier] of Object.entries(TIER_MAP)) {
-    const weight = TIER_WEIGHTS[tier] || 0.4;
-    await prisma.rankingList.update({
-      where: { listId: Number(listId) },
-      data: { prestigeTier: tier, listWeight: weight },
-    }).catch(() => {});
+  // Conditions: proxy from prestige (higher-ranked courses tend to be well-maintained)
+  const conditions = Math.min(100, Math.max(20, 40 + prestigeScore * 0.5));
+
+  // Challenge: slope/course rating
+  let challenge = 50;
+  if (course.maxSlopeRating) {
+    challenge = Math.min(100, Math.max(20, ((course.maxSlopeRating - 100) / 55) * 100));
+  }
+  if (course.maxCourseRating && course.maxCourseRating > 74) {
+    challenge = Math.min(100, challenge + 10);
   }
 
-  const upserts = Array.from(prestigeMap.entries()).map(([courseId, { score, numLists, bestRanks }]) => {
-    const rankFields = getBestRankFields(bestRanks);
-    return prisma.chameleonScore.upsert({
-      where: { courseId },
-      update: {
-        chameleonScore: score,
-        prestigeScore: score,
-        numListsAppeared: numLists,
-        bestRankGolfDigest: rankFields.bestRankGolfDigest,
-        bestRankGolfweek: rankFields.bestRankGolfweek,
-        bestRankGolfMag: rankFields.bestRankGolfMag,
-        bestRankTop100gc: rankFields.bestRankTop100gc,
-        computedAt: new Date(),
-      },
-      create: {
-        courseId,
-        chameleonScore: score,
-        prestigeScore: score,
-        numListsAppeared: numLists,
-        bestRankGolfDigest: rankFields.bestRankGolfDigest,
-        bestRankGolfweek: rankFields.bestRankGolfweek,
-        bestRankGolfMag: rankFields.bestRankGolfMag,
-        bestRankTop100gc: rankFields.bestRankTop100gc,
-      },
-    });
-  });
+  // Scenery: proxy — links/mountain courses score higher
+  const scenery = Math.min(100, Math.max(30, 45 + prestigeScore * 0.4));
 
-  // Batch in chunks of 50
-  for (let i = 0; i < upserts.length; i += 50) {
-    await Promise.all(upserts.slice(i, i + 50));
+  // Value: inverse relationship with green fees
+  let value = 50;
+  const fee = course.greenFeeHigh ?? course.greenFeeLow;
+  if (fee != null) {
+    if (fee <= 75) value = 90;
+    else if (fee <= 150) value = 70;
+    else if (fee <= 300) value = 50;
+    else if (fee <= 500) value = 30;
+    else value = 15;
+    // Boost value if prestige is high relative to fee
+    if (prestigeScore > 60 && fee < 200) value = Math.min(100, value + 15);
   }
 
-  return prestigeMap.size;
+  // Amenities: practice facilities + access type (resorts tend to have more)
+  let amenities = 50;
+  if (course.practiceFacilities) {
+    const pf = typeof course.practiceFacilities === "string"
+      ? course.practiceFacilities
+      : JSON.stringify(course.practiceFacilities);
+    const facilityCount = (pf.match(/range|putting|chipping|bunker|short game|simulator/gi) || []).length;
+    amenities = Math.min(100, 40 + facilityCount * 12);
+  }
+  if (course.accessType?.toLowerCase().includes("resort")) amenities = Math.min(100, amenities + 15);
+
+  // Accessibility: walking policy + public/private
+  let accessibility = 50;
+  const wp = (course.walkingPolicy || "").toLowerCase();
+  if (wp.includes("walking only") || wp.includes("unrestricted walking")) accessibility = 90;
+  else if (wp.includes("walking allowed")) accessibility = 70;
+  else if (wp.includes("cart") && wp.includes("required")) accessibility = 25;
+  if (course.accessType) {
+    const at = course.accessType.toLowerCase();
+    if (at.includes("public") || at.includes("municipal")) accessibility = Math.min(100, accessibility + 10);
+    else if (at.includes("private")) accessibility = Math.max(0, accessibility - 15);
+  }
+
+  // Prestige: direct from prestige score
+  const prestige = Math.min(100, Math.max(0, prestigeScore));
+
+  // Vibe: proxy — combination of prestige and accessibility
+  const vibe = Math.min(100, Math.max(30, (prestige * 0.4 + accessibility * 0.3 + amenities * 0.3)));
+
+  return { design, conditions, challenge, scenery, value, amenities, accessibility, prestige, vibe };
 }
 
 /**
- * Recompute a single course's Equalizer score (e.g. after a new rating).
+ * Compute the final Chameleon Score from dimension scores + user weights.
+ * Returns the overall score (0–100) and per-dimension breakdown.
  */
-export async function recomputeSingleCourseScore(courseId: number) {
-  const entries = await prisma.rankingEntry.findMany({
-    where: { courseId, rankPosition: { gt: 0 } },
-    include: { list: { include: { source: true } } },
+export function computeChameleonScore(
+  dimScores: DimensionScores,
+  weights: DimensionWeights,
+  prestigeScore: number
+): {
+  score: number;
+  breakdown: { dimension: DimensionKey; weight: number; score: number; contribution: number }[];
+} {
+  const dims = Object.keys(dimScores) as DimensionKey[];
+  const totalWeight = dims.reduce((sum, k) => sum + (weights[k] || 0), 0);
+  if (totalWeight === 0) {
+    return {
+      score: prestigeScore,
+      breakdown: dims.map((d) => ({ dimension: d, weight: 0, score: dimScores[d], contribution: 0 })),
+    };
+  }
+
+  const breakdown = dims.map((d) => {
+    const w = weights[d] || 0;
+    const pct = (w / totalWeight) * 100;
+    const contribution = (w / totalWeight) * dimScores[d];
+    return { dimension: d, weight: pct, score: dimScores[d], contribution };
   });
 
-  // Count list sizes for this course's lists
-  const listIds = [...new Set(entries.map((e) => e.listId))];
-  const listSizes = new Map<number, number>();
-  for (const lid of listIds) {
-    const count = await prisma.rankingEntry.count({ where: { listId: lid } });
-    listSizes.set(lid, count);
-  }
+  const score = breakdown.reduce((sum, b) => sum + b.contribution, 0);
 
-  const sourceBest = new Map<string, { weightedScore: number; bestRank: number; authorityWeight: number }>();
-  const numLists = new Set<number>();
-
-  for (const entry of entries) {
-    if (!entry.rankPosition) continue;
-    numLists.add(entry.listId);
-    const tier = TIER_MAP[entry.listId] || "regional";
-    const tierWeight = TIER_WEIGHTS[tier] || 0.4;
-    const listSize = listSizes.get(entry.listId) || 100;
-    const weighted = rankToScore(entry.rankPosition, listSize) * tierWeight;
-    const sourceName = entry.list.source.sourceName;
-    const authorityWeight = Number(entry.list.source.authorityWeight);
-
-    const current = sourceBest.get(sourceName);
-    if (!current || weighted > current.weightedScore) {
-      sourceBest.set(sourceName, { weightedScore: weighted, bestRank: entry.rankPosition, authorityWeight });
-    }
-  }
-
-  let totalWeight = 0;
-  let totalScore = 0;
-  const bestRanks: Record<string, number> = {};
-  for (const [sourceName, { weightedScore, bestRank, authorityWeight }] of sourceBest) {
-    totalWeight += authorityWeight;
-    totalScore += weightedScore * authorityWeight;
-    bestRanks[sourceName] = bestRank;
-  }
-
-  let prestige = totalWeight > 0 ? totalScore / totalWeight : 0;
-  const breadthBonus = Math.min(10, (sourceBest.size - 1) * 3.33);
-  prestige = Math.min(100, prestige + breadthBonus);
-
-  const score = Math.round(prestige * 100) / 100;
-  const rankFields = getBestRankFields(bestRanks);
-
-  await prisma.chameleonScore.upsert({
-    where: { courseId },
-    update: {
-      chameleonScore: score,
-      prestigeScore: score,
-      numListsAppeared: numLists.size,
-      ...rankFields,
-      computedAt: new Date(),
-    },
-    create: {
-      courseId,
-      chameleonScore: score,
-      prestigeScore: score,
-      numListsAppeared: numLists.size,
-      ...rankFields,
-    },
-  });
-
-  return { score, bestRanks };
+  return { score: Math.round(score * 100) / 100, breakdown };
 }

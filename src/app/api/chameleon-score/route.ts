@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { recomputeAndStoreScores } from "@/lib/chameleon-score";
+import { recomputeAndStoreScores } from "@/lib/chameleon-score-server";
 import { computePersonalizedScore } from "@/lib/circle-score";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
