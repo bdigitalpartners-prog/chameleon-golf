@@ -309,6 +309,10 @@ model User {
   connectionsReceived Connection[]     @relation("ConnectionsReceived")
   notifications     Notification[]
   notificationPrefs NotificationPref[]
+  circles           Circle[]
+  memberships       CircleMembership[]
+  invitesSent       CircleInvite[]     @relation("InvitesSent")
+  invitesReceived   CircleInvite[]     @relation("InvitesReceived")
 
   @@map("users")
 }
@@ -610,6 +614,104 @@ model ConciergeUsage {
   createdAt       DateTime @default(now()) @map("created_at")
 
   @@map("concierge_usage")
+}
+
+// ============================================================
+// Social Circles — Sprint 2
+// ============================================================
+
+enum CircleType {
+  CREW
+  GAME
+  NETWORK
+  CLUB
+  LEAGUE
+}
+
+enum CirclePrivacy {
+  PUBLIC
+  PRIVATE
+  SECRET
+}
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+  PENDING
+  GUEST
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+model Circle {
+  id                  String        @id @default(cuid())
+  name                String
+  slug                String        @unique
+  description         String?       @db.Text
+  type                CircleType
+  privacy             CirclePrivacy @default(PUBLIC)
+  avatarUrl           String?
+  coverUrl            String?
+  memberCount         Int           @default(0)
+  maxMembers          Int?
+  verificationMethod  String?
+  verificationDomain  String?
+  config              Json?
+  createdById         String
+  createdBy           User          @relation(fields: [createdById], references: [id])
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  members             CircleMembership[]
+  invites             CircleInvite[]
+
+  @@index([type])
+  @@index([privacy])
+  @@index([slug])
+  @@index([createdById])
+}
+
+model CircleMembership {
+  id              String     @id @default(cuid())
+  circleId        String
+  circle          Circle     @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role            MemberRole @default(MEMBER)
+  joinedAt        DateTime   @default(now())
+  verifiedAt      DateTime?
+  membershipTier  String?
+
+  @@unique([circleId, userId])
+  @@index([circleId])
+  @@index([userId])
+  @@index([role])
+}
+
+model CircleInvite {
+  id              String       @id @default(cuid())
+  circleId        String
+  circle          Circle       @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  inviterId       String
+  inviter         User         @relation("InvitesSent", fields: [inviterId], references: [id])
+  inviteeId       String?
+  invitee         User?        @relation("InvitesReceived", fields: [inviteeId], references: [id])
+  inviteeEmail    String?
+  inviteCode      String?      @unique
+  status          InviteStatus @default(PENDING)
+  expiresAt       DateTime?
+  createdAt       DateTime     @default(now())
+
+  @@index([circleId])
+  @@index([inviteeId])
+  @@index([inviteCode])
+  @@index([inviteeEmail])
 }
 
 // ============================================================
