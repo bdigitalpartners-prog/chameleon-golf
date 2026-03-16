@@ -20,6 +20,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
           take: 10,
         },
         chameleonScores: true,
+        intelligenceNotes: {
+          where: { isVisible: true },
+          orderBy: { category: "asc" },
+        },
         ratings: {
           where: { isPublished: true },
           include: { user: { select: { name: true, image: true } } },

@@ -17,12 +17,14 @@ import {
   X,
   Shield,
   Database,
+  Lightbulb,
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "Courses", href: "/admin/courses", icon: MapPin },
   { label: "Enrichment", href: "/admin/enrichment", icon: Database },
+  { label: "Intelligence", href: "/admin/intelligence", icon: Lightbulb },
   { label: "Rankings", href: "/admin/rankings", icon: Trophy },
   { label: "Users", href: "/admin/users", icon: Users },
   { label: "Reviews", href: "/admin/reviews", icon: Star },
