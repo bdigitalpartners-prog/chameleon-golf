@@ -6,6 +6,7 @@ import { Search, Menu, X, User } from "lucide-react";
 import { useState } from "react";
 import { SearchOverlay } from "@/components/layout/SearchOverlay";
 import { ThemeSettings } from "@/components/layout/ThemeSettings";
+import { NotificationBell } from "@/components/layout/NotificationBell";
 
 export function Navbar() {
   const { data: session } = useSession();
@@ -60,6 +61,8 @@ export function Navbar() {
 
           <div className="flex items-center gap-2">
             <ThemeSettings />
+
+            {session && <NotificationBell />}
 
             <button
               onClick={() => setSearchOpen(true)}
