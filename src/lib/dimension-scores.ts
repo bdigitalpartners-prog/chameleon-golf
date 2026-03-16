@@ -1,5 +1,5 @@
 import prisma from "./prisma";
-import { computeAllPrestigeScores } from "./chameleon-score";
+import { computeAllPrestigeScores } from "./chameleon-score-server";
 
 /**
  * Architect tier mapping — higher tier = higher architecture score.
