@@ -3,7 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useState, useEffect, useCallback } from "react";
-import dynamic from "next/dynamic";
+import nextDynamic from "next/dynamic";
 import {
   Search,
   Star,
@@ -17,39 +17,39 @@ import {
   ExternalLink,
 } from "lucide-react";
 
-const BarChart = dynamic(
+const BarChart = nextDynamic(
   () => import("recharts").then((mod) => mod.BarChart),
   { ssr: false }
 );
-const Bar = dynamic(
+const Bar = nextDynamic(
   () => import("recharts").then((mod) => mod.Bar),
   { ssr: false }
 );
-const LineChart = dynamic(
+const LineChart = nextDynamic(
   () => import("recharts").then((mod) => mod.LineChart),
   { ssr: false }
 );
-const Line = dynamic(
+const Line = nextDynamic(
   () => import("recharts").then((mod) => mod.Line),
   { ssr: false }
 );
-const XAxis = dynamic(
+const XAxis = nextDynamic(
   () => import("recharts").then((mod) => mod.XAxis),
   { ssr: false }
 );
-const YAxis = dynamic(
+const YAxis = nextDynamic(
   () => import("recharts").then((mod) => mod.YAxis),
   { ssr: false }
 );
-const CartesianGrid = dynamic(
+const CartesianGrid = nextDynamic(
   () => import("recharts").then((mod) => mod.CartesianGrid),
   { ssr: false }
 );
-const Tooltip = dynamic(
+const Tooltip = nextDynamic(
   () => import("recharts").then((mod) => mod.Tooltip),
   { ssr: false }
 );
-const ResponsiveContainer = dynamic(
+const ResponsiveContainer = nextDynamic(
   () => import("recharts").then((mod) => mod.ResponsiveContainer),
   { ssr: false }
 );

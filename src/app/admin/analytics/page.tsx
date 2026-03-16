@@ -15,11 +15,11 @@ import {
   Bot,
   Info,
 } from "lucide-react";
-import dynamic from "next/dynamic";
+import nextDynamic from "next/dynamic";
 
 /* ── Dynamic recharts imports ── */
 
-const CourseViewsChart = dynamic(
+const CourseViewsChart = nextDynamic(
   () =>
     import("recharts").then((mod) => {
       const { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } = mod;
@@ -41,7 +41,7 @@ const CourseViewsChart = dynamic(
   { ssr: false, loading: () => <div className="h-96 flex items-center justify-center text-gray-500 text-sm">Loading chart...</div> }
 );
 
-const PieChartComponent = dynamic(
+const PieChartComponent = nextDynamic(
   () =>
     import("recharts").then((mod) => {
       const { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } = mod;
@@ -67,7 +67,7 @@ const PieChartComponent = dynamic(
   { ssr: false, loading: () => <div className="h-64 flex items-center justify-center text-gray-500 text-sm">Loading chart...</div> }
 );
 
-const BarChartHorizontal = dynamic(
+const BarChartHorizontal = nextDynamic(
   () =>
     import("recharts").then((mod) => {
       const { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } = mod;
@@ -89,7 +89,7 @@ const BarChartHorizontal = dynamic(
   { ssr: false, loading: () => <div className="h-64 flex items-center justify-center text-gray-500 text-sm">Loading chart...</div> }
 );
 
-const LineChartComponent = dynamic(
+const LineChartComponent = nextDynamic(
   () =>
     import("recharts").then((mod) => {
       const { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } = mod;
