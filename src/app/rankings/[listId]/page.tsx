@@ -14,6 +14,7 @@ import {
   Minus,
   Image as ImageIcon,
 } from "lucide-react";
+import { CoursePlaceholder } from "@/components/course/CoursePlaceholder";
 
 interface ListCourse {
   entryId: number;
@@ -311,12 +312,11 @@ export default function ListDetailPage() {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="h-full w-full flex items-center justify-center">
-                      <ImageIcon
-                        className="h-3.5 w-3.5"
-                        style={{ color: "var(--cg-text-muted)" }}
-                      />
-                    </div>
+                    <CoursePlaceholder
+                      courseName={course.courseName}
+                      courseStyle={course.courseStyle}
+                      size="thumbnail"
+                    />
                   )}
                 </div>
 
@@ -386,12 +386,11 @@ export default function ListDetailPage() {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="h-full w-full flex items-center justify-center">
-                      <ImageIcon
-                        className="h-4 w-4"
-                        style={{ color: "var(--cg-text-muted)" }}
-                      />
-                    </div>
+                    <CoursePlaceholder
+                      courseName={course.courseName}
+                      courseStyle={course.courseStyle}
+                      size="thumbnail"
+                    />
                   )}
                 </div>
 

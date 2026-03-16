@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { MapPin, Trophy, GitCompareArrows } from "lucide-react";
+import { MapPin, GitCompareArrows } from "lucide-react";
 import type { CourseCard as CourseCardType } from "@/types";
 import { formatCurrency } from "@/lib/utils";
 import { useCompare } from "@/contexts/CompareContext";
+import { CoursePlaceholder } from "./CoursePlaceholder";
 
 function ScoreRing({ score, label }: { score: number | null; label?: string }) {
   if (score === null)
@@ -75,15 +76,18 @@ export function CourseCard({ course, showWeightedScore }: { course: CourseCardTy
               />
             ) : null}
             <div
-              className="flex h-full items-center justify-center"
+              className="h-full w-full"
               style={{
-                color: "var(--cg-text-muted)",
-                display: course.primaryImageUrl ? "none" : "flex",
+                display: course.primaryImageUrl ? "none" : "block",
                 position: course.primaryImageUrl ? "absolute" : "static",
                 inset: 0,
               }}
             >
-              <Trophy className="h-12 w-12" />
+              <CoursePlaceholder
+                courseName={course.courseName}
+                courseStyle={course.courseStyle}
+                size="card"
+              />
             </div>
             <div className="absolute top-3 right-3">
               <ScoreRing score={displayScore} label={scoreLabel} />

@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { MapPin, Trophy } from "lucide-react";
+import { MapPin } from "lucide-react";
 import type { CourseCard as CourseCardType } from "@/types";
 import { formatCurrency } from "@/lib/utils";
+import { CoursePlaceholder } from "./CoursePlaceholder";
 
 export function CourseListRow({ course, rank }: { course: CourseCardType; rank?: number }) {
   return (
@@ -46,10 +47,14 @@ export function CourseListRow({ course, rank }: { course: CourseCardType; rank?:
             />
           ) : null}
           <div
-            className="flex h-full w-full items-center justify-center"
-            style={{ display: course.primaryImageUrl ? "none" : "flex" }}
+            className="h-full w-full"
+            style={{ display: course.primaryImageUrl ? "none" : "block" }}
           >
-            <Trophy className="h-4 w-4" style={{ color: "var(--cg-text-muted)" }} />
+            <CoursePlaceholder
+              courseName={course.courseName}
+              courseStyle={course.courseStyle}
+              size="thumbnail"
+            />
           </div>
         </div>
 
