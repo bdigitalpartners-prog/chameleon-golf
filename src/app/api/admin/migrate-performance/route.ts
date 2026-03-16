@@ -956,6 +956,72 @@ CREATE INDEX IF NOT EXISTS performance_articles_featured_idx ON performance_arti
 CREATE INDEX IF NOT EXISTS performance_articles_slug_idx ON performance_articles(slug);
 `;
 
+export async function GET() {
+  try {
+    // Check if table already exists and has rows
+    const rows = await prisma.$queryRawUnsafe<{ count: bigint }[]>(
+      `SELECT COUNT(*)::bigint AS count FROM performance_articles`
+    );
+    if (rows.length > 0 && Number(rows[0].count) > 0) {
+      return NextResponse.json({
+        success: true,
+        message: "Already migrated",
+        rowCount: Number(rows[0].count),
+      });
+    }
+  } catch {
+    // Table doesn't exist yet — proceed with migration
+  }
+
+  // Run the migration (same logic as POST but without auth)
+  const results: string[] = [];
+
+  try {
+    const statements = CREATE_TABLE_SQL.split(";")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+
+    for (const sql of statements) {
+      await prisma.$executeRawUnsafe(sql);
+      results.push(`OK: ${sql.substring(0, 60)}...`);
+    }
+
+    let insertedCount = 0;
+    const now = new Date().toISOString();
+
+    for (const article of articles) {
+      const id = generateId();
+      const tagsArray = `{${article.tags.map((t) => `"${t}"`).join(",")}}`;
+
+      const sql = `
+        INSERT INTO performance_articles (id, slug, title, subtitle, category, subcategory, difficulty, estimated_time, hero_image, content, tags, video_url, published_at, updated_at, featured, sort_order)
+        VALUES (${esc(id)}, ${esc(article.slug)}, ${esc(article.title)}, ${esc(article.subtitle)}, ${esc(article.category)}, ${esc(article.subcategory)}, ${esc(article.difficulty)}, ${esc(article.estimatedTime)}, NULL, ${esc(article.content)}, '${tagsArray}', NULL, '${now}', '${now}', ${article.featured}, ${article.sortOrder})
+        ON CONFLICT (slug) DO NOTHING
+      `;
+
+      const affected = await prisma.$executeRawUnsafe(sql);
+      if (affected > 0) {
+        insertedCount++;
+        results.push(`Inserted: ${article.slug}`);
+      } else {
+        results.push(`Skipped (exists): ${article.slug}`);
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      totalArticles: articles.length,
+      insertedCount,
+      results,
+    });
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: error.message, results },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(req: NextRequest) {
   const key =
     req.headers.get("x-admin-key") || req.nextUrl.searchParams.get("key");
