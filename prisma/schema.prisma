@@ -43,6 +43,12 @@ model Course {
   isEnriched           Boolean  @default(false) @map("is_enriched")
   description          String?
 
+  // Logo
+  logoUrl             String?   @map("logo_url") @db.VarChar(500)
+  logoLocalPath       String?   @map("logo_local_path") @db.VarChar(500)
+  logoSource          String?   @map("logo_source") @db.VarChar(200)
+  logoBackgroundColor String?   @map("logo_background_color") @db.VarChar(20)
+
   // Access & Policies
   email               String?
   tagline             String?
