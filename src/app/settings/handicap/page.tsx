@@ -294,7 +294,6 @@ export default function HandicapVerificationPage() {
                   backgroundColor: "var(--cg-bg-secondary)",
                   color: "var(--cg-text-primary)",
                   border: "1px solid var(--cg-border)",
-                  focusRingColor: "#01696F",
                 }}
               />
               <p className="text-xs mt-1" style={{ color: "var(--cg-text-muted)" }}>
