@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import prisma from "@/lib/prisma";
 import { Brain } from "lucide-react";
 import { CategoryPageLayout } from "../CategoryPageLayout";
 
@@ -18,15 +17,16 @@ const subcategories = [
 ];
 
 export default async function MentalGamePage() {
-  let articles: Awaited<ReturnType<typeof prisma.performanceArticle.findMany>> = [];
+  let articles: any[] = [];
 
   try {
+    const prisma = (await import("@/lib/prisma")).default;
     articles = await prisma.performanceArticle.findMany({
       where: { category: "mental-game" },
       orderBy: { sortOrder: "asc" },
     });
-  } catch {
-    // Table may not exist yet — render with empty data
+  } catch (e) {
+    console.error("[Performance/mental-game] Failed to load data:", e);
   }
 
   return (

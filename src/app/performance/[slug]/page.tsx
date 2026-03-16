@@ -1,6 +1,5 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import prisma from "@/lib/prisma";
 import { ArticlePage } from "@/components/performance/ArticlePage";
 
 export const dynamic = 'force-dynamic';
@@ -11,6 +10,7 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
+    const prisma = (await import("@/lib/prisma")).default;
     const article = await prisma.performanceArticle.findUnique({
       where: { slug: params.slug },
     });
@@ -21,13 +21,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: `${article.title} — Performance Center — golfEQUALIZER`,
       description: article.subtitle || article.title,
     };
-  } catch {
+  } catch (e) {
+    console.error("[Performance/slug] generateMetadata failed:", e);
     return { title: "Performance Center — golfEQUALIZER" };
   }
 }
 
 export default async function ArticleDetailPage({ params }: Props) {
   try {
+    const prisma = (await import("@/lib/prisma")).default;
     const article = await prisma.performanceArticle.findUnique({
       where: { slug: params.slug },
     });
@@ -44,7 +46,8 @@ export default async function ArticleDetailPage({ params }: Props) {
     });
 
     return <ArticlePage article={article} relatedArticles={relatedArticles} />;
-  } catch {
+  } catch (e) {
+    console.error("[Performance/slug] Failed to load article:", e);
     notFound();
   }
 }

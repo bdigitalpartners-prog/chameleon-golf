@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import prisma from "@/lib/prisma";
 import { Wrench } from "lucide-react";
 import { CategoryPageLayout } from "../CategoryPageLayout";
 
@@ -17,15 +16,16 @@ const subcategories = [
 ];
 
 export default async function EquipmentIntelPage() {
-  let articles: Awaited<ReturnType<typeof prisma.performanceArticle.findMany>> = [];
+  let articles: any[] = [];
 
   try {
+    const prisma = (await import("@/lib/prisma")).default;
     articles = await prisma.performanceArticle.findMany({
       where: { category: "equipment-intel" },
       orderBy: { sortOrder: "asc" },
     });
-  } catch {
-    // Table may not exist yet — render with empty data
+  } catch (e) {
+    console.error("[Performance/equipment-intel] Failed to load data:", e);
   }
 
   return (

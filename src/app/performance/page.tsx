@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import prisma from "@/lib/prisma";
 import { PerformanceHero } from "@/components/performance/PerformanceHero";
 import { PerformanceCategoryCard } from "@/components/performance/PerformanceCategoryCard";
 import { ArticleCard } from "@/components/performance/ArticleCard";
@@ -57,12 +56,10 @@ const categories = [
   },
 ];
 
-export default async function PerformancePage() {
-  let countMap: Record<string, number> = {};
-  let featuredArticles: Awaited<ReturnType<typeof prisma.performanceArticle.findMany>> = [];
-
+async function getPerformanceData() {
   try {
-    const [articleCounts, featured] = await Promise.all([
+    const prisma = (await import("@/lib/prisma")).default;
+    const [articleCounts, featuredArticles] = await Promise.all([
       prisma.performanceArticle.groupBy({
         by: ["category"],
         _count: { id: true },
@@ -74,13 +71,20 @@ export default async function PerformancePage() {
       }),
     ]);
 
+    const countMap: Record<string, number> = {};
     articleCounts.forEach((g) => {
       countMap[g.category] = g._count.id;
     });
-    featuredArticles = featured;
-  } catch {
-    // Table may not exist yet — render with empty data
+
+    return { countMap, featuredArticles };
+  } catch (e) {
+    console.error("[Performance] Failed to load data:", e);
+    return { countMap: {} as Record<string, number>, featuredArticles: [] as any[] };
   }
+}
+
+export default async function PerformancePage() {
+  const { countMap, featuredArticles } = await getPerformanceData();
 
   return (
     <div style={{ backgroundColor: "var(--cg-bg-primary)" }}>
@@ -148,7 +152,7 @@ export default async function PerformancePage() {
             </div>
 
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {featuredArticles.map((article) => (
+              {featuredArticles.map((article: any) => (
                 <ArticleCard
                   key={article.slug}
                   slug={article.slug}
