@@ -7,23 +7,85 @@ import {
   Lightbulb, Utensils, Bed, Compass, Flag, ChevronRight,
   Clock, Sun, CloudRain, Wind, Leaf, SlidersHorizontal,
   Building2, Map, Mail, ExternalLink, DollarSign,
-  Home, Camera, Image,
+  Home, Camera, Image, MessageSquare, Brain, Briefcase,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { CoursePlaceholder } from "./CoursePlaceholder";
 import { CircleRatingsSection } from "./CircleRatingsSection";
 import { PoweredByBadge } from "@/components/brand/PoweredByBadge";
 
+/* ─── Safe Text Helper ─── */
+
+function safeText(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  const str = String(value);
+  if (str === "undefined" || str === "null" || str.trim() === "") return null;
+  return str;
+}
+
 /* ─── Empty State ─── */
 
-function EmptyState({ icon, title, description }: { icon: React.ReactNode; title: string; description?: string }) {
+function EmptyState({ icon, title, description, cta }: {
+  icon: React.ReactNode;
+  title: string;
+  description?: string;
+  cta?: React.ReactNode;
+}) {
   return (
-    <div className="flex flex-col items-center justify-center py-8 text-center">
-      <span style={{ color: "var(--cg-text-muted)" }}>{icon}</span>
-      <p className="mt-3 text-sm font-medium" style={{ color: "var(--cg-text-secondary)" }}>{title}</p>
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <div
+        className="flex items-center justify-center h-16 w-16 rounded-2xl mb-4"
+        style={{ backgroundColor: "var(--cg-bg-tertiary)", border: "1px solid var(--cg-border)" }}
+      >
+        <span style={{ color: "var(--cg-text-muted)" }}>{icon}</span>
+      </div>
+      <p className="text-sm font-medium" style={{ color: "var(--cg-text-secondary)" }}>{title}</p>
       {description && (
-        <p className="mt-1 text-xs" style={{ color: "var(--cg-text-muted)" }}>{description}</p>
+        <p className="mt-1.5 text-xs max-w-xs" style={{ color: "var(--cg-text-muted)" }}>{description}</p>
       )}
+      {cta && <div className="mt-4">{cta}</div>}
+    </div>
+  );
+}
+
+/* ─── Last Updated ─── */
+
+function LastUpdated({ date }: { date: string | Date | null | undefined }) {
+  if (!date) return null;
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return null;
+  const relative = getRelativeTime(d);
+  return (
+    <span className="text-[10px] flex items-center gap-1" style={{ color: "var(--cg-text-muted)" }}>
+      <Clock className="h-2.5 w-2.5" />
+      Updated {relative}
+    </span>
+  );
+}
+
+function getRelativeTime(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return "today";
+  if (diffDays === 1) return "yesterday";
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) > 1 ? "s" : ""} ago`;
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)} month${Math.floor(diffDays / 30) > 1 ? "s" : ""} ago`;
+  return date.toLocaleDateString();
+}
+
+/* ─── Section Skeleton ─── */
+
+function SectionSkeleton({ rows = 3, showTitle = true }: { rows?: number; showTitle?: boolean }) {
+  return (
+    <div className="rounded-xl p-6 animate-pulse" style={{ backgroundColor: "var(--cg-bg-card)", border: "1px solid var(--cg-border)" }}>
+      {showTitle && <div className="h-5 w-40 rounded mb-4" style={{ backgroundColor: "var(--cg-bg-tertiary)" }} />}
+      <div className="space-y-3">
+        {Array.from({ length: rows }).map((_, i) => (
+          <div key={i} className="h-3 rounded" style={{ backgroundColor: "var(--cg-bg-tertiary)", width: `${85 - i * 10}%` }} />
+        ))}
+      </div>
     </div>
   );
 }
@@ -153,23 +215,28 @@ function ScoreDimRow({ label, value }: { label: string; value: number | null }) 
 /* ─── Info Row helper ─── */
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
-  if (!value) return null;
+  if (value === null || value === undefined) return null;
+  const display = typeof value === "string" ? safeText(value) : value;
+  if (display === null) return null;
   return (
     <div>
       <dt className="mb-0.5 text-xs" style={mutedText}>{label}</dt>
-      <dd className="font-medium text-sm" style={primaryText}>{value}</dd>
+      <dd className="font-medium text-sm" style={primaryText}>{display}</dd>
     </div>
   );
 }
 
 /* ─── Section Heading ─── */
 
-function SectionHeading({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
+function SectionHeading({ icon, children, lastUpdated }: { icon?: React.ReactNode; children: React.ReactNode; lastUpdated?: string | Date | null }) {
   return (
-    <h2 className="font-display text-xl font-semibold mb-4 flex items-center gap-2" style={sectionTitle}>
-      {icon}
-      {children}
-    </h2>
+    <div className="flex items-center justify-between mb-4">
+      <h2 className="font-display text-xl font-semibold flex items-center gap-2" style={sectionTitle}>
+        {icon}
+        {children}
+      </h2>
+      {lastUpdated && <LastUpdated date={lastUpdated} />}
+    </div>
   );
 }
 
@@ -479,40 +546,40 @@ export function CourseDetailClient({ course }: { course: any }) {
             <div className="lg:col-span-2 space-y-8">
 
               {/* About */}
-              {course.description && (
+              {safeText(course.description) && (
                 <section style={cardStyle}>
-                  <SectionHeading>About {course.courseName}</SectionHeading>
+                  <SectionHeading lastUpdated={course.updatedAt}>About {course.courseName}</SectionHeading>
                   <p className="text-sm leading-relaxed" style={{ color: "var(--cg-text-secondary)", lineHeight: "1.75" }}>
-                    {course.description}
+                    {safeText(course.description)}
                   </p>
                 </section>
               )}
 
               {/* Course Information */}
               <section style={cardStyle}>
-                <SectionHeading>Course Information</SectionHeading>
+                <SectionHeading lastUpdated={course.updatedAt}>Course Information</SectionHeading>
                 <dl className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
-                  <InfoRow label="Style" value={course.courseStyle} />
-                  <InfoRow label="Access" value={course.accessType} />
+                  <InfoRow label="Style" value={safeText(course.courseStyle)} />
+                  <InfoRow label="Access" value={safeText(course.accessType)} />
                   <InfoRow label="Holes" value={course.numHoles} />
                   <InfoRow label="Par" value={course.par} />
-                  <InfoRow label="Architect" value={course.originalArchitect} />
+                  <InfoRow label="Architect" value={safeText(course.originalArchitect)} />
                   <InfoRow label="Year Opened" value={course.yearOpened} />
                   <InfoRow label="Renovation" value={
-                    course.renovationArchitect
-                      ? `${course.renovationArchitect}${course.renovationYear ? ` (${course.renovationYear})` : ""}`
+                    safeText(course.renovationArchitect)
+                      ? `${safeText(course.renovationArchitect)}${safeText(course.renovationYear) ? ` (${safeText(course.renovationYear)})` : ""}`
                       : null
                   } />
-                  <InfoRow label="Walking" value={course.walkingPolicy} />
-                  <InfoRow label="Dress Code" value={course.dressCode} />
+                  <InfoRow label="Walking" value={safeText(course.walkingPolicy)} />
+                  <InfoRow label="Dress Code" value={safeText(course.dressCode)} />
                   <InfoRow label="Caddie" value={
-                    course.caddieAvailability
-                      ? `${course.caddieAvailability}${course.caddieFee ? ` — ${course.caddieFee}` : ""}`
+                    safeText(course.caddieAvailability)
+                      ? `${safeText(course.caddieAvailability)}${safeText(course.caddieFee) ? ` — ${safeText(course.caddieFee)}` : ""}`
                       : null
                   } />
                   <InfoRow label="Cart Policy" value={
-                    course.cartPolicy
-                      ? `${course.cartPolicy}${course.cartFee ? ` — ${course.cartFee}` : ""}`
+                    safeText(course.cartPolicy)
+                      ? `${safeText(course.cartPolicy)}${safeText(course.cartFee) ? ` — ${safeText(course.cartFee)}` : ""}`
                       : null
                   } />
                   <InfoRow label="Green Fees" value={
@@ -521,7 +588,7 @@ export function CourseDetailClient({ course }: { course: any }) {
                       : null
                   } />
                   <InfoRow label="Club Rental" value={course.clubRentalAvailable != null ? (course.clubRentalAvailable ? "Available" : "Not available") : null} />
-                  <InfoRow label="Cell Phone" value={course.cellPhonePolicy} />
+                  <InfoRow label="Cell Phone" value={safeText(course.cellPhonePolicy)} />
                 </dl>
 
                 {/* Practice Facilities */}
@@ -704,8 +771,11 @@ export function CourseDetailClient({ course }: { course: any }) {
               {/* Course Intelligence */}
               {course.intelligenceNotes?.length > 0 && (
                 <section style={cardStyle}>
-                  <div className="flex items-center justify-between mb-5">
-                    <SectionHeading icon={<Lightbulb className="h-5 w-5" style={{ color: "#4ade80" }} />}>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-5">
+                    <SectionHeading
+                      icon={<Lightbulb className="h-5 w-5" style={{ color: "#4ade80" }} />}
+                      lastUpdated={course.intelligenceNotes[0]?.generatedAt}
+                    >
                       Course Intelligence
                     </SectionHeading>
                     <PoweredByBadge variant="intelligence" />
@@ -855,39 +925,39 @@ export function CourseDetailClient({ course }: { course: any }) {
           <div className="max-w-3xl space-y-8">
 
             {/* Empty state for entire tab */}
-            {!course.howToGetOn && !course.resortAffiliateAccess && !course.guestPolicy &&
-             insiderTips.length === 0 && !course.courseStrategy && !course.whatToExpect &&
-             !course.bestTimeToPlay && !course.weatherData && !course.bestConditionMonths &&
-             !course.fairwayGrass && !course.greenGrass && !course.greenSpeed &&
-             !course.aerationSchedule && !course.golfSeason && !course.paceOfPlayNotes && (
+            {!safeText(course.howToGetOn) && !safeText(course.resortAffiliateAccess) && !safeText(course.guestPolicy) &&
+             insiderTips.length === 0 && !safeText(course.courseStrategy) && !safeText(course.whatToExpect) &&
+             !safeText(course.bestTimeToPlay) && !course.weatherData && !safeText(course.bestConditionMonths) &&
+             !safeText(course.fairwayGrass) && !safeText(course.greenGrass) && !safeText(course.greenSpeed) &&
+             !safeText(course.aerationSchedule) && !safeText(course.golfSeason) && !safeText(course.paceOfPlayNotes) && (
               <section style={cardStyle}>
                 <EmptyState
-                  icon={<Lightbulb className="h-10 w-10" />}
-                  title="Insider tips coming soon"
-                  description="Course intelligence and tips will be added as they become available"
+                  icon={<Brain className="h-8 w-8" />}
+                  title="Course Intelligence coming soon"
+                  description="Our team is gathering insider tips, strategy notes, and local knowledge for this course"
                 />
               </section>
             )}
 
             {/* How to Get On */}
-            {(course.howToGetOn || course.resortAffiliateAccess || course.guestPolicy) && (
+            {(safeText(course.howToGetOn) || safeText(course.resortAffiliateAccess) || safeText(course.guestPolicy)) && (
               <section style={cardStyle}>
-                <SectionHeading icon={<Compass className="h-5 w-5" style={{ color: "var(--cg-accent)" }} />}>
+                <SectionHeading icon={<Compass className="h-5 w-5" style={{ color: "var(--cg-accent)" }} />} lastUpdated={course.updatedAt}>
                   How to Get On
                 </SectionHeading>
-                {course.howToGetOn && (
-                  <p className="text-sm leading-relaxed mb-4" style={secondaryText}>{course.howToGetOn}</p>
+                {safeText(course.howToGetOn) && (
+                  <p className="text-sm leading-relaxed mb-4" style={secondaryText}>{safeText(course.howToGetOn)}</p>
                 )}
-                {course.resortAffiliateAccess && (
+                {safeText(course.resortAffiliateAccess) && (
                   <div className="rounded-lg p-3 mb-3" style={{ backgroundColor: "var(--cg-bg-secondary)" }}>
                     <span className="text-xs font-semibold" style={mutedText}>Resort / Affiliate Access</span>
-                    <p className="text-sm mt-1" style={primaryText}>{course.resortAffiliateAccess}</p>
+                    <p className="text-sm mt-1" style={primaryText}>{safeText(course.resortAffiliateAccess)}</p>
                   </div>
                 )}
-                {course.guestPolicy && (
+                {safeText(course.guestPolicy) && (
                   <div className="rounded-lg p-3" style={{ backgroundColor: "var(--cg-bg-secondary)" }}>
                     <span className="text-xs font-semibold" style={mutedText}>Guest Policy</span>
-                    <p className="text-sm mt-1" style={primaryText}>{course.guestPolicy}</p>
+                    <p className="text-sm mt-1" style={primaryText}>{safeText(course.guestPolicy)}</p>
                   </div>
                 )}
               </section>
@@ -915,38 +985,38 @@ export function CourseDetailClient({ course }: { course: any }) {
             )}
 
             {/* Course Strategy */}
-            {course.courseStrategy && (
+            {safeText(course.courseStrategy) && (
               <section style={cardStyle}>
                 <SectionHeading icon={<Map className="h-5 w-5" style={{ color: "#60a5fa" }} />}>
                   Course Strategy
                 </SectionHeading>
-                <p className="text-sm leading-relaxed" style={secondaryText}>{course.courseStrategy}</p>
+                <p className="text-sm leading-relaxed" style={secondaryText}>{safeText(course.courseStrategy)}</p>
               </section>
             )}
 
             {/* What to Expect */}
-            {course.whatToExpect && (
+            {safeText(course.whatToExpect) && (
               <section style={cardStyle}>
                 <SectionHeading icon={<Flag className="h-5 w-5" style={{ color: "#c084fc" }} />}>
                   What to Expect
                 </SectionHeading>
-                <p className="text-sm leading-relaxed" style={secondaryText}>{course.whatToExpect}</p>
+                <p className="text-sm leading-relaxed" style={secondaryText}>{safeText(course.whatToExpect)}</p>
               </section>
             )}
 
             {/* Best Time to Play & Weather */}
-            {(course.bestTimeToPlay || course.weatherData || course.bestConditionMonths) && (
+            {(safeText(course.bestTimeToPlay) || course.weatherData || safeText(course.bestConditionMonths)) && (
               <section style={cardStyle}>
                 <SectionHeading icon={<Sun className="h-5 w-5" style={{ color: "#fbbf24" }} />}>
                   Best Time to Play
                 </SectionHeading>
-                {course.bestTimeToPlay && (
-                  <p className="text-sm leading-relaxed mb-4" style={secondaryText}>{course.bestTimeToPlay}</p>
+                {safeText(course.bestTimeToPlay) && (
+                  <p className="text-sm leading-relaxed mb-4" style={secondaryText}>{safeText(course.bestTimeToPlay)}</p>
                 )}
-                {course.bestConditionMonths && (
+                {safeText(course.bestConditionMonths) && (
                   <div className="rounded-lg p-3 mb-4" style={{ backgroundColor: "var(--cg-bg-secondary)" }}>
                     <span className="text-xs font-semibold" style={mutedText}>Best Condition Months</span>
-                    <p className="text-sm mt-1" style={primaryText}>{course.bestConditionMonths}</p>
+                    <p className="text-sm mt-1" style={primaryText}>{safeText(course.bestConditionMonths)}</p>
                   </div>
                 )}
                 {course.weatherData && typeof course.weatherData === "object" && (
@@ -959,28 +1029,28 @@ export function CourseDetailClient({ course }: { course: any }) {
             )}
 
             {/* Conditions */}
-            {(course.fairwayGrass || course.greenGrass || course.greenSpeed || course.aerationSchedule || course.golfSeason) && (
+            {(safeText(course.fairwayGrass) || safeText(course.greenGrass) || safeText(course.greenSpeed) || safeText(course.aerationSchedule) || safeText(course.golfSeason)) && (
               <section style={cardStyle}>
                 <SectionHeading icon={<Leaf className="h-5 w-5" style={{ color: "var(--cg-accent)" }} />}>
                   Course Conditions
                 </SectionHeading>
                 <dl className="grid grid-cols-2 gap-4 text-sm">
-                  <InfoRow label="Fairway Grass" value={course.fairwayGrass} />
-                  <InfoRow label="Green Grass" value={course.greenGrass} />
-                  <InfoRow label="Green Speed" value={course.greenSpeed} />
-                  <InfoRow label="Aeration Schedule" value={course.aerationSchedule} />
-                  <InfoRow label="Golf Season" value={course.golfSeason} />
+                  <InfoRow label="Fairway Grass" value={safeText(course.fairwayGrass)} />
+                  <InfoRow label="Green Grass" value={safeText(course.greenGrass)} />
+                  <InfoRow label="Green Speed" value={safeText(course.greenSpeed)} />
+                  <InfoRow label="Aeration Schedule" value={safeText(course.aerationSchedule)} />
+                  <InfoRow label="Golf Season" value={safeText(course.golfSeason)} />
                 </dl>
               </section>
             )}
 
             {/* Pace of Play */}
-            {course.paceOfPlayNotes && (
+            {safeText(course.paceOfPlayNotes) && (
               <section style={cardStyle}>
                 <SectionHeading icon={<Clock className="h-5 w-5" style={{ color: "#60a5fa" }} />}>
                   Pace of Play
                 </SectionHeading>
-                <p className="text-sm leading-relaxed" style={secondaryText}>{course.paceOfPlayNotes}</p>
+                <p className="text-sm leading-relaxed" style={secondaryText}>{safeText(course.paceOfPlayNotes)}</p>
               </section>
             )}
 
@@ -1000,9 +1070,9 @@ export function CourseDetailClient({ course }: { course: any }) {
               <div className="lg:col-span-2">
                 <section style={cardStyle}>
                   <EmptyState
-                    icon={<Plane className="h-10 w-10" />}
-                    title="Travel information coming soon"
-                    description="Airport proximity, lodging, and dining recommendations will be added soon"
+                    icon={<Briefcase className="h-8 w-8" />}
+                    title="Trip planning data being curated"
+                    description="We're gathering airport proximity, lodging, dining, and attraction recommendations for this course"
                   />
                 </section>
               </div>
@@ -1322,27 +1392,58 @@ export function CourseDetailClient({ course }: { course: any }) {
                       <div className="flex items-center gap-3">
                         {r.user?.image && <img src={r.user.image} alt="" className="h-8 w-8 rounded-full" />}
                         <div>
-                          <div className="font-medium text-sm" style={primaryText}>{r.user?.name || "Anonymous"}</div>
+                          <div className="font-medium text-sm" style={primaryText}>{safeText(r.user?.name) || "Anonymous"}</div>
                           <div className="text-xs" style={mutedText}>{new Date(r.createdAt).toLocaleDateString()}</div>
                         </div>
                         <span className="ml-auto text-lg font-bold" style={{ color: "var(--cg-accent)" }}>
                           {parseFloat(r.overallRating).toFixed(1)}
                         </span>
                       </div>
-                      {r.reviewTitle && (
-                        <div className="mt-2 font-medium text-sm" style={primaryText}>{r.reviewTitle}</div>
+                      {safeText(r.reviewTitle) && (
+                        <div className="mt-2 font-medium text-sm" style={primaryText}>{safeText(r.reviewTitle)}</div>
                       )}
-                      {r.reviewText && (
-                        <p className="mt-1 text-sm leading-relaxed" style={secondaryText}>{r.reviewText}</p>
+                      {safeText(r.reviewText) && (
+                        <p className="mt-1 text-sm leading-relaxed" style={secondaryText}>{safeText(r.reviewText)}</p>
                       )}
                     </div>
                   ))}
                 </div>
               ) : (
                 <EmptyState
-                  icon={<Star className="h-10 w-10" />}
-                  title="Be the first to review this course"
-                  description="Share your experience to help other golfers"
+                  icon={<MessageSquare className="h-8 w-8" />}
+                  title="Be the first to rate this course"
+                  description="Share your experience and help fellow golfers discover this course"
+                  cta={
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className="h-7 w-7 cursor-pointer transition-colors hover:scale-110"
+                          style={{ color: "var(--cg-border)", fill: "var(--cg-border)" }}
+                          onMouseEnter={(e) => {
+                            const parent = e.currentTarget.parentElement;
+                            if (!parent) return;
+                            const stars = parent.querySelectorAll("svg");
+                            stars.forEach((s, i) => {
+                              if (i <= star - 1) {
+                                s.style.color = "#f59e0b";
+                                s.style.fill = "#f59e0b";
+                              }
+                            });
+                          }}
+                          onMouseLeave={(e) => {
+                            const parent = e.currentTarget.parentElement;
+                            if (!parent) return;
+                            const stars = parent.querySelectorAll("svg");
+                            stars.forEach((s) => {
+                              s.style.color = "var(--cg-border)";
+                              s.style.fill = "var(--cg-border)";
+                            });
+                          }}
+                        />
+                      ))}
+                    </div>
+                  }
                 />
               )}
             </section>
