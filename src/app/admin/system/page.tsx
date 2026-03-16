@@ -362,7 +362,7 @@ function ConfigTab() {
             {rows.length === 0 && (
               <tr>
                 <td colSpan={4} className="px-5 py-8 text-center text-gray-500">
-                  No config entries. Run POST /api/admin/setup first.
+                  No config entries found.
                 </td>
               </tr>
             )}
@@ -502,7 +502,7 @@ function AuditTab() {
             {logs.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-5 py-8 text-center text-gray-500">
-                  No audit log entries. Run POST /api/admin/setup to create the table.
+                  No audit log entries found.
                 </td>
               </tr>
             )}

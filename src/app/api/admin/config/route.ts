@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(config);
   } catch {
-    return NextResponse.json({ error: "admin_config table may not exist. Hit POST /api/admin/setup first." }, { status: 500 });
+    return NextResponse.json({ error: "admin_config table may not exist." }, { status: 500 });
   }
 }
 

@@ -1,16 +1,32 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import {
   MapPin, Globe, Phone, Trophy, Plane, Star, Calendar,
   Lightbulb, Utensils, Bed, Compass, Flag, ChevronRight,
   Clock, Sun, CloudRain, Wind, Leaf, SlidersHorizontal,
   Building2, Map, Mail, ExternalLink, DollarSign,
+  Home, Camera, Image,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { CoursePlaceholder } from "./CoursePlaceholder";
 import { CircleRatingsSection } from "./CircleRatingsSection";
 import { PoweredByBadge } from "@/components/brand/PoweredByBadge";
+
+/* ─── Empty State ─── */
+
+function EmptyState({ icon, title, description }: { icon: React.ReactNode; title: string; description?: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-8 text-center">
+      <span style={{ color: "var(--cg-text-muted)" }}>{icon}</span>
+      <p className="mt-3 text-sm font-medium" style={{ color: "var(--cg-text-secondary)" }}>{title}</p>
+      {description && (
+        <p className="mt-1 text-xs" style={{ color: "var(--cg-text-muted)" }}>{description}</p>
+      )}
+    </div>
+  );
+}
 
 /* ─── Shared Styles ─── */
 
@@ -329,6 +345,28 @@ export function CourseDetailClient({ course }: { course: any }) {
 
   return (
     <div style={{ backgroundColor: "var(--cg-bg-primary)" }}>
+      {/* ══════ BREADCRUMBS ══════ */}
+      <nav className="mx-auto max-w-7xl px-4 py-3" aria-label="Breadcrumb">
+        <ol className="flex items-center gap-1.5 text-xs" style={{ color: "var(--cg-text-muted)" }}>
+          <li>
+            <Link href="/" className="flex items-center gap-1 hover:opacity-80 transition-opacity" style={{ color: "var(--cg-text-muted)" }}>
+              <Home className="h-3.5 w-3.5" />
+              Home
+            </Link>
+          </li>
+          <li><ChevronRight className="h-3 w-3" /></li>
+          <li>
+            <Link href="/discover" className="hover:opacity-80 transition-opacity" style={{ color: "var(--cg-text-muted)" }}>
+              Courses
+            </Link>
+          </li>
+          <li><ChevronRight className="h-3 w-3" /></li>
+          <li className="truncate max-w-[200px]" style={{ color: "var(--cg-text-secondary)" }}>
+            {course.courseName || "Course"}
+          </li>
+        </ol>
+      </nav>
+
       {/* ══════ HERO ══════ */}
       <div className="relative overflow-hidden" style={{ minHeight: primaryImage ? undefined : 200 }}>
         {primaryImage ? (
@@ -394,10 +432,12 @@ export function CourseDetailClient({ course }: { course: any }) {
               <p className="mt-1 text-base text-white/80 italic">{course.tagline}</p>
             )}
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-white/90">
-              <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4" />{location}{course.country && location ? `, ${course.country}` : course.country || ""}</span>
-              {course.par && <span>Par {course.par}</span>}
-              {maxTeeYardage && <span>{Number(maxTeeYardage).toLocaleString()} yards</span>}
-              {course.numHoles && <span>{course.numHoles} holes</span>}
+              {(location || course.country) && (
+                <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4" />{location}{course.country && location ? `, ${course.country}` : course.country || ""}</span>
+              )}
+              {course.par != null && <span>Par {course.par}</span>}
+              {maxTeeYardage != null && <span>{Number(maxTeeYardage).toLocaleString()} yards</span>}
+              {course.numHoles != null && <span>{course.numHoles} holes</span>}
             </div>
           </div>
         </div>
@@ -566,27 +606,35 @@ export function CourseDetailClient({ course }: { course: any }) {
               )}
 
               {/* Rankings */}
-              {course.rankings?.length > 0 && (
-                <section style={cardStyle}>
-                  <SectionHeading icon={<Trophy className="h-5 w-5" style={{ color: "#f59e0b" }} />}>
-                    Rankings
-                  </SectionHeading>
+              <section style={cardStyle}>
+                <SectionHeading icon={<Trophy className="h-5 w-5" style={{ color: "#f59e0b" }} />}>
+                  Rankings
+                </SectionHeading>
+                {course.rankings?.length > 0 ? (
                   <div className="space-y-2">
                     {course.rankings.map((r: any) => (
                       <div key={r.entryId} className="flex items-center justify-between rounded-lg px-4 py-3" style={{ backgroundColor: "var(--cg-bg-secondary)" }}>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-bold text-base" style={{ color: "var(--cg-accent)" }}>#{r.rankPosition}</span>
-                          <span className="text-sm" style={primaryText}>{r.list.listName}</span>
-                          <span className="rounded px-1.5 py-0.5 text-xs capitalize" style={tierBadgeStyle(r.list.prestigeTier)}>
-                            {r.list.prestigeTier}
-                          </span>
+                          <span className="text-sm" style={primaryText}>{r.list?.listName || "Unknown List"}</span>
+                          {r.list?.prestigeTier && (
+                            <span className="rounded px-1.5 py-0.5 text-xs capitalize" style={tierBadgeStyle(r.list.prestigeTier)}>
+                              {r.list.prestigeTier}
+                            </span>
+                          )}
                         </div>
-                        <span className="text-sm shrink-0" style={mutedText}>{r.list.source.sourceName}</span>
+                        <span className="text-sm shrink-0" style={mutedText}>{r.list?.source?.sourceName || ""}</span>
                       </div>
                     ))}
                   </div>
-                </section>
-              )}
+                ) : (
+                  <EmptyState
+                    icon={<Trophy className="h-10 w-10" />}
+                    title="Not yet ranked"
+                    description="This course has not appeared on any major ranking lists yet"
+                  />
+                )}
+              </section>
 
               {/* Championship History */}
               {(championshipHistory.length > 0 || famousMoments.length > 0) && (
@@ -628,9 +676,9 @@ export function CourseDetailClient({ course }: { course: any }) {
               )}
 
               {/* Photo Gallery */}
-              {course.media?.length > 1 && (
-                <section style={cardStyle}>
-                  <SectionHeading>Photos</SectionHeading>
+              <section style={cardStyle}>
+                <SectionHeading icon={<Camera className="h-5 w-5" style={{ color: "var(--cg-accent)" }} />}>Photos</SectionHeading>
+                {course.media?.length > 1 ? (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {course.media.slice(0, 9).map((m: any) => (
                       <div key={m.mediaId} className="aspect-[4/3] overflow-hidden rounded-lg" style={{ backgroundColor: "var(--cg-bg-tertiary)" }}>
@@ -644,8 +692,14 @@ export function CourseDetailClient({ course }: { course: any }) {
                       </div>
                     ))}
                   </div>
-                </section>
-              )}
+                ) : (
+                  <EmptyState
+                    icon={<Image className="h-10 w-10" />}
+                    title="Photos coming soon"
+                    description="Course photos will be added as they become available"
+                  />
+                )}
+              </section>
 
               {/* Course Intelligence */}
               {course.intelligenceNotes?.length > 0 && (
@@ -800,6 +854,21 @@ export function CourseDetailClient({ course }: { course: any }) {
         {activeTab === "Insider Tips" && (
           <div className="max-w-3xl space-y-8">
 
+            {/* Empty state for entire tab */}
+            {!course.howToGetOn && !course.resortAffiliateAccess && !course.guestPolicy &&
+             insiderTips.length === 0 && !course.courseStrategy && !course.whatToExpect &&
+             !course.bestTimeToPlay && !course.weatherData && !course.bestConditionMonths &&
+             !course.fairwayGrass && !course.greenGrass && !course.greenSpeed &&
+             !course.aerationSchedule && !course.golfSeason && !course.paceOfPlayNotes && (
+              <section style={cardStyle}>
+                <EmptyState
+                  icon={<Lightbulb className="h-10 w-10" />}
+                  title="Insider tips coming soon"
+                  description="Course intelligence and tips will be added as they become available"
+                />
+              </section>
+            )}
+
             {/* How to Get On */}
             {(course.howToGetOn || course.resortAffiliateAccess || course.guestPolicy) && (
               <section style={cardStyle}>
@@ -925,6 +994,20 @@ export function CourseDetailClient({ course }: { course: any }) {
         {/* ────── TRAVEL & STAY TAB ────── */}
         {activeTab === "Travel & Stay" && (
           <div className="grid gap-8 lg:grid-cols-2">
+            {/* Empty state for entire tab */}
+            {!course.airports?.length && nearbyCourses.length === 0 &&
+             nearbyLodging.length === 0 && nearbyDining.length === 0 && nearbyAttractions.length === 0 && (
+              <div className="lg:col-span-2">
+                <section style={cardStyle}>
+                  <EmptyState
+                    icon={<Plane className="h-10 w-10" />}
+                    title="Travel information coming soon"
+                    description="Airport proximity, lodging, and dining recommendations will be added soon"
+                  />
+                </section>
+              </div>
+            )}
+
             {/* Left column */}
             <div className="space-y-8">
 
@@ -1256,10 +1339,11 @@ export function CourseDetailClient({ course }: { course: any }) {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <Star className="h-8 w-8 mx-auto mb-3" style={{ color: "var(--cg-border)" }} />
-                  <p className="text-sm" style={mutedText}>Be the first to rate this course</p>
-                </div>
+                <EmptyState
+                  icon={<Star className="h-10 w-10" />}
+                  title="Be the first to review this course"
+                  description="Share your experience to help other golfers"
+                />
               )}
             </section>
           </div>

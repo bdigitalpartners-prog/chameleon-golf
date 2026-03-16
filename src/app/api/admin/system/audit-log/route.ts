@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
       currentPage: 1,
       total: 0,
       actionTypes: [],
-      error: "Audit log table may not exist. Run POST /api/admin/setup first.",
+      error: "Audit log table may not exist.",
     });
   }
 }
