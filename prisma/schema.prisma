@@ -158,6 +158,9 @@ model Course {
   tripCourses         TripCourse[]
   tripVotes           TripVote[]
 
+  // Sprint 8
+  courseRecommendations CourseRecommendation[]
+
   @@map("courses")
 }
 
@@ -374,6 +377,11 @@ model User {
   circleScoreWeights  CircleScoreWeight[]
   tripsCreated        TripPlan[]
   tripVotes           TripVote[]
+
+  // Sprint 8
+  courseRecommendations CourseRecommendation[]
+  onboardingProgress   OnboardingProgress?
+  contentReports       ContentReport[]
 
   @@map("users")
 }
@@ -757,6 +765,9 @@ model Circle {
   circleScoreWeights  CircleScoreWeight[]
   circleConsensus     CircleConsensus[]
   tripPlans           TripPlan[]
+
+  // Sprint 8
+  courseRecommendations CourseRecommendation[]
 
   @@index([type])
   @@index([privacy])
@@ -1546,4 +1557,57 @@ model TripVote {
   @@unique([tripId, userId, courseId])
   @@index([tripId])
   @@index([userId])
+}
+
+// ============================================================
+// Discovery & Launch — Sprint 8
+// ============================================================
+
+model CourseRecommendation {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId       Int
+  course        Course   @relation(fields: [courseId], references: [courseId])
+  score         Float
+  reason        String
+  sourceCircleId String?
+  sourceCircle  Circle?  @relation(fields: [sourceCircleId], references: [id])
+  dismissed     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  @@unique([userId, courseId])
+  @@index([userId, dismissed, score(sort: Desc)])
+}
+
+model OnboardingProgress {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profileComplete Boolean  @default(false)
+  tagsSelected    Boolean  @default(false)
+  friendsAdded    Boolean  @default(false)
+  circleJoined    Boolean  @default(false)
+  coursesRated    Boolean  @default(false)
+  completedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model ContentReport {
+  id          String   @id @default(cuid())
+  reporterId  String
+  reporter    User     @relation(fields: [reporterId], references: [id])
+  contentType String
+  contentId   String
+  reason      String
+  details     String?  @db.Text
+  status      String   @default("PENDING")
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([status])
+  @@index([contentType, contentId])
+  @@index([reporterId])
 }
