@@ -6,7 +6,7 @@ import { ArrowLeft, Upload, FileText, AlertTriangle, CheckCircle2, Loader2 } fro
 
 function getAdminKey() {
   if (typeof window === "undefined") return "";
-  return localStorage.getItem("golfEQ_admin_key") || "";
+  return sessionStorage.getItem("golfEQ_admin_key") || "";
 }
 
 interface ParsedRow {

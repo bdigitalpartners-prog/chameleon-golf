@@ -7,7 +7,7 @@ import Link from "next/link";
 
 function getAdminKey() {
   if (typeof window === "undefined") return "";
-  return localStorage.getItem("golfEQ_admin_key") || "";
+  return sessionStorage.getItem("golfEQ_admin_key") || "";
 }
 
 export default function NewCoursePage() {

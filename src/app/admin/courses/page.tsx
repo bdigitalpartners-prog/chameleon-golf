@@ -17,7 +17,7 @@ interface CourseRow {
 
 function getAdminKey() {
   if (typeof window === "undefined") return "";
-  return localStorage.getItem("golfEQ_admin_key") || "";
+  return sessionStorage.getItem("golfEQ_admin_key") || "";
 }
 
 export default function CoursesPage() {

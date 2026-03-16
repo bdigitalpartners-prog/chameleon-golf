@@ -18,7 +18,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetch("/api/admin/dashboard", {
-      headers: { "x-admin-key": localStorage.getItem("golfEQ_admin_key") || "" },
+      headers: { "x-admin-key": sessionStorage.getItem("golfEQ_admin_key") || "" },
     })
       .then((r) => r.json())
       .then(setData)

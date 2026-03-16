@@ -13,15 +13,35 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-} from "recharts";
+import dynamic from "next/dynamic";
+
+const RechartsChart = dynamic(
+  () =>
+    import("recharts").then((mod) => {
+      const { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } = mod;
+      function Chart({ data }: { data: Array<{ date: string; cost: number; queries: number }> }) {
+        return (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+              <XAxis dataKey="date" tick={{ fill: "#888", fontSize: 11 }} />
+              <YAxis tick={{ fill: "#888", fontSize: 11 }} tickFormatter={(v: any) => `$${v}`} />
+              <Tooltip
+                contentStyle={{ backgroundColor: "#1a1a1a", border: "1px solid #333", borderRadius: 8 }}
+                labelStyle={{ color: "#fff" }}
+                formatter={(value: any, name: any) =>
+                  name === "cost" ? [`$${Number(value).toFixed(4)}`, "Cost"] : [value, "Queries"]
+                }
+              />
+              <Bar dataKey="cost" fill="#22c55e" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        );
+      }
+      return Chart;
+    }),
+  { ssr: false, loading: () => <div className="h-64 flex items-center justify-center text-gray-500 text-sm">Loading chart...</div> }
+);
 
 interface UsageData {
   totalQueries: number;
@@ -49,7 +69,7 @@ const MODELS = [
   { value: "sonar-reasoning-pro", label: "Sonar Reasoning Pro", cost: "~$0.05/query" },
 ];
 
-const ADMIN_KEY = () => typeof window !== "undefined" ? localStorage.getItem("golfEQ_admin_key") || "" : "";
+const ADMIN_KEY = () => typeof window !== "undefined" ? sessionStorage.getItem("golfEQ_admin_key") || "" : "";
 
 function fetchAdmin(url: string, opts: RequestInit = {}) {
   return fetch(url, {
@@ -234,21 +254,7 @@ export default function ConciergeDashboard() {
             <div className="rounded-xl border border-gray-800 bg-[#111111] p-6">
               <h3 className="mb-4 text-sm font-semibold text-gray-400">Daily Cost (Last 30 days)</h3>
               <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                    <XAxis dataKey="date" tick={{ fill: "#888", fontSize: 11 }} />
-                    <YAxis tick={{ fill: "#888", fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: "#1a1a1a", border: "1px solid #333", borderRadius: 8 }}
-                      labelStyle={{ color: "#fff" }}
-                      formatter={(value: any, name: any) =>
-                        name === "cost" ? [`$${Number(value).toFixed(4)}`, "Cost"] : [value, "Queries"]
-                      }
-                    />
-                    <Bar dataKey="cost" fill="#22c55e" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <RechartsChart data={chartData} />
               </div>
             </div>
           )}

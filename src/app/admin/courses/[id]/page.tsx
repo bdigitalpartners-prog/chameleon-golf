@@ -7,7 +7,7 @@ import { ArrowLeft, Save, Loader2 } from "lucide-react";
 
 function getAdminKey() {
   if (typeof window === "undefined") return "";
-  return localStorage.getItem("golfEQ_admin_key") || "";
+  return sessionStorage.getItem("golfEQ_admin_key") || "";
 }
 
 const TABS = [

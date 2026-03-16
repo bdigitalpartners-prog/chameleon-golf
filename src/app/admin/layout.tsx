@@ -54,12 +54,24 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const keyParam = searchParams.get("key");
   const hasKeyAccess = keyParam === process.env.NEXT_PUBLIC_ADMIN_API_KEY || !!keyParam;
 
+  // Store the admin key in sessionStorage so all admin pages can use it for API calls
+  useEffect(() => {
+    if (keyParam) {
+      sessionStorage.setItem("golfEQ_admin_key", keyParam);
+    }
+  }, [keyParam]);
+
+  // Read stored key for navigation (in case key isn't in current URL)
+  const storedKey = typeof window !== "undefined" ? sessionStorage.getItem("golfEQ_admin_key") : null;
+  const adminKey = keyParam || storedKey;
+  const hasAccess = isAdmin || !!adminKey;
+
   useEffect(() => {
     if (status === "loading") return;
-    if (!isAdmin && !hasKeyAccess) {
+    if (!hasAccess) {
       router.push("/");
     }
-  }, [status, isAdmin, hasKeyAccess, router]);
+  }, [status, hasAccess, router]);
 
   if (status === "loading") {
     return (
@@ -69,7 +81,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!isAdmin && !hasKeyAccess) {
+  if (!hasAccess) {
     return (
       <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: "#0a0a0a" }}>
         <div className="text-center">
@@ -119,10 +131,11 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
+            const navHref = adminKey ? `${item.href}?key=${adminKey}` : item.href;
             return (
               <a
                 key={item.href}
-                href={item.href}
+                href={navHref}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                   active
                     ? "bg-green-500/10 text-green-500"
