@@ -79,6 +79,19 @@ interface RankedCourse {
   maxCourseRating?: number | null;
 }
 
+interface PrecomputedDimensionScores {
+  avgConditioning: number | null;
+  avgLayoutDesign: number | null;
+  avgPace: number | null;
+  avgAesthetics: number | null;
+  avgChallenge: number | null;
+  avgValue: number | null;
+  avgAmenities: number | null;
+  avgWalkability: number | null;
+  avgService: number | null;
+  avgOverall: number | null;
+}
+
 interface PrestigeCourse {
   courseId: number;
   courseName: string;
@@ -103,6 +116,7 @@ interface PrestigeCourse {
   bestSource: string | null;
   yearOpened?: number | null;
   renovationYear?: number | null;
+  dimensionScores?: PrecomputedDimensionScores | null;
 }
 
 function ScoreRing({ score, size = "md" }: { score: number; size?: "sm" | "md" }) {
@@ -148,26 +162,45 @@ export function CourseRanker() {
       .catch(() => setLoading(false));
   }, []);
 
+  // Map pre-computed DB dimension scores (0-10) to client DimensionScores (0-100)
+  const mapPrecomputedToDimensionScores = useCallback(
+    (ds: PrecomputedDimensionScores, prestigeScore: number): DimensionScores => ({
+      design: (ds.avgLayoutDesign ?? 5) * 10,
+      conditions: (ds.avgConditioning ?? 5) * 10,
+      challenge: (ds.avgChallenge ?? 5) * 10,
+      scenery: (ds.avgAesthetics ?? 5) * 10,
+      value: (ds.avgValue ?? 5) * 10,
+      amenities: (ds.avgAmenities ?? 5) * 10,
+      accessibility: (ds.avgWalkability ?? 5) * 10,
+      prestige: Math.min(prestigeScore, 100),
+      vibe: (ds.avgService ?? 5) * 10,
+    }),
+    []
+  );
+
   // Recompute scores client-side when weights or courses change
   const rerank = useCallback(
     (w: DimensionWeights) => {
       if (courses.length === 0) return;
       const scored: RankedCourse[] = courses.map((c) => {
-        const dimScores = computeDimensionScores(
-          {
-            accessType: c.accessType,
-            greenFeeLow: c.greenFeeLow,
-            greenFeeHigh: c.greenFeeHigh,
-            practiceFacilities: c.practiceFacilities,
-            walkingPolicy: c.walkingPolicy,
-            yearOpened: c.yearOpened ?? null,
-            renovationYear: c.renovationYear ?? null,
-            originalArchitect: c.originalArchitect,
-            maxSlopeRating: c.maxSlopeRating,
-            maxCourseRating: c.maxCourseRating,
-          },
-          c.prestigeScore
-        );
+        // Use pre-computed dimension scores when available, fall back to client-side computation
+        const dimScores = c.dimensionScores?.avgOverall != null
+          ? mapPrecomputedToDimensionScores(c.dimensionScores, c.prestigeScore)
+          : computeDimensionScores(
+              {
+                accessType: c.accessType,
+                greenFeeLow: c.greenFeeLow,
+                greenFeeHigh: c.greenFeeHigh,
+                practiceFacilities: c.practiceFacilities,
+                walkingPolicy: c.walkingPolicy,
+                yearOpened: c.yearOpened ?? null,
+                renovationYear: c.renovationYear ?? null,
+                originalArchitect: c.originalArchitect,
+                maxSlopeRating: c.maxSlopeRating,
+                maxCourseRating: c.maxCourseRating,
+              },
+              c.prestigeScore
+            );
         const { score, breakdown } = computeChameleonScore(dimScores, w, c.prestigeScore);
         return {
           courseId: c.courseId,
@@ -194,7 +227,7 @@ export function CourseRanker() {
       scored.sort((a, b) => b.chameleonScore - a.chameleonScore);
       setRanked(scored);
     },
-    [courses]
+    [courses, mapPrecomputedToDimensionScores]
   );
 
   // Trigger rerank when courses load or weights change

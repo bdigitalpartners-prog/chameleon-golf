@@ -5,12 +5,22 @@ export const dynamic = "force-dynamic";
 import { useState, useEffect, useCallback } from "react";
 import { Calculator, RefreshCw, CheckCircle, AlertCircle, Clock, BarChart3 } from "lucide-react";
 
+interface DimensionStat {
+  dimension: string;
+  label: string;
+  min: number;
+  max: number;
+  avg: number;
+  count: number;
+}
+
 interface ScoreStatus {
   totalCourses: number;
   coursesWithScores: number;
   coursesWithDimensions: number;
   coursesWithPrestige: number;
   lastComputedAt: string | null;
+  dimensionStats: DimensionStat[];
 }
 
 interface ComputeResult {
@@ -213,6 +223,55 @@ export default function AdminScoresPage() {
           <div className="flex items-center gap-2 text-red-400">
             <AlertCircle className="h-5 w-5" />
             <span className="text-sm font-semibold">{error}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Dimension Distribution Stats */}
+      {status?.dimensionStats && status.dimensionStats.length > 0 && (
+        <div className="mb-8 rounded-xl border border-gray-800 bg-[#111111] p-5">
+          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-400">
+            Dimension Score Distribution
+          </h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-gray-500">
+                  <th className="pb-2 pr-4 font-medium">Dimension</th>
+                  <th className="pb-2 pr-4 font-medium text-right">Min</th>
+                  <th className="pb-2 pr-4 font-medium text-right">Avg</th>
+                  <th className="pb-2 pr-4 font-medium text-right">Max</th>
+                  <th className="pb-2 font-medium">Distribution</th>
+                </tr>
+              </thead>
+              <tbody>
+                {status.dimensionStats.map((dim) => {
+                  const pct = dim.max > 0 ? (dim.avg / 10) * 100 : 0;
+                  return (
+                    <tr key={dim.dimension} className="border-t border-gray-800/50">
+                      <td className="py-2.5 pr-4 font-medium text-white">{dim.label}</td>
+                      <td className="py-2.5 pr-4 text-right tabular-nums text-gray-400">{dim.min.toFixed(1)}</td>
+                      <td className="py-2.5 pr-4 text-right tabular-nums text-white font-semibold">{dim.avg.toFixed(2)}</td>
+                      <td className="py-2.5 pr-4 text-right tabular-nums text-gray-400">{dim.max.toFixed(1)}</td>
+                      <td className="py-2.5">
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-800">
+                            <div
+                              className="h-full rounded-full transition-all"
+                              style={{
+                                width: `${pct}%`,
+                                backgroundColor: dim.label === "Overall" ? "#a855f7" : "#22c55e",
+                              }}
+                            />
+                          </div>
+                          <span className="text-xs tabular-nums text-gray-500 w-10 text-right">{dim.avg.toFixed(1)}/10</span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

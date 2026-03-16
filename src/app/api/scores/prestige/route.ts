@@ -43,6 +43,16 @@ export async function GET() {
           bestRankGolfweek: true,
           bestRankGolfMag: true,
           bestRankTop100gc: true,
+          avgConditioning: true,
+          avgLayoutDesign: true,
+          avgPace: true,
+          avgAesthetics: true,
+          avgChallenge: true,
+          avgValue: true,
+          avgAmenities: true,
+          avgWalkability: true,
+          avgService: true,
+          avgOverall: true,
         },
       },
       teeBoxes: {
@@ -94,6 +104,19 @@ export async function GET() {
       maxCourseRating: c.teeBoxes[0]?.courseRating ? Number(c.teeBoxes[0].courseRating) : null,
       bestRank: best?.rank ?? null,
       bestSource: best?.source ?? null,
+      // Pre-computed dimension scores (0-10 scale)
+      dimensionScores: cs?.avgOverall != null ? {
+        avgConditioning: cs.avgConditioning ? Number(cs.avgConditioning) : null,
+        avgLayoutDesign: cs.avgLayoutDesign ? Number(cs.avgLayoutDesign) : null,
+        avgPace: cs.avgPace ? Number(cs.avgPace) : null,
+        avgAesthetics: cs.avgAesthetics ? Number(cs.avgAesthetics) : null,
+        avgChallenge: cs.avgChallenge ? Number(cs.avgChallenge) : null,
+        avgValue: cs.avgValue ? Number(cs.avgValue) : null,
+        avgAmenities: cs.avgAmenities ? Number(cs.avgAmenities) : null,
+        avgWalkability: cs.avgWalkability ? Number(cs.avgWalkability) : null,
+        avgService: cs.avgService ? Number(cs.avgService) : null,
+        avgOverall: cs.avgOverall ? Number(cs.avgOverall) : null,
+      } : null,
     };
   });
 
