@@ -47,7 +47,58 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
     typeof v === "object" && v !== null && "toFixed" in v ? v.toString() : v
   ));
 
-  return <CourseDetailClient course={serialized} />;
+  // Build JSON-LD structured data
+  const location = [course.city, course.state, course.country].filter(Boolean).join(", ");
+  const primaryImage = course.media?.find((m: any) => m.isPrimary);
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "GolfCourse",
+    name: course.courseName,
+    description: course.description || `Golf course in ${location}`,
+    url: `https://golfequalizer.ai/course/${course.courseId}`,
+    ...(primaryImage?.url ? { image: primaryImage.url } : {}),
+    address: {
+      "@type": "PostalAddress",
+      ...(course.streetAddress ? { streetAddress: course.streetAddress } : {}),
+      ...(course.city ? { addressLocality: course.city } : {}),
+      ...(course.state ? { addressRegion: course.state } : {}),
+      ...(course.zipCode ? { postalCode: course.zipCode } : {}),
+      ...(course.country ? { addressCountry: course.country } : {}),
+    },
+    ...(course.latitude && course.longitude
+      ? {
+          geo: {
+            "@type": "GeoCoordinates",
+            latitude: parseFloat(course.latitude.toString()),
+            longitude: parseFloat(course.longitude.toString()),
+          },
+        }
+      : {}),
+    ...(course.phone ? { telephone: course.phone } : {}),
+    ...(course.websiteUrl ? { sameAs: course.websiteUrl } : {}),
+    ...(course.greenFeeLow || course.greenFeeHigh
+      ? {
+          priceRange:
+            course.greenFeeLow && course.greenFeeHigh
+              ? `$${parseFloat(course.greenFeeLow.toString())} - $${parseFloat(course.greenFeeHigh.toString())}`
+              : course.greenFeeHigh
+                ? `Up to $${parseFloat(course.greenFeeHigh.toString())}`
+                : `From $${parseFloat(course.greenFeeLow!.toString())}`,
+        }
+      : {}),
+    ...(course.yearOpened ? { foundingDate: course.yearOpened.toString() } : {}),
+    ...(course.numHoles ? { amenityFeature: { "@type": "LocationFeatureSpecification", name: "Holes", value: course.numHoles } } : {}),
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <CourseDetailClient course={serialized} />
+    </>
+  );
 }
 
 export async function generateMetadata({ params }: { params: { id: string } }) {

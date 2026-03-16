@@ -1,4 +1,4 @@
-// CourseFACTOR Theme System
+// golfEQUALIZER Theme System
 // 3 presets — Midnight, Fairway, Golden Hour
 
 export type ThemePreset = "midnight" | "fairway" | "golden-hour";

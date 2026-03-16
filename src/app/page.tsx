@@ -170,7 +170,7 @@ export default function LandingPage() {
               className="mt-6 text-lg leading-relaxed sm:text-xl max-w-2xl"
               style={{ color: "var(--cg-text-secondary)" }}
             >
-              CourseFACTOR aggregates Golf Digest, Golfweek, GOLF Magazine, and
+              golfEQUALIZER aggregates Golf Digest, Golfweek, GOLF Magazine, and
               Top100GolfCourses — then lets you re-weight them based on what matters
               to you. Explore 46 ranking lists from 4 trusted sources.
             </p>
@@ -446,7 +446,7 @@ export default function LandingPage() {
               style={{ color: "var(--cg-text-secondary)" }}
             >
               Traditional golf rankings are static — one committee's opinion frozen
-              in time. CourseFACTOR is dynamic. It synthesizes multiple sources
+              in time. golfEQUALIZER is dynamic. It synthesizes multiple sources
               and your preferences into a score that adapts.
             </p>
           </div>
