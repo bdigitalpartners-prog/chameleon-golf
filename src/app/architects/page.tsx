@@ -31,6 +31,9 @@ export default async function ArchitectsPage() {
   const architectsWithCounts = architects.map((a) => ({
     ...a,
     courseCount: courseCountMap.get(a.name) || 0,
+    notableFeatures: Array.isArray(a.notableFeatures)
+      ? (a.notableFeatures as string[])
+      : [],
   }));
 
   // Group by era
