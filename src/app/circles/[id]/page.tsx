@@ -23,6 +23,9 @@ import {
 import { PostCard } from "@/components/social/PostCard";
 import { PostComposer } from "@/components/social/PostComposer";
 import { CircleCoursesTab } from "@/components/social/CircleCoursesTab";
+import { CircleConditionsTab } from "@/components/social/CircleConditionsTab";
+import { CircleEventsTab } from "@/components/social/CircleEventsTab";
+import { CircleDiscussionsTab } from "@/components/social/CircleDiscussionsTab";
 
 const TYPE_META: Record<string, { label: string; icon: any }> = {
   CREW: { label: "Crew", icon: Users },
@@ -38,7 +41,7 @@ const PRIVACY_META: Record<string, { label: string; icon: any }> = {
   SECRET: { label: "Secret", icon: EyeOff },
 };
 
-type Tab = "feed" | "courses" | "members" | "about";
+type Tab = "feed" | "courses" | "members" | "about" | "conditions" | "events" | "discussions";
 
 export default function CircleDetailPage() {
   const { data: session, status } = useSession();
@@ -134,6 +137,13 @@ export default function CircleDetailPage() {
   const tabs: { key: Tab; label: string }[] = [
     { key: "feed", label: "Feed" },
     { key: "courses", label: "Courses" },
+    ...(circle.type === "CLUB"
+      ? [
+          { key: "conditions" as Tab, label: "Conditions" },
+          { key: "events" as Tab, label: "Events" },
+          { key: "discussions" as Tab, label: "Discussions" },
+        ]
+      : []),
     { key: "members", label: "Members" },
     { key: "about", label: "About" },
   ];
@@ -306,6 +316,12 @@ export default function CircleDetailPage() {
           )}
 
           {tab === "courses" && <CircleCoursesTab circleId={circleId} />}
+
+          {tab === "conditions" && <CircleConditionsTab circleId={circleId} />}
+
+          {tab === "events" && <CircleEventsTab circleId={circleId} isAdmin={!!isAdmin} />}
+
+          {tab === "discussions" && <CircleDiscussionsTab circleId={circleId} isAdmin={!!isAdmin} />}
 
           {tab === "members" && <MembersPreview circleId={circleId} />}
 

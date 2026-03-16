@@ -143,6 +143,10 @@ model Course {
   circleWishlists     Wishlist[]          @relation("CircleWishlists")
   courseCheckIns       CourseCheckIn[]
 
+  // Sprint 5
+  conditionReports    ConditionReport[]
+  circleEvents        CircleEvent[]
+
   @@map("courses")
 }
 
@@ -338,6 +342,14 @@ model User {
   circleCourseRatings CircleCourseRating[]
   circleWishlists     Wishlist[]
   courseCheckIns       CourseCheckIn[]
+
+  // Sprint 5
+  clubVerifications   ClubVerification[]
+  conditionReports    ConditionReport[]
+  circleEventsCreated CircleEvent[]
+  eventRSVPs          EventRSVP[]
+  threadsCreated      DiscussionThread[] @relation("ThreadsCreated")
+  threadReplies       ThreadReply[]      @relation("ThreadReplies")
 
   @@map("users")
 }
@@ -706,6 +718,12 @@ model Circle {
   circleWishlists     Wishlist[]
   circleCheckIns      CourseCheckIn[]
 
+  // Sprint 5
+  clubVerifications   ClubVerification[]
+  conditionReports    ConditionReport[]
+  circleEvents        CircleEvent[]
+  discussionThreads   DiscussionThread[]
+
   @@index([type])
   @@index([privacy])
   @@index([slug])
@@ -1045,4 +1063,169 @@ model CourseCheckIn {
   @@index([userId, createdAt(sort: Desc)])
   @@index([courseId])
   @@index([circleId])
+}
+
+// ============================================================
+// Club Circles & Verification — Sprint 5
+// ============================================================
+
+enum VerificationMethod {
+  DOCUMENT
+  VOUCHING
+  DOMAIN
+  ADMIN_MANUAL
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ClubVerification {
+  id              String             @id @default(cuid())
+  circleId        String
+  circle          Circle             @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  method          VerificationMethod
+  status          VerificationStatus @default(PENDING)
+  evidenceUrl     String?
+  vouchedBy       String[]
+  domainEmail     String?
+  reviewedBy      String?
+  reviewNotes     String?
+  verifiedAt      DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@unique([circleId, userId])
+  @@index([circleId, status])
+  @@index([userId])
+}
+
+model ConditionReport {
+  id               String   @id @default(cuid())
+  circleId         String
+  circle           Circle   @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  courseId          Int
+  course           Course   @relation(fields: [courseId], references: [courseId])
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  greensSpeed      Int?
+  fairwayFirmness  Int?
+  roughHeight      Int?
+  bunkerCondition  Int?
+  overallCondition Int?
+  weatherImpact    String?
+  notes            String?  @db.Text
+  photos           String[]
+  reportDate       DateTime @default(now())
+  createdAt        DateTime @default(now())
+
+  @@index([circleId, reportDate(sort: Desc)])
+  @@index([courseId])
+  @@index([userId])
+}
+
+enum EventType {
+  TEE_TIME
+  TOURNAMENT
+  SOCIAL
+  MEMBER_GUEST
+  COURSE_OUTING
+}
+
+model CircleEvent {
+  id              String    @id @default(cuid())
+  circleId        String
+  circle          Circle    @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  createdById     String
+  createdBy       User      @relation(fields: [createdById], references: [id])
+  title           String
+  description     String?   @db.Text
+  courseId         Int?
+  course          Course?   @relation(fields: [courseId], references: [courseId])
+  eventType       EventType @default(TEE_TIME)
+  startDate       DateTime
+  endDate         DateTime?
+  rsvpDeadline    DateTime?
+  maxAttendees    Int?
+  location        String?
+  coverUrl        String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  rsvps           EventRSVP[]
+
+  @@index([circleId, startDate])
+  @@index([courseId])
+}
+
+enum RSVPStatus {
+  GOING
+  MAYBE
+  DECLINED
+}
+
+model EventRSVP {
+  id          String      @id @default(cuid())
+  eventId     String
+  event       CircleEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status      RSVPStatus  @default(GOING)
+  guestCount  Int         @default(0)
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+}
+
+enum ThreadCategory {
+  CONDITIONS
+  EVENTS
+  DINING
+  PRO_SHOP
+  GENERAL
+  TIPS
+}
+
+model DiscussionThread {
+  id          String         @id @default(cuid())
+  circleId    String
+  circle      Circle         @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User           @relation("ThreadsCreated", fields: [authorId], references: [id])
+  title       String
+  category    ThreadCategory @default(GENERAL)
+  isPinned    Boolean        @default(false)
+  isLocked    Boolean        @default(false)
+  replyCount  Int            @default(0)
+  lastReplyAt DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  replies     ThreadReply[]
+
+  @@index([circleId, isPinned, lastReplyAt(sort: Desc)])
+  @@index([circleId, category])
+}
+
+model ThreadReply {
+  id          String           @id @default(cuid())
+  threadId    String
+  thread      DiscussionThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User             @relation("ThreadReplies", fields: [authorId], references: [id])
+  content     String           @db.Text
+  mediaUrls   String[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([threadId, createdAt])
+  @@index([authorId])
 }
