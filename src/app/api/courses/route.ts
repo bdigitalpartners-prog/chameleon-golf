@@ -125,7 +125,7 @@ export async function GET(req: NextRequest) {
           CASE
             WHEN cs.id IS NOT NULL THEN
               (
-                ${w_expert}::float * COALESCE(cs.prestige_score, 0) +
+                ${w_expert}::float * COALESCE(cs.prestige_score / 10.0, 0) +
                 ${w_conditioning}::float * COALESCE(cs.avg_conditioning, 0) +
                 ${w_layout}::float * COALESCE(cs.avg_layout_design, 0) +
                 ${w_aesthetics}::float * COALESCE(cs.avg_aesthetics, 0) +

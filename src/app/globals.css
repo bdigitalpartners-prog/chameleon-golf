@@ -198,3 +198,13 @@ input[type="range"]::-moz-range-thumb {
   border: 2px solid var(--cg-bg-primary);
   box-shadow: 0 0 0 1px var(--thumb-color, var(--cg-accent));
 }
+
+/* Mobile drawer slide-up animation */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
