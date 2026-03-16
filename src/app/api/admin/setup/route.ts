@@ -18,6 +18,19 @@ export async function POST(request: NextRequest) {
       )
     `);
 
+    // Create audit log table
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS admin_audit_log (
+        id SERIAL PRIMARY KEY,
+        admin_user VARCHAR(100),
+        action VARCHAR(100) NOT NULL,
+        entity_type VARCHAR(50),
+        entity_id VARCHAR(100),
+        details TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
     // Seed default values
     const defaults: Record<string, string> = {
       concierge_active_model: "sonar-pro",
@@ -41,7 +54,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ success: true, message: "admin_config table created and seeded" });
+    return NextResponse.json({ success: true, message: "admin_config and admin_audit_log tables created and seeded" });
   } catch (err) {
     console.error("Setup error:", err);
     return NextResponse.json({ error: "Setup failed" }, { status: 500 });

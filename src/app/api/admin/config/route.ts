@@ -16,10 +16,26 @@ export async function GET(request: NextRequest) {
   if (authError) return authError;
 
   try {
+    const { searchParams } = new URL(request.url);
+    const format = searchParams.get("format");
+
     const rows = await prisma.$queryRaw<AdminConfigRow[]>`
       SELECT key, value, updated_at, updated_by FROM admin_config ORDER BY key
     `;
 
+    // If format=rows, return full row data for the config editor
+    if (format === "rows") {
+      return NextResponse.json({
+        rows: rows.map((r) => ({
+          key: r.key,
+          value: r.value,
+          updatedAt: r.updated_at,
+          updatedBy: r.updated_by,
+        })),
+      });
+    }
+
+    // Default: return key-value map (backward compatible)
     const config: Record<string, string> = {};
     for (const row of rows) {
       config[row.key] = row.value;
@@ -56,5 +72,29 @@ export async function PUT(request: NextRequest) {
   } catch (err) {
     console.error("Config update error:", err);
     return NextResponse.json({ error: "Failed to update config" }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  const authError = await checkAdminAuth(request);
+  if (authError) return authError;
+
+  try {
+    const body = await request.json();
+    const { key } = body as { key: string };
+
+    if (!key) {
+      return NextResponse.json({ error: "key is required" }, { status: 400 });
+    }
+
+    await prisma.$executeRawUnsafe(
+      `DELETE FROM admin_config WHERE key = $1`,
+      key
+    );
+
+    return NextResponse.json({ success: true, key });
+  } catch (err) {
+    console.error("Config delete error:", err);
+    return NextResponse.json({ error: "Failed to delete config" }, { status: 500 });
   }
 }
