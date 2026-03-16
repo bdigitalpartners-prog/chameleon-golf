@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import { Brain } from "lucide-react";
 import { CategoryPageLayout } from "../CategoryPageLayout";
 
 export const dynamic = 'force-dynamic';
@@ -33,7 +32,7 @@ export default async function MentalGamePage() {
     <CategoryPageLayout
       title="The Mental Game"
       description="Psychology and course management — visualization, smart targeting, pressure handling, and structured practice planning."
-      icon={Brain}
+      iconName="Brain"
       articles={articles}
       subcategories={subcategories}
     />

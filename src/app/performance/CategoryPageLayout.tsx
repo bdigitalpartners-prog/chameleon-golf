@@ -1,8 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, type LucideIcon } from "lucide-react";
+import {
+  ChevronRight,
+  Crosshair,
+  Dumbbell,
+  Brain,
+  Wrench,
+  BarChart3,
+  type LucideIcon,
+} from "lucide-react";
 import { ArticleGrid } from "@/components/performance/ArticleGrid";
+
+const iconMap: Record<string, LucideIcon> = {
+  Crosshair,
+  Dumbbell,
+  Brain,
+  Wrench,
+  BarChart3,
+};
 
 interface Article {
   slug: string;
@@ -19,7 +35,7 @@ interface Article {
 interface CategoryPageLayoutProps {
   title: string;
   description: string;
-  icon: LucideIcon;
+  iconName: string;
   articles: Article[];
   subcategories: { value: string; label: string }[];
 }
@@ -27,10 +43,11 @@ interface CategoryPageLayoutProps {
 export function CategoryPageLayout({
   title,
   description,
-  icon: Icon,
+  iconName,
   articles,
   subcategories,
 }: CategoryPageLayoutProps) {
+  const Icon = iconMap[iconName] || Crosshair;
   return (
     <div style={{ backgroundColor: "var(--cg-bg-primary)" }}>
       {/* Breadcrumb */}

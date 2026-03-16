@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import { Crosshair } from "lucide-react";
 import { CategoryPageLayout } from "../CategoryPageLayout";
 
 export const dynamic = 'force-dynamic';
@@ -33,7 +32,7 @@ export default async function SwingLabPage() {
     <CategoryPageLayout
       title="The Swing Lab"
       description="Training tips, swing analysis, and drills organized by fundamentals, common fixes, club type, and difficulty level."
-      icon={Crosshair}
+      iconName="Crosshair"
       articles={articles}
       subcategories={subcategories}
     />

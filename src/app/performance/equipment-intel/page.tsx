@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import { Wrench } from "lucide-react";
 import { CategoryPageLayout } from "../CategoryPageLayout";
 
 export const dynamic = 'force-dynamic';
@@ -32,7 +31,7 @@ export default async function EquipmentIntelPage() {
     <CategoryPageLayout
       title="Equipment Intelligence"
       description="Data-driven equipment insights — fitting guides, technology demystified, and the trends shaping golf gear innovation."
-      icon={Wrench}
+      iconName="Wrench"
       articles={articles}
       subcategories={subcategories}
     />

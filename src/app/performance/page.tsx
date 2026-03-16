@@ -2,13 +2,6 @@ import { Metadata } from "next";
 import { PerformanceHero } from "@/components/performance/PerformanceHero";
 import { PerformanceCategoryCard } from "@/components/performance/PerformanceCategoryCard";
 import { ArticleCard } from "@/components/performance/ArticleCard";
-import {
-  Crosshair,
-  Dumbbell,
-  Brain,
-  Wrench,
-  BarChart3,
-} from "lucide-react";
 
 export const dynamic = 'force-dynamic';
 
@@ -24,35 +17,35 @@ const categories = [
     href: "/performance/swing-lab",
     title: "The Swing Lab",
     description: "Swing fundamentals, common fixes, club-specific tips, and a drills library to build a repeatable, powerful golf swing.",
-    icon: Crosshair,
+    iconName: "Crosshair",
   },
   {
     key: "fitness",
     href: "/performance/fitness",
     title: "Golf Fitness",
     description: "Mobility routines, strength training, injury prevention, and on-course nutrition to optimize your physical game.",
-    icon: Dumbbell,
+    iconName: "Dumbbell",
   },
   {
     key: "mental-game",
     href: "/performance/mental-game",
     title: "The Mental Game",
     description: "Pre-round routines, course management, pressure performance, and deliberate practice strategies.",
-    icon: Brain,
+    iconName: "Brain",
   },
   {
     key: "equipment-intel",
     href: "/performance/equipment-intel",
     title: "Equipment Intelligence",
     description: "Fitting guides, technology explained, and gear trends — data-driven insights for smarter equipment decisions.",
-    icon: Wrench,
+    iconName: "Wrench",
   },
   {
     key: "stats-center",
     href: "/performance/stats-center",
     title: "The Stats Center",
     description: "Key stats to track, strokes gained explained, handicap intelligence, and practice metrics that drive improvement.",
-    icon: BarChart3,
+    iconName: "BarChart3",
   },
 ];
 
@@ -84,7 +77,16 @@ async function getPerformanceData() {
 }
 
 export default async function PerformancePage() {
-  const { countMap, featuredArticles } = await getPerformanceData();
+  let countMap: Record<string, number> = {};
+  let featuredArticles: any[] = [];
+
+  try {
+    const data = await getPerformanceData();
+    countMap = data.countMap;
+    featuredArticles = data.featuredArticles;
+  } catch (e) {
+    console.error("[PerformancePage] getPerformanceData threw:", e);
+  }
 
   return (
     <div style={{ backgroundColor: "var(--cg-bg-primary)" }}>
@@ -118,7 +120,7 @@ export default async function PerformancePage() {
                 href={cat.href}
                 title={cat.title}
                 description={cat.description}
-                icon={cat.icon}
+                iconName={cat.iconName}
                 articleCount={countMap[cat.key] || 0}
               />
             ))}

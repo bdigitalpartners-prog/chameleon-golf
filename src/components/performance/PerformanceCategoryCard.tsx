@@ -1,13 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronRight, type LucideIcon } from "lucide-react";
+import {
+  ChevronRight,
+  Crosshair,
+  Dumbbell,
+  Brain,
+  Wrench,
+  BarChart3,
+  type LucideIcon,
+} from "lucide-react";
+
+const iconMap: Record<string, LucideIcon> = {
+  Crosshair,
+  Dumbbell,
+  Brain,
+  Wrench,
+  BarChart3,
+};
 
 interface PerformanceCategoryCardProps {
   href: string;
   title: string;
   description: string;
-  icon: LucideIcon;
+  iconName: string;
   articleCount: number;
 }
 
@@ -15,9 +31,10 @@ export function PerformanceCategoryCard({
   href,
   title,
   description,
-  icon: Icon,
+  iconName,
   articleCount,
 }: PerformanceCategoryCardProps) {
+  const Icon = iconMap[iconName] || Crosshair;
   return (
     <Link href={href}>
       <div

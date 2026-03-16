@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import { Dumbbell } from "lucide-react";
 import { CategoryPageLayout } from "../CategoryPageLayout";
 
 export const dynamic = 'force-dynamic';
@@ -33,7 +32,7 @@ export default async function FitnessPage() {
     <CategoryPageLayout
       title="Golf Fitness"
       description="Physical conditioning for golf performance — flexibility, strength, injury prevention, and nutrition strategies."
-      icon={Dumbbell}
+      iconName="Dumbbell"
       articles={articles}
       subcategories={subcategories}
     />
