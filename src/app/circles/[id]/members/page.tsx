@@ -14,6 +14,7 @@ import {
   Shield,
   Crown,
   X,
+  CheckCircle2,
 } from "lucide-react";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -238,6 +239,14 @@ export default function MembersPage() {
                   <p className="text-sm font-semibold truncate" style={{ color: "var(--cg-text-primary)" }}>
                     {m.user?.name ?? "Unknown"}
                   </p>
+                  {m.isVerified && (
+                    <span title="Verified Member">
+                      <CheckCircle2
+                        className="h-4 w-4 flex-shrink-0"
+                        style={{ color: "#22c55e" }}
+                      />
+                    </span>
+                  )}
                   <span
                     className="text-xs font-medium rounded-full px-2 py-0.5"
                     style={{ backgroundColor: "var(--cg-bg-tertiary)", color: ROLE_COLORS[m.role] }}

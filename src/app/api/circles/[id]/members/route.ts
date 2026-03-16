@@ -52,11 +52,34 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       prisma.circleMembership.count({ where }),
     ]);
 
+    // For CLUB circles, include verification status for each member
+    let membersWithVerification = members as any[];
+    if (circle.type === "CLUB") {
+      const userIds = members.map((m) => m.userId);
+      const verifications = await prisma.clubVerification.findMany({
+        where: { circleId, userId: { in: userIds }, status: "APPROVED" },
+        select: { userId: true },
+      });
+      const verifiedSet = new Set(verifications.map((v) => v.userId));
+      membersWithVerification = members.map((m) => ({
+        ...m,
+        isVerified: verifiedSet.has(m.userId),
+      }));
+    }
+
+    // Get current user's role
+    const userId = (session.user as any).id;
+    const currentMembership = await prisma.circleMembership.findUnique({
+      where: { circleId_userId: { circleId, userId } },
+      select: { role: true },
+    });
+
     return NextResponse.json({
-      members,
+      members: membersWithVerification,
       total,
       page,
       totalPages: Math.ceil(total / limit),
+      userRole: currentMembership?.role ?? null,
     });
   } catch (error: any) {
     console.error("GET /api/circles/[id]/members error:", error);

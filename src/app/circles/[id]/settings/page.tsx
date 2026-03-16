@@ -12,6 +12,10 @@ import {
   EyeOff,
   Copy,
   Check,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Shield,
 } from "lucide-react";
 
 const PRIVACY_OPTIONS = [
@@ -42,6 +46,10 @@ export default function SettingsPage() {
   const [inviteCode, setInviteCode] = useState("");
   const [generatingCode, setGeneratingCode] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const [verQueue, setVerQueue] = useState<any[]>([]);
+  const [verQueueLoading, setVerQueueLoading] = useState(false);
+  const [verActionLoading, setVerActionLoading] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     name: "",
@@ -74,6 +82,38 @@ export default function SettingsPage() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [circleId]);
+
+  // Fetch verification queue for CLUB circles
+  useEffect(() => {
+    if (!circle || circle.type !== "CLUB") return;
+    setVerQueueLoading(true);
+    fetch(`/api/circles/${circleId}/verification/queue`)
+      .then((r) => r.json())
+      .then((data) => setVerQueue(data.verifications ?? []))
+      .catch(console.error)
+      .finally(() => setVerQueueLoading(false));
+  }, [circle, circleId]);
+
+  const handleVerAction = async (verificationId: string, action: "approve" | "reject", notes?: string) => {
+    setVerActionLoading(verificationId);
+    try {
+      const res = await fetch(`/api/circles/${circleId}/verification/${verificationId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, notes }),
+      });
+      if (res.ok) {
+        // Refresh queue
+        const qRes = await fetch(`/api/circles/${circleId}/verification/queue`);
+        const qData = await qRes.json();
+        setVerQueue(qData.verifications ?? []);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setVerActionLoading(null);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -387,6 +427,88 @@ export default function SettingsPage() {
             </button>
           )}
         </section>
+
+        {/* Verification queue (CLUB only) */}
+        {circle.type === "CLUB" && (
+          <section
+            className="rounded-xl p-6 space-y-4"
+            style={{ backgroundColor: "var(--cg-bg-card)", border: "1px solid var(--cg-border)" }}
+          >
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5" style={{ color: "var(--cg-accent)" }} />
+              <h2 className="text-lg font-semibold" style={{ color: "var(--cg-text-primary)" }}>
+                Verification Queue
+              </h2>
+            </div>
+            {verQueueLoading ? (
+              <div className="flex justify-center py-4">
+                <Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--cg-accent)" }} />
+              </div>
+            ) : verQueue.filter((v) => v.status === "PENDING").length === 0 ? (
+              <p className="text-sm" style={{ color: "var(--cg-text-muted)" }}>
+                No pending verifications.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {verQueue
+                  .filter((v) => v.status === "PENDING")
+                  .map((v) => (
+                    <div
+                      key={v.id}
+                      className="flex items-center gap-3 rounded-lg p-3"
+                      style={{ backgroundColor: "var(--cg-bg-tertiary)", border: "1px solid var(--cg-border)" }}
+                    >
+                      <div
+                        className="h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden"
+                        style={{ backgroundColor: "var(--cg-bg-card)" }}
+                      >
+                        {v.user?.image ? (
+                          <img src={v.user.image} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <span className="text-xs font-medium" style={{ color: "var(--cg-text-muted)" }}>
+                            {v.user?.name?.[0]}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate" style={{ color: "var(--cg-text-primary)" }}>
+                          {v.user?.name ?? "Unknown"}
+                        </p>
+                        <p className="text-xs" style={{ color: "var(--cg-text-muted)" }}>
+                          {v.method === "DOCUMENT" && "Document upload"}
+                          {v.method === "VOUCHING" && `Vouching (${v.vouchedBy?.length ?? 0}/2)`}
+                          {v.method === "DOMAIN" && "Email domain"}
+                          {v.method === "ADMIN_MANUAL" && "Admin review"}
+                          {" · "}
+                          {new Date(v.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex gap-2 flex-shrink-0">
+                        <button
+                          onClick={() => handleVerAction(v.id, "approve")}
+                          disabled={verActionLoading === v.id}
+                          className="rounded-lg p-1.5"
+                          style={{ backgroundColor: "rgba(34,197,94,0.1)", color: "#22c55e" }}
+                          title="Approve"
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleVerAction(v.id, "reject")}
+                          disabled={verActionLoading === v.id}
+                          className="rounded-lg p-1.5"
+                          style={{ backgroundColor: "rgba(239,68,68,0.1)", color: "var(--cg-status-error, #ef4444)" }}
+                          title="Reject"
+                        >
+                          <XCircle className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </section>
+        )}
 
         {/* Save */}
         <button
