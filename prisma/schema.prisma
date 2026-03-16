@@ -153,6 +153,11 @@ model Course {
   // Sprint 6
   games               Game[]
 
+  // Sprint 7
+  circleConsensus     CircleConsensus[]
+  tripCourses         TripCourse[]
+  tripVotes           TripVote[]
+
   @@map("courses")
 }
 
@@ -364,6 +369,11 @@ model User {
   h2hAsUser1          HeadToHead[]       @relation("H2HUser1")
   h2hAsUser2          HeadToHead[]       @relation("H2HUser2")
   leagueStandings     LeagueStanding[]
+
+  // Sprint 7
+  circleScoreWeights  CircleScoreWeight[]
+  tripsCreated        TripPlan[]
+  tripVotes           TripVote[]
 
   @@map("users")
 }
@@ -742,6 +752,11 @@ model Circle {
   games               Game[]
   headToHeads         HeadToHead[]
   leagueSeasons       LeagueSeason[]
+
+  // Sprint 7
+  circleScoreWeights  CircleScoreWeight[]
+  circleConsensus     CircleConsensus[]
+  tripPlans           TripPlan[]
 
   @@index([type])
   @@index([privacy])
@@ -1442,5 +1457,93 @@ model LeagueStanding {
 
   @@unique([seasonId, userId])
   @@index([seasonId, rank])
+  @@index([userId])
+}
+
+// ─── Sprint 7: Chameleon Score Integration ─────────────────────────
+
+model CircleScoreWeight {
+  id          String  @id @default(cuid())
+  userId      String
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  circleId    String
+  circle      Circle  @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  weight      Float   @default(0.5)
+  enabled     Boolean @default(true)
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, circleId])
+  @@index([userId])
+}
+
+model CircleConsensus {
+  id              String   @id @default(cuid())
+  circleId        String
+  circle          Circle   @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  courseId         Int
+  course          Course   @relation(fields: [courseId], references: [courseId])
+  consensusScore  Float
+  agreementLevel  Float
+  comparedToNational Float?
+  outlierUserIds  String[]
+  lastUpdated     DateTime @default(now())
+
+  @@unique([circleId, courseId])
+  @@index([circleId])
+  @@index([courseId])
+}
+
+model TripPlan {
+  id          String   @id @default(cuid())
+  creatorId   String
+  creator     User     @relation(fields: [creatorId], references: [id])
+  circleId    String
+  circle      Circle   @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  title       String
+  destination String?
+  startDate   DateTime?
+  endDate     DateTime?
+  status      String   @default("PLANNING")
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  courses     TripCourse[]
+  votes       TripVote[]
+
+  @@index([circleId])
+  @@index([creatorId])
+}
+
+model TripCourse {
+  id          String   @id @default(cuid())
+  tripId      String
+  trip        TripPlan @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  courseId     Int
+  course      Course   @relation(fields: [courseId], references: [courseId])
+  playDate    DateTime?
+  teeTime     String?
+  playOrder   Int      @default(0)
+  confirmed   Boolean  @default(false)
+  notes       String?
+
+  @@unique([tripId, courseId])
+  @@index([tripId])
+}
+
+model TripVote {
+  id          String   @id @default(cuid())
+  tripId      String
+  trip        TripPlan @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId     Int
+  course      Course   @relation(fields: [courseId], references: [courseId])
+  vote        Int
+  comment     String?
+  createdAt   DateTime @default(now())
+
+  @@unique([tripId, userId, courseId])
+  @@index([tripId])
   @@index([userId])
 }
