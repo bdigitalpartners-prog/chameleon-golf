@@ -383,6 +383,12 @@ model User {
   onboardingProgress   OnboardingProgress?
   contentReports       ContentReport[]
 
+  // EQ Tokens & Founders
+  tokenTransactions     EQTokenTransaction[]
+  foundersMembership    FoundersMembership?
+  foundersInvitesSent   FoundersInvite[]     @relation("FoundersInvitesSent")
+  foundersInvitesUsed   FoundersInvite[]     @relation("FoundersInvitesUsed")
+
   @@map("users")
 }
 
@@ -1646,4 +1652,111 @@ model WaitlistSignup {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("waitlist_signups")
+}
+
+// ============================================================
+// EQ Tokens & Founders Program — Backend Infrastructure
+// ============================================================
+
+enum TokenTransactionType {
+  EARNED
+  SPENT
+  EXPIRED
+}
+
+enum TokenSource {
+  REVIEW
+  CHECK_IN
+  REFERRAL
+  ACHIEVEMENT
+  PURCHASE
+  ADMIN
+  PROFILE
+}
+
+enum FoundersPhase {
+  GROUND_ZERO
+  CHARTER_CLASS
+  LAST_CALL
+}
+
+enum FoundersStatus {
+  ACTIVE
+  EXPIRED
+}
+
+model EQTokenTransaction {
+  id          String               @id @default(cuid())
+  userId      String               @map("user_id")
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount      Int
+  type        TokenTransactionType
+  source      TokenSource
+  description String?              @db.VarChar(500)
+  createdAt   DateTime             @default(now()) @map("created_at")
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([type])
+  @@index([source])
+  @@map("eq_token_transactions")
+}
+
+model TokenEarningRule {
+  id          String   @id @default(cuid())
+  source      TokenSource
+  action      String   @db.VarChar(100)  // e.g., "submit_review", "check_in", "refer_friend"
+  amount      Int
+  description String?  @db.VarChar(500)
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([source, action])
+  @@map("token_earning_rules")
+}
+
+model TierConfig {
+  id          String   @id @default(cuid())
+  name        String   @unique @db.VarChar(50)  // Birdie, Eagle, Albatross, Condor
+  threshold   Int                                 // EQ tokens required
+  sortOrder   Int      @default(0) @map("sort_order")
+  features    Json     @default("[]")             // JSON array of feature strings
+  color       String?  @db.VarChar(20)            // hex color for UI
+  icon        String?  @db.VarChar(50)            // icon name for UI
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("tier_configs")
+}
+
+model FoundersMembership {
+  id           String         @id @default(cuid())
+  userId       String         @unique @map("user_id")
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  memberNumber Int            @unique @map("member_number")  // 1-200
+  joinedAt     DateTime       @default(now()) @map("joined_at")
+  tier         String         @default("FOUNDERS_FLIGHT") @db.VarChar(50)
+  status       FoundersStatus @default(ACTIVE)
+  vaultAccess  Boolean        @default(true) @map("vault_access")
+  badgeAwarded Boolean        @default(true) @map("badge_awarded")
+
+  @@map("founders_memberships")
+}
+
+model FoundersInvite {
+  id          String        @id @default(cuid())
+  code        String        @unique @db.VarChar(50)
+  createdBy   String        @map("created_by")
+  creator     User          @relation("FoundersInvitesSent", fields: [createdBy], references: [id])
+  usedBy      String?       @map("used_by")
+  usedByUser  User?         @relation("FoundersInvitesUsed", fields: [usedBy], references: [id])
+  usedAt      DateTime?     @map("used_at")
+  phase       FoundersPhase
+  expiresAt   DateTime?     @map("expires_at")
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  @@index([phase])
+  @@index([createdBy])
+  @@map("founders_invites")
 }
