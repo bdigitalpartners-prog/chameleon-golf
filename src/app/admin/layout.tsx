@@ -22,6 +22,7 @@ import {
   Crown,
   Layers,
   Calculator,
+  BadgeCheck,
   PenTool,
 } from "lucide-react";
 
@@ -34,6 +35,7 @@ const NAV_ITEMS = [
   { label: "Rankings", href: "/admin/rankings", icon: Trophy },
   { label: "Scores", href: "/admin/scores", icon: Calculator },
   { label: "Users", href: "/admin/users", icon: Users },
+  { label: "Verification", href: "/admin/verification", icon: BadgeCheck },
   { label: "Reviews", href: "/admin/reviews", icon: Star },
   { label: "Concierge", href: "/admin/concierge", icon: MessageCircle },
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },

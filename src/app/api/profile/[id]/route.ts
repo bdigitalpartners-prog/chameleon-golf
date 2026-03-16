@@ -18,7 +18,17 @@ export async function GET(
         image: true,
         createdAt: true,
         profile: {
-          include: {
+          select: {
+            bio: true,
+            handicap: true,
+            homeClub: true,
+            avatarUrl: true,
+            coverUrl: true,
+            location: true,
+            isAvailableToPlay: true,
+            handicapIndex: true,
+            handicapVerified: true,
+            ghinNumber: true,
             tags: { include: { tag: true } },
           },
         },
