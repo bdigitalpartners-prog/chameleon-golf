@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "How It Works — golfEQUALIZER",
   description: "Learn how golfEQUALIZER aggregates rankings from Golf Digest, Golfweek, GOLF Magazine, and Top100GolfCourses to create dynamic, personalized golf course rankings.",

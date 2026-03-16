@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState, useEffect, useCallback } from "react";
 import { CourseCard } from "@/components/course/CourseCard";
 import { CourseListRow } from "@/components/course/CourseListRow";

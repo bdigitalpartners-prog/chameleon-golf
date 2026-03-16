@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useSession } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarDays, Trophy, Loader2 } from "lucide-react";
