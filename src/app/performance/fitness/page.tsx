@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import { Dumbbell } from "lucide-react";
 import { CategoryPageLayout } from "../CategoryPageLayout";
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: "Golf Fitness — Performance Center — golfEQUALIZER",
   description: "Mobility routines, strength training, injury prevention, and on-course nutrition to optimize your physical game.",

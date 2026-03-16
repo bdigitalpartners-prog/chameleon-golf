@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { withCircleAuth } from "@/lib/circle-auth";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET — Circle vs Experts: side-by-side circle ratings vs national rankings
  */

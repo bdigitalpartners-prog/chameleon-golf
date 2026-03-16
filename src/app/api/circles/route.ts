@@ -6,6 +6,8 @@ import { uniqueSlug } from "@/lib/slugify";
 import { CIRCLE_DEFAULTS } from "@/lib/circle-defaults";
 import { CircleType, CirclePrivacy } from "@prisma/client";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);

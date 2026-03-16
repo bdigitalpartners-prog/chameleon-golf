@@ -5,6 +5,8 @@ import prisma from "@/lib/prisma";
 import { withCircleAuth } from "@/lib/circle-auth";
 import { calculateLeaderboard } from "@/lib/game-scoring";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest, { params }: { params: { id: string; gameId: string } }) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

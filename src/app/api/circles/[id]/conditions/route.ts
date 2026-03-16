@@ -5,6 +5,8 @@ import prisma from "@/lib/prisma";
 import { withCircleAuth } from "@/lib/circle-auth";
 import { fanOutToCircle } from "@/lib/feed";
 
+export const dynamic = 'force-dynamic';
+
 // GET — List condition reports
 export async function GET(
   req: NextRequest,

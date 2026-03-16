@@ -11,6 +11,8 @@ import {
   BarChart3,
 } from "lucide-react";
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: "The Performance Center — golfEQUALIZER",
   description:

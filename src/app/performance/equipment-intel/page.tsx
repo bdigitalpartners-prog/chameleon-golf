@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import { Wrench } from "lucide-react";
 import { CategoryPageLayout } from "../CategoryPageLayout";
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: "Equipment Intelligence — Performance Center — golfEQUALIZER",
   description: "Fitting guides, technology explained, and gear trends — data-driven insights for smarter equipment decisions.",

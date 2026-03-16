@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { withCircleAuth } from "@/lib/circle-auth";
 
+export const dynamic = 'force-dynamic';
+
 // GET — Thread detail with replies
 export async function GET(
   req: NextRequest,

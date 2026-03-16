@@ -5,6 +5,8 @@ import prisma from "@/lib/prisma";
 import { withCircleAuth } from "@/lib/circle-auth";
 import { createNotification } from "@/lib/notifications";
 
+export const dynamic = 'force-dynamic';
+
 // POST — Vouch for a member
 export async function POST(
   req: NextRequest,

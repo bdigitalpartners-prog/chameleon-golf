@@ -4,6 +4,8 @@ import { computePersonalizedScore } from "@/lib/circle-score";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * POST — Admin: recompute all editorial scores (unchanged)
  */

@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { computePersonalizedScore } from "@/lib/circle-score";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET — How circles affect the user's Chameleon Score for a course
  * Returns per-circle breakdown showing each circle's influence

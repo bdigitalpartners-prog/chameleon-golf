@@ -7,6 +7,8 @@ import { recalculateAggregate } from "@/lib/course-aggregates";
 import { fanOutToCircle } from "@/lib/feed";
 import { createNotification } from "@/lib/notifications";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions);

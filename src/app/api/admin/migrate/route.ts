@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   const key = req.headers.get("x-admin-key") || req.nextUrl.searchParams.get("key");
   if (key !== process.env.ADMIN_API_KEY) {
