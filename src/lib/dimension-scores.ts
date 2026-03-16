@@ -734,6 +734,15 @@ function getBestRankFields(bestRanks: Record<string, number>) {
   return result;
 }
 
+export interface DimensionDistribution {
+  dimension: string;
+  label: string;
+  min: number;
+  max: number;
+  avg: number;
+  count: number;
+}
+
 /**
  * Get computation status — how many courses have scores computed.
  */
@@ -743,6 +752,7 @@ export async function getScoreStatus(): Promise<{
   coursesWithDimensions: number;
   coursesWithPrestige: number;
   lastComputedAt: Date | null;
+  dimensionStats: DimensionDistribution[];
 }> {
   const [totalCourses, coursesWithScores, coursesWithDimensions, coursesWithPrestige, lastComputed] =
     await Promise.all([
@@ -760,11 +770,79 @@ export async function getScoreStatus(): Promise<{
       }),
     ]);
 
+  // Compute dimension distribution stats
+  let dimensionStats: DimensionDistribution[] = [];
+  if (coursesWithDimensions > 0) {
+    const agg = await prisma.chameleonScore.aggregate({
+      where: { avgOverall: { not: null } },
+      _min: {
+        avgConditioning: true,
+        avgLayoutDesign: true,
+        avgPace: true,
+        avgAesthetics: true,
+        avgChallenge: true,
+        avgValue: true,
+        avgAmenities: true,
+        avgWalkability: true,
+        avgService: true,
+        avgOverall: true,
+      },
+      _max: {
+        avgConditioning: true,
+        avgLayoutDesign: true,
+        avgPace: true,
+        avgAesthetics: true,
+        avgChallenge: true,
+        avgValue: true,
+        avgAmenities: true,
+        avgWalkability: true,
+        avgService: true,
+        avgOverall: true,
+      },
+      _avg: {
+        avgConditioning: true,
+        avgLayoutDesign: true,
+        avgPace: true,
+        avgAesthetics: true,
+        avgChallenge: true,
+        avgValue: true,
+        avgAmenities: true,
+        avgWalkability: true,
+        avgService: true,
+        avgOverall: true,
+      },
+      _count: { avgOverall: true },
+    });
+
+    const dims = [
+      { key: "avgLayoutDesign", label: "Architecture" },
+      { key: "avgChallenge", label: "Challenge" },
+      { key: "avgAesthetics", label: "Aesthetics" },
+      { key: "avgConditioning", label: "Conditioning" },
+      { key: "avgValue", label: "Value" },
+      { key: "avgWalkability", label: "Walkability" },
+      { key: "avgPace", label: "Pace of Play" },
+      { key: "avgAmenities", label: "Amenities" },
+      { key: "avgService", label: "Service" },
+      { key: "avgOverall", label: "Overall" },
+    ] as const;
+
+    dimensionStats = dims.map(({ key, label }) => ({
+      dimension: key,
+      label,
+      min: Number(agg._min[key] ?? 0),
+      max: Number(agg._max[key] ?? 0),
+      avg: Math.round(Number(agg._avg[key] ?? 0) * 100) / 100,
+      count: agg._count.avgOverall,
+    }));
+  }
+
   return {
     totalCourses,
     coursesWithScores,
     coursesWithDimensions,
     coursesWithPrestige,
     lastComputedAt: lastComputed?.computedAt ?? null,
+    dimensionStats,
   };
 }
