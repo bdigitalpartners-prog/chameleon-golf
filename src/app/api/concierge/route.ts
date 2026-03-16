@@ -43,7 +43,7 @@ setInterval(() => {
   }
 }, 60_000);
 
-const SYSTEM_PROMPT = `You are the GolfEQ Concierge, an AI-powered golf course expert for the CourseFACTOR ranking platform. You have deep knowledge of over 1,500 ranked golf courses worldwide.
+const DEFAULT_SYSTEM_PROMPT = `You are the GolfEQ Concierge, an AI-powered golf course expert for the CourseFACTOR ranking platform. You have deep knowledge of over 1,500 ranked golf courses worldwide.
 
 Your expertise includes:
 - CourseFACTOR rankings, which aggregate data from Golf Digest, Golfweek, GOLF Magazine, and Top100GolfCourses
@@ -71,6 +71,37 @@ Guidelines:
 // Rough token estimation: ~4 chars per token for English text
 function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
+}
+
+interface AdminConfigRow {
+  key: string;
+  value: string;
+}
+
+async function getAdminConfig(): Promise<Record<string, string>> {
+  try {
+    const rows = await prisma.$queryRaw<AdminConfigRow[]>`
+      SELECT key, value FROM admin_config
+    `;
+    const config: Record<string, string> = {};
+    for (const row of rows) {
+      config[row.key] = row.value;
+    }
+    return config;
+  } catch {
+    // Table may not exist yet
+    return {};
+  }
+}
+
+async function getTodaySpend(): Promise<number> {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const result = await prisma.conciergeUsage.aggregate({
+    where: { createdAt: { gte: todayStart } },
+    _sum: { totalCost: true },
+  });
+  return Number(result._sum.totalCost || 0);
 }
 
 export async function POST(request: NextRequest) {
@@ -106,8 +137,26 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Message is required" }, { status: 400 });
   }
 
+  // Read admin config for model selection and budget caps
+  const adminConfig = await getAdminConfig();
+  let activeModel = adminConfig.concierge_active_model || "sonar-pro";
+  const budgetCap = parseFloat(adminConfig.concierge_daily_budget_cap || "50");
+  const fallbackModel = adminConfig.concierge_fallback_model || "sonar";
+  const autoDowngrade = adminConfig.concierge_auto_downgrade === "true";
+
+  // Check budget cap and auto-downgrade
+  if (autoDowngrade && budgetCap > 0) {
+    const todaySpend = await getTodaySpend();
+    if (todaySpend >= budgetCap) {
+      activeModel = fallbackModel;
+    }
+  }
+
+  // Read custom system prompt
+  const systemPrompt = adminConfig.concierge_system_prompt || DEFAULT_SYSTEM_PROMPT;
+
   const messages = [
-    { role: "system", content: SYSTEM_PROMPT },
+    { role: "system", content: systemPrompt },
     ...conversationHistory.slice(-20), // Keep last 20 messages for context
     { role: "user", content: message },
   ];
@@ -124,7 +173,7 @@ export async function POST(request: NextRequest) {
         Authorization: `Bearer ${PERPLEXITY_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "sonar-pro",
+        model: activeModel,
         messages,
         stream: true,
       }),
@@ -202,7 +251,7 @@ export async function POST(request: NextRequest) {
                 estimatedCost,
                 requestFee: REQUEST_FEE,
                 totalCost,
-                model: "sonar-pro",
+                model: activeModel,
                 messagePreview: message.slice(0, 200),
               },
             });
