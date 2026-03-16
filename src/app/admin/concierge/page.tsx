@@ -15,9 +15,9 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import dynamic from "next/dynamic";
+import nextDynamic from "next/dynamic";
 
-const RechartsChart = dynamic(
+const RechartsChart = nextDynamic(
   () =>
     import("recharts").then((mod) => {
       const { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } = mod;
