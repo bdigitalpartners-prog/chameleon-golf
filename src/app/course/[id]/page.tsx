@@ -40,6 +40,10 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
         orderBy: { distanceMiles: "asc" },
         take: 8,
       },
+      intelligenceNotes: {
+        where: { isVisible: true },
+        orderBy: { generatedAt: "desc" },
+      },
     },
   });
 
