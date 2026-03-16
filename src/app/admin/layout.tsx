@@ -19,6 +19,9 @@ import {
   Database,
   Lightbulb,
   Calculator,
+  Coins,
+  Crown,
+  Layers,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -32,6 +35,9 @@ const NAV_ITEMS = [
   { label: "Reviews", href: "/admin/reviews", icon: Star },
   { label: "Concierge", href: "/admin/concierge", icon: MessageCircle },
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+  { label: "Tokens", href: "/admin/tokens", icon: Coins },
+  { label: "Founders", href: "/admin/founders", icon: Crown },
+  { label: "Tiers", href: "/admin/tiers", icon: Layers },
   { label: "System", href: "/admin/system", icon: Settings },
 ];
 
