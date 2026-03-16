@@ -298,12 +298,17 @@ model User {
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @default(now()) @map("updated_at")
 
-  accounts        Account[]
-  sessions        Session[]
-  ratings         UserCourseRating[]
-  scores          PostedScore[]
-  weightProfiles  UserWeightProfile[]
-  wishlists       CourseWishlist[]
+  accounts          Account[]
+  sessions          Session[]
+  ratings           UserCourseRating[]
+  scores            PostedScore[]
+  weightProfiles    UserWeightProfile[]
+  wishlists         CourseWishlist[]
+  profile           UserProfile?
+  connectionsSent   Connection[]       @relation("ConnectionsSent")
+  connectionsReceived Connection[]     @relation("ConnectionsReceived")
+  notifications     Notification[]
+  notificationPrefs NotificationPref[]
 
   @@map("users")
 }
@@ -605,4 +610,114 @@ model ConciergeUsage {
   createdAt       DateTime @default(now()) @map("created_at")
 
   @@map("concierge_usage")
+}
+
+// ============================================================
+// Social Circles — Sprint 1
+// ============================================================
+
+enum ConnectionStatus {
+  PENDING
+  ACCEPTED
+  BLOCKED
+}
+
+enum NotificationLevel {
+  ALL
+  MENTIONS
+  HIGHLIGHTS
+  MUTED
+}
+
+model UserProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio               String?  @db.Text
+  handicap          Float?
+  homeClub          String?
+  avatarUrl         String?
+  coverUrl          String?
+  location          String?
+  isAvailableToPlay Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  tags              UserTag[]
+
+  @@index([userId])
+}
+
+model Connection {
+  id          String           @id @default(cuid())
+  senderId    String
+  sender      User             @relation("ConnectionsSent", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId  String
+  receiver    User             @relation("ConnectionsReceived", fields: [receiverId], references: [id], onDelete: Cascade)
+  status      ConnectionStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([senderId, receiverId])
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([status])
+}
+
+model Tag {
+  id         String   @id @default(cuid())
+  name       String   @unique
+  slug       String   @unique
+  category   String?
+  usageCount Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  users      UserTag[]
+
+  @@index([slug])
+  @@index([category])
+}
+
+model UserTag {
+  id        String      @id @default(cuid())
+  userId    String
+  profile   UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  tagId     String
+  tag       Tag         @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+
+  @@unique([userId, tagId])
+  @@index([userId])
+  @@index([tagId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String?  @db.Text
+  actionUrl String?
+  read      Boolean  @default(false)
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+}
+
+model NotificationPref {
+  id          String            @id @default(cuid())
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  circleId    String?
+  level       NotificationLevel @default(ALL)
+  emailDigest Boolean           @default(true)
+  pushEnabled Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@unique([userId, circleId])
+  @@index([userId])
 }
