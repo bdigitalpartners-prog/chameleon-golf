@@ -2,6 +2,8 @@ import prisma from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { CourseDetailClient } from "@/components/course/CourseDetailClient";
 
+export const dynamic = "force-dynamic";
+
 export default async function CourseDetailPage({ params }: { params: { id: string } }) {
   const courseId = parseInt(params.id);
   if (isNaN(courseId)) notFound();
