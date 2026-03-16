@@ -130,6 +130,7 @@ model Course {
   nearbyDining      CourseNearbyDining[]
   nearbyLodging     CourseNearbyLodging[]
   nearbyAttractions CourseNearbyAttractions[]
+  nearbyRvParks     CourseNearbyRvPark[]
   wishlists         CourseWishlist[]
   nearbyCourses     CourseNearbyCourses[] @relation("SourceCourse")
   nearbyFrom        CourseNearbyCourses[] @relation("NearbyCourse")
@@ -642,12 +643,39 @@ model CourseNearbyAttractions {
   category     String?  @db.VarChar(100)
   description  String?
   distanceMiles Decimal? @map("distance_miles") @db.Decimal(6, 1)
+  rating       Decimal? @db.Decimal(3, 1)
   websiteUrl   String?  @map("website_url") @db.VarChar(500)
+  googleMapsUrl String? @map("google_maps_url") @db.VarChar(500)
+  sortOrder    Int      @default(0) @map("sort_order")
   createdAt    DateTime @default(now()) @map("created_at")
 
   course       Course   @relation(fields: [courseId], references: [courseId])
 
   @@map("course_nearby_attractions")
+}
+
+model CourseNearbyRvPark {
+  id              Int      @id @default(autoincrement())
+  courseId         Int      @map("course_id")
+  name            String   @db.VarChar(255)
+  description     String?
+  distanceMiles   Decimal? @map("distance_miles") @db.Decimal(6, 1)
+  driveTimeMinutes Int?    @map("drive_time_minutes")
+  rating          Decimal? @db.Decimal(3, 1)
+  priceLevel      String?  @map("price_level") @db.VarChar(10)
+  numSites        Int?     @map("num_sites")
+  hookups         String?  @db.VarChar(100)
+  amenities       String?
+  address         String?
+  phone           String?  @db.VarChar(50)
+  websiteUrl      String?  @map("website_url") @db.VarChar(500)
+  googleMapsUrl   String?  @map("google_maps_url") @db.VarChar(500)
+  sortOrder       Int      @default(0) @map("sort_order")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  course          Course   @relation(fields: [courseId], references: [courseId])
+
+  @@map("course_nearby_rv_parks")
 }
 
 model CourseWishlist {

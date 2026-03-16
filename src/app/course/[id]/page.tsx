@@ -34,7 +34,8 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
       },
       nearbyDining: { orderBy: { sortOrder: "asc" }, take: 8 },
       nearbyLodging: { orderBy: { sortOrder: "asc" }, take: 6 },
-      nearbyAttractions: { take: 8 },
+      nearbyAttractions: { orderBy: { sortOrder: "asc" }, take: 8 },
+      nearbyRvParks: { orderBy: { sortOrder: "asc" }, take: 4 },
       nearbyCourses: {
         include: { nearbyCourse: { include: { media: { where: { isPrimary: true }, take: 1 } } } },
         orderBy: { distanceMiles: "asc" },
