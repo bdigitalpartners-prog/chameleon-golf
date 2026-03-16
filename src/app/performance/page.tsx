@@ -49,6 +49,12 @@ const categories = [
   },
 ];
 
+const articleListSelect = {
+  slug: true, title: true, subtitle: true, category: true,
+  subcategory: true, difficulty: true, estimatedTime: true,
+  tags: true, featured: true,
+} as const;
+
 async function getPerformanceData() {
   try {
     const prisma = (await import("@/lib/prisma")).default;
@@ -61,6 +67,7 @@ async function getPerformanceData() {
         where: { featured: true },
         orderBy: { sortOrder: "asc" },
         take: 6,
+        select: articleListSelect,
       }),
     ]);
 

@@ -14,6 +14,12 @@ const subcategories = [
   { value: "gear-trends", label: "Gear Trends" },
 ];
 
+const articleListSelect = {
+  slug: true, title: true, subtitle: true, category: true,
+  subcategory: true, difficulty: true, estimatedTime: true,
+  tags: true, featured: true,
+} as const;
+
 export default async function EquipmentIntelPage() {
   let articles: any[] = [];
 
@@ -22,6 +28,7 @@ export default async function EquipmentIntelPage() {
     articles = await prisma.performanceArticle.findMany({
       where: { category: "equipment-intel" },
       orderBy: { sortOrder: "asc" },
+      select: articleListSelect,
     });
   } catch (e) {
     console.error("[Performance/equipment-intel] Failed to load data:", e);

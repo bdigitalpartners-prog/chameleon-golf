@@ -15,6 +15,12 @@ const subcategories = [
   { value: "nutrition", label: "On-Course Nutrition" },
 ];
 
+const articleListSelect = {
+  slug: true, title: true, subtitle: true, category: true,
+  subcategory: true, difficulty: true, estimatedTime: true,
+  tags: true, featured: true,
+} as const;
+
 export default async function FitnessPage() {
   let articles: any[] = [];
 
@@ -23,6 +29,7 @@ export default async function FitnessPage() {
     articles = await prisma.performanceArticle.findMany({
       where: { category: "fitness" },
       orderBy: { sortOrder: "asc" },
+      select: articleListSelect,
     });
   } catch (e) {
     console.error("[Performance/fitness] Failed to load data:", e);

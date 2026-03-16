@@ -6,7 +6,7 @@ import { DifficultyBadge } from "./DifficultyBadge";
 import { VideoEmbed } from "./VideoEmbed";
 import { ArticleCard } from "./ArticleCard";
 
-interface Article {
+interface ArticleSummary {
   slug: string;
   title: string;
   subtitle: string | null;
@@ -14,16 +14,19 @@ interface Article {
   subcategory: string;
   difficulty: string | null;
   estimatedTime: string | null;
-  content: string;
   tags: string[];
-  videoUrl: string | null;
-  publishedAt: Date;
   featured: boolean;
+}
+
+interface Article extends ArticleSummary {
+  content: string;
+  videoUrl: string | null;
+  publishedAt: string;
 }
 
 interface ArticlePageProps {
   article: Article;
-  relatedArticles: Article[];
+  relatedArticles: ArticleSummary[];
 }
 
 const categoryLabels: Record<string, string> = {

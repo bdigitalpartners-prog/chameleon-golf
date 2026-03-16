@@ -15,6 +15,12 @@ const subcategories = [
   { value: "practice-with-purpose", label: "Practice with Purpose" },
 ];
 
+const articleListSelect = {
+  slug: true, title: true, subtitle: true, category: true,
+  subcategory: true, difficulty: true, estimatedTime: true,
+  tags: true, featured: true,
+} as const;
+
 export default async function MentalGamePage() {
   let articles: any[] = [];
 
@@ -23,6 +29,7 @@ export default async function MentalGamePage() {
     articles = await prisma.performanceArticle.findMany({
       where: { category: "mental-game" },
       orderBy: { sortOrder: "asc" },
+      select: articleListSelect,
     });
   } catch (e) {
     console.error("[Performance/mental-game] Failed to load data:", e);
