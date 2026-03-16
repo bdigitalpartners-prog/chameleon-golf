@@ -10,33 +10,41 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const article = await prisma.performanceArticle.findUnique({
-    where: { slug: params.slug },
-  });
+  try {
+    const article = await prisma.performanceArticle.findUnique({
+      where: { slug: params.slug },
+    });
 
-  if (!article) return { title: "Not Found — golfEQUALIZER" };
+    if (!article) return { title: "Not Found — golfEQUALIZER" };
 
-  return {
-    title: `${article.title} — Performance Center — golfEQUALIZER`,
-    description: article.subtitle || article.title,
-  };
+    return {
+      title: `${article.title} — Performance Center — golfEQUALIZER`,
+      description: article.subtitle || article.title,
+    };
+  } catch {
+    return { title: "Performance Center — golfEQUALIZER" };
+  }
 }
 
 export default async function ArticleDetailPage({ params }: Props) {
-  const article = await prisma.performanceArticle.findUnique({
-    where: { slug: params.slug },
-  });
+  try {
+    const article = await prisma.performanceArticle.findUnique({
+      where: { slug: params.slug },
+    });
 
-  if (!article) notFound();
+    if (!article) notFound();
 
-  const relatedArticles = await prisma.performanceArticle.findMany({
-    where: {
-      category: article.category,
-      slug: { not: article.slug },
-    },
-    orderBy: { sortOrder: "asc" },
-    take: 3,
-  });
+    const relatedArticles = await prisma.performanceArticle.findMany({
+      where: {
+        category: article.category,
+        slug: { not: article.slug },
+      },
+      orderBy: { sortOrder: "asc" },
+      take: 3,
+    });
 
-  return <ArticlePage article={article} relatedArticles={relatedArticles} />;
+    return <ArticlePage article={article} relatedArticles={relatedArticles} />;
+  } catch {
+    notFound();
+  }
 }

@@ -17,10 +17,16 @@ const subcategories = [
 ];
 
 export default async function EquipmentIntelPage() {
-  const articles = await prisma.performanceArticle.findMany({
-    where: { category: "equipment-intel" },
-    orderBy: { sortOrder: "asc" },
-  });
+  let articles: Awaited<ReturnType<typeof prisma.performanceArticle.findMany>> = [];
+
+  try {
+    articles = await prisma.performanceArticle.findMany({
+      where: { category: "equipment-intel" },
+      orderBy: { sortOrder: "asc" },
+    });
+  } catch {
+    // Table may not exist yet — render with empty data
+  }
 
   return (
     <CategoryPageLayout

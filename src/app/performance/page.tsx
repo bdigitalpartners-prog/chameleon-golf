@@ -58,22 +58,29 @@ const categories = [
 ];
 
 export default async function PerformancePage() {
-  const [articleCounts, featuredArticles] = await Promise.all([
-    prisma.performanceArticle.groupBy({
-      by: ["category"],
-      _count: { id: true },
-    }),
-    prisma.performanceArticle.findMany({
-      where: { featured: true },
-      orderBy: { sortOrder: "asc" },
-      take: 6,
-    }),
-  ]);
+  let countMap: Record<string, number> = {};
+  let featuredArticles: Awaited<ReturnType<typeof prisma.performanceArticle.findMany>> = [];
 
-  const countMap: Record<string, number> = {};
-  articleCounts.forEach((g) => {
-    countMap[g.category] = g._count.id;
-  });
+  try {
+    const [articleCounts, featured] = await Promise.all([
+      prisma.performanceArticle.groupBy({
+        by: ["category"],
+        _count: { id: true },
+      }),
+      prisma.performanceArticle.findMany({
+        where: { featured: true },
+        orderBy: { sortOrder: "asc" },
+        take: 6,
+      }),
+    ]);
+
+    articleCounts.forEach((g) => {
+      countMap[g.category] = g._count.id;
+    });
+    featuredArticles = featured;
+  } catch {
+    // Table may not exist yet — render with empty data
+  }
 
   return (
     <div style={{ backgroundColor: "var(--cg-bg-primary)" }}>
