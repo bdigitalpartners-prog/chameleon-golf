@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { CoursePlaceholder } from "./CoursePlaceholder";
+import { CircleRatingsSection } from "./CircleRatingsSection";
 
 /* ─── Shared Styles ─── */
 
@@ -1109,6 +1110,9 @@ export function CourseDetailClient({ course }: { course: any }) {
         {/* ────── REVIEWS TAB ────── */}
         {activeTab === "Reviews" && (
           <div className="max-w-3xl space-y-8">
+
+            {/* Your Circles */}
+            <CircleRatingsSection courseId={course.courseId} courseName={course.courseName} />
 
             {/* Score Breakdown */}
             {hasDimensions && (
