@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { PostCard } from "@/components/social/PostCard";
 import { PostComposer } from "@/components/social/PostComposer";
+import { CircleCoursesTab } from "@/components/social/CircleCoursesTab";
 
 const TYPE_META: Record<string, { label: string; icon: any }> = {
   CREW: { label: "Crew", icon: Users },
@@ -37,7 +38,7 @@ const PRIVACY_META: Record<string, { label: string; icon: any }> = {
   SECRET: { label: "Secret", icon: EyeOff },
 };
 
-type Tab = "feed" | "members" | "about";
+type Tab = "feed" | "courses" | "members" | "about";
 
 export default function CircleDetailPage() {
   const { data: session, status } = useSession();
@@ -132,6 +133,7 @@ export default function CircleDetailPage() {
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "feed", label: "Feed" },
+    { key: "courses", label: "Courses" },
     { key: "members", label: "Members" },
     { key: "about", label: "About" },
   ];
@@ -302,6 +304,8 @@ export default function CircleDetailPage() {
           {tab === "feed" && (
             <CircleFeed circleId={circleId} isMember={!!isMember} currentUserId={(session?.user as any)?.id} />
           )}
+
+          {tab === "courses" && <CircleCoursesTab circleId={circleId} />}
 
           {tab === "members" && <MembersPreview circleId={circleId} />}
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Trash2, Share2 } from "lucide-react";
+import { Trash2, Share2, Star, MapPin, Heart } from "lucide-react";
 import { FistBumpButton } from "./FistBumpButton";
 import { CommentThread } from "./CommentThread";
 
@@ -93,6 +93,14 @@ export function PostCard({ post, currentUserId, onDeleted }: PostCardProps) {
 
   const canDelete = currentUserId === post.authorId || currentUserId === post.author?.id;
 
+  const postTypeMeta: Record<string, { icon: any; label: string; color: string }> = {
+    COURSE_RATING: { icon: Star, label: "Rated", color: "#f59e0b" },
+    CHECK_IN: { icon: MapPin, label: "Checked In", color: "var(--cg-accent)" },
+    WISHLIST_ADD: { icon: Heart, label: "Wishlisted", color: "#f87171" },
+  };
+  const typeMeta = postTypeMeta[post.type];
+  const TypeIcon = typeMeta?.icon;
+
   return (
     <div
       className="rounded-xl overflow-hidden"
@@ -155,6 +163,17 @@ export function PostCard({ post, currentUserId, onDeleted }: PostCardProps) {
             </button>
           )}
         </div>
+
+        {/* Post type badge */}
+        {typeMeta && TypeIcon && (
+          <div
+            className="inline-flex items-center gap-1.5 mt-2 rounded-full px-2.5 py-1 text-xs font-medium"
+            style={{ backgroundColor: `${typeMeta.color}20`, color: typeMeta.color }}
+          >
+            <TypeIcon className="h-3 w-3" />
+            {typeMeta.label}
+          </div>
+        )}
 
         {/* Content */}
         {post.content && (

@@ -134,6 +134,12 @@ model Course {
   // Sprint 3
   posts             Post[]
 
+  // Sprint 4
+  circleCourseRatings CircleCourseRating[]
+  circleCourseAggregates CircleCourseAggregate[]
+  circleWishlists     Wishlist[]          @relation("CircleWishlists")
+  courseCheckIns       CourseCheckIn[]
+
   @@map("courses")
 }
 
@@ -324,6 +330,11 @@ model User {
   feedItems         FeedItem[]
   feedActions       FeedItem[]         @relation("FeedActor")
   mentionedIn       Mention[]
+
+  // Sprint 4
+  circleCourseRatings CircleCourseRating[]
+  circleWishlists     Wishlist[]
+  courseCheckIns       CourseCheckIn[]
 
   @@map("users")
 }
@@ -686,6 +697,12 @@ model Circle {
   posts               Post[]
   feedItems           FeedItem[]
 
+  // Sprint 4
+  circleCourseRatings CircleCourseRating[]
+  circleCourseAggregates CircleCourseAggregate[]
+  circleWishlists     Wishlist[]
+  circleCheckIns      CourseCheckIn[]
+
   @@index([type])
   @@index([privacy])
   @@index([slug])
@@ -848,6 +865,9 @@ enum PostType {
   PHOTO
   ROUND_RECAP
   REVIEW
+  COURSE_RATING
+  CHECK_IN
+  WISHLIST_ADD
 }
 
 model Post {
@@ -943,4 +963,83 @@ model Mention {
   @@index([mentionedUserId])
   @@index([postId])
   @@index([commentId])
+}
+
+// ============================================================
+// Course Integration — Sprint 4
+// ============================================================
+
+model CircleCourseRating {
+  id            String   @id @default(cuid())
+  circleId      String
+  circle        Circle   @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId       Int
+  course        Course   @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  overallScore  Float
+  dimensions    Json?
+  reviewText    String?  @db.Text
+  playDate      DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([circleId, userId, courseId])
+  @@index([circleId, courseId])
+  @@index([userId])
+  @@index([courseId])
+}
+
+model CircleCourseAggregate {
+  id              String   @id @default(cuid())
+  circleId        String
+  circle          Circle   @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  courseId         Int
+  course          Course   @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  avgScore        Float
+  ratingCount     Int      @default(0)
+  dimensionAvgs   Json?
+  rank            Int?
+  lastUpdated     DateTime @default(now())
+
+  @@unique([circleId, courseId])
+  @@index([circleId, avgScore(sort: Desc)])
+  @@index([courseId])
+}
+
+model Wishlist {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId     Int
+  course      Course   @relation("CircleWishlists", fields: [courseId], references: [courseId], onDelete: Cascade)
+  circleId    String?
+  circle      Circle?  @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  notes       String?  @db.Text
+  priority    Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, courseId, circleId])
+  @@index([userId])
+  @@index([circleId])
+  @@index([courseId])
+}
+
+model CourseCheckIn {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId     Int
+  course      Course   @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  circleId    String?
+  circle      Circle?  @relation(fields: [circleId], references: [id])
+  playDate    DateTime @default(now())
+  score       Int?
+  photos      String[]
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([courseId])
+  @@index([circleId])
 }
