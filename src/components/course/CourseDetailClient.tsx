@@ -563,7 +563,17 @@ export function CourseDetailClient({ course }: { course: any }) {
                   <InfoRow label="Access" value={safeText(course.accessType)} />
                   <InfoRow label="Holes" value={course.numHoles} />
                   <InfoRow label="Par" value={course.par} />
-                  <InfoRow label="Architect" value={safeText(course.originalArchitect)} />
+                  <InfoRow label="Architect" value={
+                    safeText(course.originalArchitect) ? (
+                      <Link
+                        href={`/architects/${course.originalArchitect.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`}
+                        className="transition-colors hover:underline"
+                        style={{ color: "var(--cg-accent)" }}
+                      >
+                        {course.originalArchitect}
+                      </Link>
+                    ) : null
+                  } />
                   <InfoRow label="Year Opened" value={course.yearOpened} />
                   <InfoRow label="Renovation" value={
                     safeText(course.renovationArchitect)
