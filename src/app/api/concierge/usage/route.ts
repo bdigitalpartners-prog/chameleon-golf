@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
         _avg: { totalCost: true },
       }),
       // Get daily breakdown using raw query for grouping by date
-      prisma.$queryRaw<Array<{ date: string; queries: bigint; cost: string }>>`
+      prisma.$queryRaw<Array<{ date: Date | string; queries: bigint; cost: string }>>`
         SELECT
           DATE(created_at) as date,
           COUNT(*)::bigint as queries,
@@ -72,7 +72,9 @@ export async function GET(request: NextRequest) {
       totalCost: Number(aggregate._sum.totalCost || 0),
       avgCostPerQuery: Number(aggregate._avg.totalCost || 0),
       dailyBreakdown: dailyBreakdown.map((row) => ({
-        date: row.date,
+        date: row.date instanceof Date
+          ? row.date.toISOString().split("T")[0]
+          : String(row.date),
         queries: Number(row.queries),
         cost: Number(row.cost || 0),
       })),
