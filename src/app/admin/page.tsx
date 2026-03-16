@@ -1,142 +1,162 @@
 "use client";
 
-import { useSession } from "next-auth/react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Shield, Users, Trophy, BarChart3, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { MapPin, Users, Star, MessageCircle, DollarSign, Plus, CheckCircle, ArrowRight } from "lucide-react";
 
-export default function AdminPage() {
-  const { data: session } = useSession();
-  const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"stats" | "users" | "scores">("stats");
+interface DashboardData {
+  totalCourses: number;
+  totalUsers: number;
+  totalRatings: number;
+  todayConciergeQueries: number;
+  todayConciergeCost: number;
+  recentUsers: Array<{ id: string; name: string | null; email: string | null; createdAt: string }>;
+}
 
-  const isAdmin = (session?.user as any)?.role === "admin";
+export default function AdminDashboard() {
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const { data: stats } = useQuery({
-    queryKey: ["admin-stats"],
-    queryFn: async () => (await fetch("/api/admin/stats")).json(),
-    enabled: isAdmin,
-  });
+  useEffect(() => {
+    fetch("/api/admin/dashboard", {
+      headers: { "x-admin-key": localStorage.getItem("golfEQ_admin_key") || "" },
+    })
+      .then((r) => r.json())
+      .then(setData)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
 
-  const { data: users } = useQuery({
-    queryKey: ["admin-users"],
-    queryFn: async () => (await fetch("/api/admin/users")).json(),
-    enabled: isAdmin && activeTab === "users",
-  });
-
-  const { data: pendingScores } = useQuery({
-    queryKey: ["admin-pending-scores"],
-    queryFn: async () => (await fetch("/api/scores")).json(),
-    enabled: isAdmin && activeTab === "scores",
-  });
-
-  const recomputeMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch("/api/chameleon-score", { method: "POST" });
-      return res.json();
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-stats"] }),
-  });
-
-  if (!isAdmin) {
+  if (loading) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-20 text-center">
-        <Shield className="mx-auto h-16 w-16 text-stone-300" />
-        <h1 className="mt-4 font-display text-2xl font-bold text-stone-900">Admin Dashboard</h1>
-        <p className="mt-2 text-stone-500">You need admin access to view this page.</p>
+      <div className="flex items-center justify-center py-20">
+        <div className="text-sm text-gray-400">Loading dashboard...</div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="font-display text-3xl font-bold text-stone-900">Admin Dashboard</h1>
-        <button
-          onClick={() => recomputeMutation.mutate()}
-          disabled={recomputeMutation.isPending}
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50 transition-colors"
-        >
-          {recomputeMutation.isPending ? "Computing..." : "Recompute Scores"}
-        </button>
+    <div>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+        <p className="mt-1 text-sm text-gray-400">GolfEQ platform overview</p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 rounded-lg bg-stone-100 p-1 mb-8 w-fit">
-        {[
-          { key: "stats", label: "Stats", icon: BarChart3 },
-          { key: "users", label: "Users", icon: Users },
-          { key: "scores", label: "Verification", icon: Trophy },
-        ].map(({ key, label, icon: Icon }) => (
-          <button
-            key={key}
-            onClick={() => setActiveTab(key as any)}
-            className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-              activeTab === key ? "bg-white text-stone-900 shadow-sm" : "text-stone-600 hover:text-stone-900"
-            }`}
-          >
-            <Icon className="h-4 w-4" /> {label}
-          </button>
-        ))}
+      {/* Stat Cards */}
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          icon={<MapPin className="h-5 w-5" />}
+          label="Total Courses"
+          value={data?.totalCourses?.toLocaleString() || "0"}
+          color="text-green-500"
+        />
+        <StatCard
+          icon={<Users className="h-5 w-5" />}
+          label="Total Users"
+          value={data?.totalUsers?.toLocaleString() || "0"}
+          color="text-blue-500"
+        />
+        <StatCard
+          icon={<Star className="h-5 w-5" />}
+          label="Total Ratings"
+          value={data?.totalRatings?.toLocaleString() || "0"}
+          color="text-amber-500"
+        />
+        <StatCard
+          icon={<MessageCircle className="h-5 w-5" />}
+          label="Today's Concierge"
+          value={`${data?.todayConciergeQueries || 0} queries`}
+          subtitle={`$${(data?.todayConciergeCost || 0).toFixed(4)} cost`}
+          color="text-purple-500"
+        />
       </div>
 
-      {/* Stats Tab */}
-      {activeTab === "stats" && stats && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[
-            { label: "Total Courses", value: stats.totalCourses?.toLocaleString(), color: "text-brand-600" },
-            { label: "Enriched Courses", value: stats.enrichedCourses?.toLocaleString(), color: "text-blue-600" },
-            { label: "Ranked Courses", value: stats.rankedCourses?.toLocaleString(), color: "text-amber-600" },
-            { label: "Total Users", value: stats.totalUsers?.toLocaleString(), color: "text-purple-600" },
-            { label: "Posted Scores", value: stats.totalScores?.toLocaleString(), color: "text-green-600" },
-            { label: "Course Ratings", value: stats.totalRatings?.toLocaleString(), color: "text-rose-600" },
-          ].map((s) => (
-            <div key={s.label} className="rounded-xl border border-stone-200 bg-white p-6">
-              <div className="text-sm font-medium text-stone-500">{s.label}</div>
-              <div className={`mt-1 text-3xl font-bold ${s.color}`}>{s.value}</div>
-            </div>
-          ))}
+      {/* Quick Actions */}
+      <div className="mb-8">
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-400">Quick Actions</h2>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <QuickAction href="/admin/courses/new" icon={<Plus className="h-4 w-4" />} label="Add Course" />
+          <QuickAction href="/admin/courses/import" icon={<ArrowRight className="h-4 w-4" />} label="Bulk Import" />
+          <QuickAction href="/admin/concierge" icon={<DollarSign className="h-4 w-4" />} label="Concierge Costs" />
+          <QuickAction href="/admin/courses" icon={<CheckCircle className="h-4 w-4" />} label="Manage Courses" />
         </div>
-      )}
+      </div>
 
-      {/* Users Tab */}
-      {activeTab === "users" && users && (
-        <div className="rounded-xl border border-stone-200 bg-white overflow-hidden">
+      {/* Recent Activity */}
+      <div>
+        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-400">Recent Signups</h2>
+        <div className="rounded-xl border border-gray-800 bg-[#111111] overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-stone-50 text-left">
-              <tr>
-                <th className="px-4 py-3 font-medium text-stone-600">Name</th>
-                <th className="px-4 py-3 font-medium text-stone-600">Email</th>
-                <th className="px-4 py-3 font-medium text-stone-600">Role</th>
-                <th className="px-4 py-3 font-medium text-stone-600">Ratings</th>
-                <th className="px-4 py-3 font-medium text-stone-600">Scores</th>
-                <th className="px-4 py-3 font-medium text-stone-600">Joined</th>
+            <thead>
+              <tr className="border-b border-gray-800">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Name</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Email</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Joined</th>
               </tr>
             </thead>
             <tbody>
-              {users.map((u: any) => (
-                <tr key={u.id} className="border-t border-stone-100">
-                  <td className="px-4 py-3 font-medium text-stone-900">{u.name || "—"}</td>
-                  <td className="px-4 py-3 text-stone-600">{u.email}</td>
-                  <td className="px-4 py-3">
-                    <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-700">{u.role}</span>
+              {data?.recentUsers?.map((user) => (
+                <tr key={user.id} className="border-b border-gray-800/50">
+                  <td className="px-4 py-3 text-white">{user.name || "—"}</td>
+                  <td className="px-4 py-3 text-gray-400">{user.email}</td>
+                  <td className="px-4 py-3 text-gray-500">
+                    {new Date(user.createdAt).toLocaleDateString()}
                   </td>
-                  <td className="px-4 py-3 text-stone-600">{u._count?.ratings ?? 0}</td>
-                  <td className="px-4 py-3 text-stone-600">{u._count?.scores ?? 0}</td>
-                  <td className="px-4 py-3 text-stone-500">{new Date(u.createdAt).toLocaleDateString()}</td>
                 </tr>
               ))}
+              {(!data?.recentUsers || data.recentUsers.length === 0) && (
+                <tr>
+                  <td colSpan={3} className="px-4 py-8 text-center text-gray-500">No users yet</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
-      )}
-
-      {/* Scores/Verification Tab */}
-      {activeTab === "scores" && (
-        <div className="rounded-xl border border-stone-200 bg-white p-6">
-          <p className="text-stone-500">Score verification queue will populate as users submit scores with GHIN screenshots.</p>
-        </div>
-      )}
+      </div>
     </div>
+  );
+}
+
+function StatCard({
+  icon,
+  label,
+  value,
+  subtitle,
+  color,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  subtitle?: string;
+  color: string;
+}) {
+  return (
+    <div className="rounded-xl border border-gray-800 bg-[#111111] p-5">
+      <div className="mb-3 flex items-center gap-2">
+        <div className={color}>{icon}</div>
+        <span className="text-xs font-medium text-gray-500">{label}</span>
+      </div>
+      <div className="text-2xl font-bold text-white">{value}</div>
+      {subtitle && <div className="mt-1 text-xs text-gray-500">{subtitle}</div>}
+    </div>
+  );
+}
+
+function QuickAction({
+  href,
+  icon,
+  label,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <a
+      href={href}
+      className="flex items-center gap-3 rounded-lg border border-gray-800 bg-[#111111] px-4 py-3 text-sm font-medium text-gray-300 transition-colors hover:border-green-500/30 hover:bg-green-500/5 hover:text-green-500"
+    >
+      {icon}
+      {label}
+    </a>
   );
 }

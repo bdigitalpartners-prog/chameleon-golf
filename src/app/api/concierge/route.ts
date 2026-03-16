@@ -6,10 +6,12 @@ export const dynamic = "force-dynamic";
 const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
 const PERPLEXITY_ENDPOINT = "https://api.perplexity.ai/chat/completions";
 
-// Sonar Pro pricing
-const INPUT_COST_PER_TOKEN = 3 / 1_000_000; // $3 per 1M input tokens
-const OUTPUT_COST_PER_TOKEN = 15 / 1_000_000; // $15 per 1M output tokens
-const REQUEST_FEE = 0.006; // $6 per 1K requests = $0.006 per request
+// Cost per model (per token)
+const MODEL_COSTS: Record<string, { input: number; output: number; requestFee: number }> = {
+  "sonar": { input: 1 / 1_000_000, output: 1 / 1_000_000, requestFee: 0.005 },
+  "sonar-pro": { input: 3 / 1_000_000, output: 15 / 1_000_000, requestFee: 0.006 },
+  "sonar-reasoning-pro": { input: 2 / 1_000_000, output: 8 / 1_000_000, requestFee: 0.006 },
+};
 
 // Simple in-memory rate limiter: 20 requests per minute per IP
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -43,7 +45,7 @@ setInterval(() => {
   }
 }, 60_000);
 
-const SYSTEM_PROMPT = `You are the GolfEQ Concierge, an AI-powered golf course expert for the CourseFACTOR ranking platform. You have deep knowledge of over 1,500 ranked golf courses worldwide.
+const DEFAULT_SYSTEM_PROMPT = `You are the GolfEQ Concierge, an AI-powered golf course expert for the CourseFACTOR ranking platform. You have deep knowledge of over 1,500 ranked golf courses worldwide.
 
 Your expertise includes:
 - CourseFACTOR rankings, which aggregate data from Golf Digest, Golfweek, GOLF Magazine, and Top100GolfCourses
@@ -71,6 +73,35 @@ Guidelines:
 // Rough token estimation: ~4 chars per token for English text
 function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
+}
+
+async function getAdminConfig(): Promise<Record<string, string>> {
+  try {
+    const rows = await prisma.$queryRaw<Array<{ key: string; value: string }>>`
+      SELECT key, value FROM admin_config
+    `;
+    const config: Record<string, string> = {};
+    for (const row of rows) {
+      config[row.key] = row.value;
+    }
+    return config;
+  } catch {
+    // Table may not exist yet — return empty config (use defaults)
+    return {};
+  }
+}
+
+async function getTodaySpend(): Promise<number> {
+  try {
+    const rows = await prisma.$queryRaw<Array<{ total: number | null }>>`
+      SELECT COALESCE(SUM("total_cost"), 0) as total
+      FROM concierge_usage
+      WHERE "created_at" >= CURRENT_DATE
+    `;
+    return Number(rows[0]?.total ?? 0);
+  } catch {
+    return 0;
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -106,8 +137,39 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Message is required" }, { status: 400 });
   }
 
+  // Read admin config for model, budget, and system prompt
+  const config = await getAdminConfig();
+  let activeModel = config.concierge_active_model || "sonar-pro";
+  const dailyBudgetCap = parseFloat(config.concierge_daily_budget_cap || "0");
+  const fallbackModel = config.concierge_fallback_model || "sonar";
+  const autoDowngrade = config.concierge_auto_downgrade === "true";
+  const customPrompt = config.concierge_system_prompt || null;
+
+  // Check budget cap before proceeding
+  if (dailyBudgetCap > 0) {
+    const todaySpend = await getTodaySpend();
+    if (todaySpend >= dailyBudgetCap) {
+      if (autoDowngrade && activeModel !== fallbackModel) {
+        activeModel = fallbackModel;
+      } else if (!autoDowngrade) {
+        return NextResponse.json(
+          { error: "Daily concierge budget has been reached. Please try again tomorrow." },
+          { status: 429 }
+        );
+      }
+    }
+  }
+
+  // Validate model
+  if (!MODEL_COSTS[activeModel]) {
+    activeModel = "sonar-pro";
+  }
+
+  const costs = MODEL_COSTS[activeModel];
+  const systemPrompt = customPrompt || DEFAULT_SYSTEM_PROMPT;
+
   const messages = [
-    { role: "system", content: SYSTEM_PROMPT },
+    { role: "system", content: systemPrompt },
     ...conversationHistory.slice(-20), // Keep last 20 messages for context
     { role: "user", content: message },
   ];
@@ -124,7 +186,7 @@ export async function POST(request: NextRequest) {
         Authorization: `Bearer ${PERPLEXITY_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "sonar-pro",
+        model: activeModel,
         messages,
         stream: true,
       }),
@@ -140,6 +202,7 @@ export async function POST(request: NextRequest) {
     }
 
     let outputText = "";
+    const usedModel = activeModel;
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -188,9 +251,9 @@ export async function POST(request: NextRequest) {
           // Log usage after stream completes
           const outputTokens = estimateTokens(outputText);
           const estimatedCost =
-            inputTokens * INPUT_COST_PER_TOKEN +
-            outputTokens * OUTPUT_COST_PER_TOKEN;
-          const totalCost = estimatedCost + REQUEST_FEE;
+            inputTokens * costs.input +
+            outputTokens * costs.output;
+          const totalCost = estimatedCost + costs.requestFee;
 
           try {
             await prisma.conciergeUsage.create({
@@ -200,9 +263,9 @@ export async function POST(request: NextRequest) {
                 inputTokens,
                 outputTokens,
                 estimatedCost,
-                requestFee: REQUEST_FEE,
+                requestFee: costs.requestFee,
                 totalCost,
-                model: "sonar-pro",
+                model: usedModel,
                 messagePreview: message.slice(0, 200),
               },
             });

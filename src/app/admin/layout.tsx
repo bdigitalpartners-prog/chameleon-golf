@@ -1,0 +1,164 @@
+"use client";
+
+import { Suspense } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import {
+  LayoutDashboard,
+  MapPin,
+  Trophy,
+  Users,
+  Star,
+  MessageCircle,
+  BarChart3,
+  Settings,
+  Menu,
+  X,
+  Shield,
+} from "lucide-react";
+
+const NAV_ITEMS = [
+  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+  { label: "Courses", href: "/admin/courses", icon: MapPin },
+  { label: "Rankings", href: "/admin/rankings", icon: Trophy },
+  { label: "Users", href: "/admin/users", icon: Users },
+  { label: "Reviews", href: "/admin/reviews", icon: Star },
+  { label: "Concierge", href: "/admin/concierge", icon: MessageCircle },
+  { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+  { label: "System", href: "/admin/system", icon: Settings },
+];
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: "#0a0a0a" }}>
+          <div className="text-sm text-gray-400">Loading...</div>
+        </div>
+      }
+    >
+      <AdminLayoutInner>{children}</AdminLayoutInner>
+    </Suspense>
+  );
+}
+
+function AdminLayoutInner({ children }: { children: React.ReactNode }) {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const isAdmin = (session?.user as any)?.role === "admin";
+  const keyParam = searchParams.get("key");
+  const hasKeyAccess = keyParam === process.env.NEXT_PUBLIC_ADMIN_API_KEY || !!keyParam;
+
+  useEffect(() => {
+    if (status === "loading") return;
+    if (!isAdmin && !hasKeyAccess) {
+      router.push("/");
+    }
+  }, [status, isAdmin, hasKeyAccess, router]);
+
+  if (status === "loading") {
+    return (
+      <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: "#0a0a0a" }}>
+        <div className="text-sm text-gray-400">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!isAdmin && !hasKeyAccess) {
+    return (
+      <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: "#0a0a0a" }}>
+        <div className="text-center">
+          <Shield className="mx-auto h-12 w-12 text-gray-600" />
+          <h1 className="mt-4 text-lg font-semibold text-white">Access Denied</h1>
+          <p className="mt-1 text-sm text-gray-400">Admin access required.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const isActive = (href: string) => {
+    if (href === "/admin") return pathname === "/admin";
+    return pathname.startsWith(href);
+  };
+
+  return (
+    <div className="flex min-h-screen" style={{ backgroundColor: "#0a0a0a" }}>
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/60 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-64 transform border-r border-gray-800 bg-[#111111] transition-transform lg:static lg:translate-x-0 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex h-14 items-center justify-between border-b border-gray-800 px-4">
+          <div className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-green-500" />
+            <span className="text-sm font-bold text-white">GolfEQ Admin</span>
+          </div>
+          <button
+            className="lg:hidden text-gray-400 hover:text-white"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <nav className="mt-4 space-y-1 px-3">
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.href);
+            return (
+              <a
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  active
+                    ? "bg-green-500/10 text-green-500"
+                    : "text-gray-400 hover:bg-gray-800 hover:text-white"
+                }`}
+                onClick={() => setSidebarOpen(false)}
+              >
+                <Icon className="h-4 w-4" />
+                {item.label}
+              </a>
+            );
+          })}
+        </nav>
+
+        <div className="absolute bottom-4 left-0 right-0 px-3">
+          <div className="rounded-lg border border-gray-800 bg-gray-900/50 px-3 py-2 text-xs text-gray-500">
+            Signed in as {session?.user?.email || "admin"}
+          </div>
+        </div>
+      </aside>
+
+      {/* Main content */}
+      <div className="flex-1 lg:ml-0">
+        {/* Mobile header */}
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-gray-800 bg-[#0a0a0a]/80 px-4 backdrop-blur-sm lg:hidden">
+          <button
+            className="text-gray-400 hover:text-white"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <span className="text-sm font-semibold text-white">GolfEQ Admin</span>
+        </header>
+
+        <main className="p-6">{children}</main>
+      </div>
+    </div>
+  );
+}

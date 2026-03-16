@@ -1,8 +1,27 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useSession } from "next-auth/react";
-import { MessageCircle, DollarSign, TrendingUp, Calendar, KeyRound } from "lucide-react";
+import {
+  MessageCircle,
+  DollarSign,
+  TrendingUp,
+  Calendar,
+  Bot,
+  Shield,
+  Save,
+  RotateCcw,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
 
 interface UsageData {
   totalQueries: number;
@@ -11,345 +30,477 @@ interface UsageData {
   dailyBreakdown: Array<{ date: string; queries: number; cost: number }>;
 }
 
-const ADMIN_KEY_STORAGE = "golfEQ_admin_key";
+interface Conversation {
+  id: number;
+  timestamp: string;
+  ip: string;
+  messagePreview: string;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  cost: number;
+}
 
-export default function AdminConciergePage() {
-  const { data: session, status } = useSession();
+type TabKey = "costs" | "model" | "logs" | "prompt";
+
+const MODELS = [
+  { value: "sonar", label: "Sonar (Basic)", cost: "~$0.003/query" },
+  { value: "sonar-pro", label: "Sonar Pro", cost: "~$0.017/query" },
+  { value: "sonar-reasoning-pro", label: "Sonar Reasoning Pro", cost: "~$0.05/query" },
+];
+
+const ADMIN_KEY = () => typeof window !== "undefined" ? localStorage.getItem("golfEQ_admin_key") || "" : "";
+
+function fetchAdmin(url: string, opts: RequestInit = {}) {
+  return fetch(url, {
+    ...opts,
+    headers: {
+      "Content-Type": "application/json",
+      "x-admin-key": ADMIN_KEY(),
+      ...(opts.headers || {}),
+    },
+  });
+}
+
+export default function ConciergeDashboard() {
+  const [activeTab, setActiveTab] = useState<TabKey>("costs");
   const [period, setPeriod] = useState<"today" | "week" | "month" | "all">("month");
-  const [data, setData] = useState<UsageData | null>(null);
+  const [usageData, setUsageData] = useState<UsageData | null>(null);
+  const [config, setConfig] = useState<Record<string, string>>({});
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [convPage, setConvPage] = useState(1);
+  const [convTotalPages, setConvTotalPages] = useState(1);
+  const [prompt, setPrompt] = useState<string>("");
+  const [promptLoaded, setPromptLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [adminKey, setAdminKey] = useState("");
-  const [keySubmitted, setKeySubmitted] = useState(false);
 
-  const isAdmin = (session?.user as any)?.role === "admin";
-
-  // Load saved admin key from localStorage
+  // Load usage data
   useEffect(() => {
-    const saved = localStorage.getItem(ADMIN_KEY_STORAGE);
-    if (saved) {
-      setAdminKey(saved);
-      setKeySubmitted(true);
-    }
-  }, []);
-
-  const fetchUsage = useCallback(async (key: string) => {
     setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/concierge/usage?period=${period}`, {
-        headers: { "x-admin-key": key },
-      });
-
-      if (!res.ok) {
-        if (res.status === 401) {
-          localStorage.removeItem(ADMIN_KEY_STORAGE);
-          setKeySubmitted(false);
-          throw new Error("Invalid admin key");
-        }
-        const err = await res.json().catch(() => ({ error: "Request failed" }));
-        throw new Error(err.error || "Failed to fetch usage data");
-      }
-
-      const json = await res.json();
-      setData(json);
-      localStorage.setItem(ADMIN_KEY_STORAGE, key);
-    } catch (err: any) {
-      setError(err.message || "Failed to load data");
-    } finally {
-      setLoading(false);
-    }
+    fetchAdmin(`/api/concierge/usage?period=${period}`)
+      .then((r) => r.json())
+      .then(setUsageData)
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, [period]);
 
+  // Load config
   useEffect(() => {
-    if (status === "loading") return;
-    if (!isAdmin) {
-      setLoading(false);
-      return;
-    }
-    if (!keySubmitted || !adminKey) {
-      setLoading(false);
-      return;
-    }
-    fetchUsage(adminKey);
-  }, [period, status, isAdmin, keySubmitted, adminKey, fetchUsage]);
+    fetchAdmin("/api/admin/config")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && !data.error) setConfig(data);
+      })
+      .catch(console.error);
+  }, []);
 
-  const handleKeySubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (adminKey.trim()) {
-      setKeySubmitted(true);
-      fetchUsage(adminKey.trim());
+  // Load conversations
+  useEffect(() => {
+    if (activeTab === "logs") {
+      fetchAdmin(`/api/admin/concierge/conversations?page=${convPage}`)
+        .then((r) => r.json())
+        .then((data) => {
+          setConversations(data.conversations || []);
+          setConvTotalPages(data.totalPages || 1);
+        })
+        .catch(console.error);
     }
+  }, [activeTab, convPage]);
+
+  // Load prompt
+  useEffect(() => {
+    if (activeTab === "prompt" && !promptLoaded) {
+      fetchAdmin("/api/admin/concierge/prompt")
+        .then((r) => r.json())
+        .then((data) => {
+          setPrompt(data.prompt || "");
+          setPromptLoaded(true);
+        })
+        .catch(console.error);
+    }
+  }, [activeTab, promptLoaded]);
+
+  const updateConfig = async (key: string, value: string) => {
+    await fetchAdmin("/api/admin/config", {
+      method: "PUT",
+      body: JSON.stringify({ key, value }),
+    });
+    setConfig((prev) => ({ ...prev, [key]: value }));
   };
 
-  if (status === "loading" || loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-sm" style={{ color: "var(--cg-text-muted)" }}>
-          Loading...
-        </div>
-      </div>
-    );
-  }
+  const savePrompt = async () => {
+    setSaving(true);
+    await fetchAdmin("/api/admin/concierge/prompt", {
+      method: "PUT",
+      body: JSON.stringify({ prompt }),
+    });
+    setSaving(false);
+  };
 
-  if (!isAdmin) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div
-          className="rounded-xl p-8 text-center"
-          style={{ backgroundColor: "var(--cg-bg-card)", border: "1px solid var(--cg-border)" }}
-        >
-          <h2 className="text-lg font-semibold" style={{ color: "var(--cg-text-primary)" }}>
-            Access Denied
-          </h2>
-          <p className="mt-2 text-sm" style={{ color: "var(--cg-text-muted)" }}>
-            You must be an admin to view this page.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const resetPrompt = async () => {
+    setSaving(true);
+    await fetchAdmin("/api/admin/concierge/prompt", {
+      method: "PUT",
+      body: JSON.stringify({ prompt: null }),
+    });
+    setPrompt("");
+    setSaving(false);
+  };
 
-  if (!keySubmitted) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <form
-          onSubmit={handleKeySubmit}
-          className="w-full max-w-sm rounded-xl p-8"
-          style={{
-            backgroundColor: "var(--cg-bg-card)",
-            border: "1px solid var(--cg-border)",
-          }}
-        >
-          <div className="mb-4 flex items-center gap-2" style={{ color: "var(--cg-accent)" }}>
-            <KeyRound className="h-5 w-5" />
-            <h2 className="text-lg font-semibold" style={{ color: "var(--cg-text-primary)" }}>
-              Admin Access
-            </h2>
-          </div>
-          <p className="mb-4 text-sm" style={{ color: "var(--cg-text-muted)" }}>
-            Enter your admin API key to view concierge usage data.
-          </p>
-          <input
-            type="password"
-            value={adminKey}
-            onChange={(e) => setAdminKey(e.target.value)}
-            placeholder="Admin API key"
-            className="mb-3 w-full rounded-lg px-3 py-2 text-sm outline-none"
-            style={{
-              backgroundColor: "var(--cg-bg-tertiary)",
-              color: "var(--cg-text-primary)",
-              border: "1px solid var(--cg-border)",
-            }}
-            autoFocus
-          />
-          <button
-            type="submit"
-            className="w-full rounded-lg px-4 py-2 text-sm font-medium transition-opacity hover:opacity-90"
-            style={{
-              backgroundColor: "var(--cg-accent)",
-              color: "var(--cg-text-inverse)",
-            }}
-          >
-            Continue
-          </button>
-        </form>
-      </div>
-    );
-  }
+  const tabs: Array<{ key: TabKey; label: string }> = [
+    { key: "costs", label: "Cost Dashboard" },
+    { key: "model", label: "Model & Budget" },
+    { key: "logs", label: "Conversation Log" },
+    { key: "prompt", label: "System Prompt" },
+  ];
+
+  // Compute projections
+  const todaysCost = usageData?.dailyBreakdown?.find(
+    (d) => d.date === new Date().toISOString().split("T")[0]
+  )?.cost || 0;
+  const avgDailyCost = usageData && usageData.dailyBreakdown.length > 0
+    ? usageData.totalCost / usageData.dailyBreakdown.length
+    : 0;
+  const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+  const projectedMonthly = avgDailyCost * daysInMonth;
+
+  const chartData = usageData?.dailyBreakdown
+    ?.slice()
+    .reverse()
+    .slice(-30)
+    .map((d) => ({
+      date: new Date(d.date + "T00:00:00").toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      }),
+      cost: Number(d.cost.toFixed(4)),
+      queries: d.queries,
+    })) || [];
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--cg-text-primary)" }}>
-            Concierge Usage
-          </h1>
-          <p className="mt-1 text-sm" style={{ color: "var(--cg-text-muted)" }}>
-            AI Concierge cost monitoring dashboard
-          </p>
-        </div>
-
-        <div className="flex gap-1 rounded-lg p-1" style={{ backgroundColor: "var(--cg-bg-tertiary)" }}>
-          {(["today", "week", "month", "all"] as const).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                period === p ? "" : ""
-              }`}
-              style={{
-                backgroundColor: period === p ? "var(--cg-accent)" : "transparent",
-                color: period === p ? "var(--cg-text-inverse)" : "var(--cg-text-secondary)",
-              }}
-            >
-              {p === "today" ? "Today" : p === "week" ? "Week" : p === "month" ? "Month" : "All"}
-            </button>
-          ))}
-        </div>
+    <div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-white">AI Concierge</h1>
+        <p className="mt-1 text-sm text-gray-400">Model management, cost monitoring, and configuration</p>
       </div>
 
-      {error ? (
-        <div
-          className="rounded-xl p-6 text-center text-sm"
-          style={{ backgroundColor: "var(--cg-bg-card)", color: "var(--cg-error)" }}
-        >
-          {error}
-        </div>
-      ) : data ? (
-        <>
-          {/* Stats Cards */}
-          <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard
-              icon={<MessageCircle className="h-5 w-5" />}
-              label="Total Queries"
-              value={data.totalQueries.toLocaleString()}
-            />
-            <StatCard
-              icon={<DollarSign className="h-5 w-5" />}
-              label="Total Cost"
-              value={`$${data.totalCost.toFixed(4)}`}
-            />
-            <StatCard
-              icon={<TrendingUp className="h-5 w-5" />}
-              label="Avg Cost / Query"
-              value={`$${data.avgCostPerQuery.toFixed(6)}`}
-            />
-            <StatCard
-              icon={<Calendar className="h-5 w-5" />}
-              label="Days Active"
-              value={data.dailyBreakdown.length.toString()}
-            />
+      {/* Tab bar */}
+      <div className="mb-6 flex gap-1 rounded-lg bg-[#111111] p-1 w-fit border border-gray-800">
+        {tabs.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setActiveTab(t.key)}
+            className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === t.key
+                ? "bg-green-500 text-white"
+                : "text-gray-400 hover:text-white"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Cost Dashboard Tab */}
+      {activeTab === "costs" && (
+        <div>
+          {/* Period selector */}
+          <div className="mb-6 flex gap-1 rounded-lg bg-[#111111] p-1 w-fit border border-gray-800">
+            {(["today", "week", "month", "all"] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                  period === p ? "bg-green-500 text-white" : "text-gray-400 hover:text-white"
+                }`}
+              >
+                {p === "today" ? "Today" : p === "week" ? "Week" : p === "month" ? "Month" : "All"}
+              </button>
+            ))}
           </div>
 
-          {/* Daily Breakdown Table */}
-          <div
-            className="overflow-hidden rounded-xl"
-            style={{
-              backgroundColor: "var(--cg-bg-card)",
-              border: "1px solid var(--cg-border)",
-            }}
-          >
-            <div className="px-5 py-4" style={{ borderBottom: "1px solid var(--cg-border)" }}>
-              <h2
-                className="text-sm font-semibold"
-                style={{ color: "var(--cg-text-primary)" }}
-              >
-                Daily Breakdown
-              </h2>
+          {/* Stats */}
+          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <StatCard icon={<MessageCircle className="h-5 w-5" />} label="Queries" value={usageData?.totalQueries?.toLocaleString() || "0"} />
+            <StatCard icon={<DollarSign className="h-5 w-5" />} label="Today's Cost" value={`$${todaysCost.toFixed(4)}`} />
+            <StatCard icon={<DollarSign className="h-5 w-5" />} label="Period Cost" value={`$${(usageData?.totalCost || 0).toFixed(4)}`} />
+            <StatCard icon={<TrendingUp className="h-5 w-5" />} label="Avg/Query" value={`$${(usageData?.avgCostPerQuery || 0).toFixed(6)}`} />
+            <StatCard icon={<Calendar className="h-5 w-5" />} label="Monthly Projection" value={`$${projectedMonthly.toFixed(2)}`} />
+          </div>
+
+          {/* Chart */}
+          {chartData.length > 0 && (
+            <div className="rounded-xl border border-gray-800 bg-[#111111] p-6">
+              <h3 className="mb-4 text-sm font-semibold text-gray-400">Daily Cost (Last 30 days)</h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                    <XAxis dataKey="date" tick={{ fill: "#888", fontSize: 11 }} />
+                    <YAxis tick={{ fill: "#888", fontSize: 11 }} tickFormatter={(v) => `$${v}`} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: "#1a1a1a", border: "1px solid #333", borderRadius: 8 }}
+                      labelStyle={{ color: "#fff" }}
+                      formatter={(value: any, name: any) =>
+                        name === "cost" ? [`$${Number(value).toFixed(4)}`, "Cost"] : [value, "Queries"]
+                      }
+                    />
+                    <Bar dataKey="cost" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr style={{ borderBottom: "1px solid var(--cg-border)" }}>
-                    <th
-                      className="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide"
-                      style={{ color: "var(--cg-text-muted)" }}
-                    >
-                      Date
-                    </th>
-                    <th
-                      className="px-5 py-3 text-right text-xs font-medium uppercase tracking-wide"
-                      style={{ color: "var(--cg-text-muted)" }}
-                    >
-                      Queries
-                    </th>
-                    <th
-                      className="px-5 py-3 text-right text-xs font-medium uppercase tracking-wide"
-                      style={{ color: "var(--cg-text-muted)" }}
-                    >
-                      Cost
-                    </th>
-                    <th
-                      className="px-5 py-3 text-right text-xs font-medium uppercase tracking-wide"
-                      style={{ color: "var(--cg-text-muted)" }}
-                    >
-                      Avg / Query
-                    </th>
+          )}
+
+          {/* Daily Breakdown Table */}
+          <div className="mt-6 rounded-xl border border-gray-800 bg-[#111111] overflow-hidden">
+            <div className="border-b border-gray-800 px-5 py-3">
+              <h3 className="text-sm font-semibold text-gray-400">Daily Breakdown</h3>
+            </div>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-800">
+                  <th className="px-5 py-3 text-left text-xs font-medium uppercase text-gray-500">Date</th>
+                  <th className="px-5 py-3 text-right text-xs font-medium uppercase text-gray-500">Queries</th>
+                  <th className="px-5 py-3 text-right text-xs font-medium uppercase text-gray-500">Cost</th>
+                  <th className="px-5 py-3 text-right text-xs font-medium uppercase text-gray-500">Avg/Query</th>
+                </tr>
+              </thead>
+              <tbody>
+                {usageData?.dailyBreakdown?.map((row) => (
+                  <tr key={row.date} className="border-b border-gray-800/50">
+                    <td className="px-5 py-3 text-white">
+                      {new Date(row.date + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+                    </td>
+                    <td className="px-5 py-3 text-right text-gray-400">{row.queries}</td>
+                    <td className="px-5 py-3 text-right font-mono text-green-500">${row.cost.toFixed(4)}</td>
+                    <td className="px-5 py-3 text-right font-mono text-gray-500">
+                      ${row.queries > 0 ? (row.cost / row.queries).toFixed(6) : "0.000000"}
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {data.dailyBreakdown.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={4}
-                        className="px-5 py-8 text-center"
-                        style={{ color: "var(--cg-text-muted)" }}
-                      >
-                        No usage data for this period
-                      </td>
-                    </tr>
-                  ) : (
-                    data.dailyBreakdown.map((row) => (
-                      <tr
-                        key={row.date}
-                        className="transition-colors"
-                        style={{ borderBottom: "1px solid var(--cg-border-subtle)" }}
-                      >
-                        <td className="px-5 py-3" style={{ color: "var(--cg-text-primary)" }}>
-                          {new Date(row.date + "T00:00:00").toLocaleDateString("en-US", {
-                            weekday: "short",
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </td>
-                        <td
-                          className="px-5 py-3 text-right"
-                          style={{ color: "var(--cg-text-secondary)" }}
-                        >
-                          {row.queries.toLocaleString()}
-                        </td>
-                        <td
-                          className="px-5 py-3 text-right font-mono"
-                          style={{ color: "var(--cg-accent)" }}
-                        >
-                          ${row.cost.toFixed(4)}
-                        </td>
-                        <td
-                          className="px-5 py-3 text-right font-mono"
-                          style={{ color: "var(--cg-text-muted)" }}
-                        >
-                          ${row.queries > 0 ? (row.cost / row.queries).toFixed(6) : "0.000000"}
-                        </td>
-                      </tr>
-                    ))
+                ))}
+                {(!usageData?.dailyBreakdown || usageData.dailyBreakdown.length === 0) && (
+                  <tr>
+                    <td colSpan={4} className="px-5 py-8 text-center text-gray-500">No usage data</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Model & Budget Tab */}
+      {activeTab === "model" && (
+        <div className="space-y-6">
+          {/* Model Switcher */}
+          <div className="rounded-xl border border-gray-800 bg-[#111111] p-6">
+            <div className="mb-4 flex items-center gap-2">
+              <Bot className="h-5 w-5 text-green-500" />
+              <h3 className="text-sm font-semibold text-white">Active Model</h3>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {MODELS.map((m) => (
+                <button
+                  key={m.value}
+                  onClick={() => updateConfig("concierge_active_model", m.value)}
+                  className={`rounded-lg border p-4 text-left transition-colors ${
+                    config.concierge_active_model === m.value
+                      ? "border-green-500 bg-green-500/10"
+                      : "border-gray-700 hover:border-gray-600"
+                  }`}
+                >
+                  <div className="text-sm font-medium text-white">{m.label}</div>
+                  <div className="mt-1 text-xs text-gray-400">{m.cost}</div>
+                  {config.concierge_active_model === m.value && (
+                    <div className="mt-2 text-xs font-medium text-green-500">Active</div>
                   )}
-                </tbody>
-              </table>
+                </button>
+              ))}
             </div>
           </div>
-        </>
-      ) : null}
+
+          {/* Budget Cap */}
+          <div className="rounded-xl border border-gray-800 bg-[#111111] p-6">
+            <div className="mb-4 flex items-center gap-2">
+              <Shield className="h-5 w-5 text-green-500" />
+              <h3 className="text-sm font-semibold text-white">Budget Cap & Auto-Downgrade</h3>
+            </div>
+
+            <div className="mb-4 rounded-lg bg-gray-900 px-4 py-3 text-sm">
+              <span className="text-gray-400">Budget: </span>
+              <span className="font-mono text-green-500">${todaysCost.toFixed(2)}</span>
+              <span className="text-gray-400"> / </span>
+              <span className="font-mono text-white">${config.concierge_daily_budget_cap || "50"}.00</span>
+              <span className="text-gray-400"> today — Active model: </span>
+              <span className="text-white">{config.concierge_active_model || "sonar-pro"}</span>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-400">Daily Budget Cap ($)</label>
+                <input
+                  type="number"
+                  value={config.concierge_daily_budget_cap || "50"}
+                  onChange={(e) => updateConfig("concierge_daily_budget_cap", e.target.value)}
+                  className="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white outline-none focus:border-green-500"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-400">Fallback Model</label>
+                <select
+                  value={config.concierge_fallback_model || "sonar"}
+                  onChange={(e) => updateConfig("concierge_fallback_model", e.target.value)}
+                  className="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-white outline-none focus:border-green-500"
+                >
+                  {MODELS.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-center gap-3">
+              <button
+                onClick={() =>
+                  updateConfig(
+                    "concierge_auto_downgrade",
+                    config.concierge_auto_downgrade === "true" ? "false" : "true"
+                  )
+                }
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  config.concierge_auto_downgrade === "true" ? "bg-green-500" : "bg-gray-700"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${
+                    config.concierge_auto_downgrade === "true" ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+              <span className="text-sm text-gray-300">Auto-downgrade when budget exceeded</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Conversation Log Tab */}
+      {activeTab === "logs" && (
+        <div className="rounded-xl border border-gray-800 bg-[#111111] overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-800">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Time</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">IP</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Message</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500">Model</th>
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">Tokens</th>
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500">Cost</th>
+              </tr>
+            </thead>
+            <tbody>
+              {conversations.map((c) => (
+                <tr key={c.id} className="border-b border-gray-800/50">
+                  <td className="px-4 py-3 text-gray-400 whitespace-nowrap">
+                    {new Date(c.timestamp).toLocaleString()}
+                  </td>
+                  <td className="px-4 py-3 font-mono text-xs text-gray-500">{c.ip}</td>
+                  <td className="px-4 py-3 text-white max-w-xs truncate">{c.messagePreview}</td>
+                  <td className="px-4 py-3">
+                    <span className="rounded-full bg-gray-800 px-2 py-0.5 text-xs text-gray-300">
+                      {c.model}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right text-xs text-gray-500">
+                    {c.inputTokens}/{c.outputTokens}
+                  </td>
+                  <td className="px-4 py-3 text-right font-mono text-green-500">${c.cost.toFixed(4)}</td>
+                </tr>
+              ))}
+              {conversations.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">No conversations found</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+
+          {/* Pagination */}
+          {convTotalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-gray-800 px-4 py-3">
+              <span className="text-xs text-gray-500">
+                Page {convPage} of {convTotalPages}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  disabled={convPage <= 1}
+                  onClick={() => setConvPage((p) => p - 1)}
+                  className="rounded-lg border border-gray-700 p-1.5 text-gray-400 hover:text-white disabled:opacity-40"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  disabled={convPage >= convTotalPages}
+                  onClick={() => setConvPage((p) => p + 1)}
+                  className="rounded-lg border border-gray-700 p-1.5 text-gray-400 hover:text-white disabled:opacity-40"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* System Prompt Tab */}
+      {activeTab === "prompt" && (
+        <div className="rounded-xl border border-gray-800 bg-[#111111] p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-white">System Prompt</h3>
+            <div className="flex gap-2">
+              <button
+                onClick={resetPrompt}
+                disabled={saving}
+                className="flex items-center gap-1.5 rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-400 hover:text-white disabled:opacity-50"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Reset to Default
+              </button>
+              <button
+                onClick={savePrompt}
+                disabled={saving}
+                className="flex items-center gap-1.5 rounded-lg bg-green-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-600 disabled:opacity-50"
+              >
+                <Save className="h-3.5 w-3.5" />
+                {saving ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+          <textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            rows={20}
+            placeholder="Leave empty to use the default system prompt built into the concierge route..."
+            className="w-full rounded-lg border border-gray-700 bg-gray-900 p-4 text-sm text-white font-mono outline-none focus:border-green-500 resize-y"
+          />
+          <p className="mt-2 text-xs text-gray-500">
+            The concierge will use this prompt instead of the default. Leave empty and save to reset.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
 
-function StatCard({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
+function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div
-      className="rounded-xl p-5"
-      style={{
-        backgroundColor: "var(--cg-bg-card)",
-        border: "1px solid var(--cg-border)",
-      }}
-    >
-      <div className="mb-3 flex items-center gap-2">
-        <div style={{ color: "var(--cg-accent)" }}>{icon}</div>
-        <span className="text-xs font-medium" style={{ color: "var(--cg-text-muted)" }}>
-          {label}
-        </span>
+    <div className="rounded-xl border border-gray-800 bg-[#111111] p-4">
+      <div className="mb-2 flex items-center gap-2">
+        <div className="text-green-500">{icon}</div>
+        <span className="text-xs font-medium text-gray-500">{label}</span>
       </div>
-      <div className="text-xl font-bold" style={{ color: "var(--cg-text-primary)" }}>
-        {value}
-      </div>
+      <div className="text-lg font-bold text-white">{value}</div>
     </div>
   );
 }
