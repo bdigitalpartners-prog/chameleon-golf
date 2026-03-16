@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
@@ -20,6 +20,8 @@ import {
   ArrowLeft,
   Lock,
 } from "lucide-react";
+import { PostCard } from "@/components/social/PostCard";
+import { PostComposer } from "@/components/social/PostComposer";
 
 const TYPE_META: Record<string, { label: string; icon: any }> = {
   CREW: { label: "Crew", icon: Users },
@@ -298,14 +300,7 @@ export default function CircleDetailPage() {
 
           {/* Tab content */}
           {tab === "feed" && (
-            <div
-              className="rounded-xl p-8 text-center"
-              style={{ backgroundColor: "var(--cg-bg-card)", border: "1px solid var(--cg-border)" }}
-            >
-              <p className="text-sm" style={{ color: "var(--cg-text-muted)" }}>
-                Posts coming in Sprint 3
-              </p>
-            </div>
+            <CircleFeed circleId={circleId} isMember={!!isMember} currentUserId={(session?.user as any)?.id} />
           )}
 
           {tab === "members" && <MembersPreview circleId={circleId} />}
@@ -491,6 +486,128 @@ function MembersPreview({ circleId }: { circleId: string }) {
       >
         View all members
       </Link>
+    </div>
+  );
+}
+
+function CircleFeed({
+  circleId,
+  isMember,
+  currentUserId,
+}: {
+  circleId: string;
+  isMember: boolean;
+  currentUserId?: string;
+}) {
+  const [posts, setPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
+  const fetchPosts = useCallback(
+    async (cursorParam?: string) => {
+      const isInitial = !cursorParam;
+      if (isInitial) setLoading(true);
+      else setLoadingMore(true);
+
+      try {
+        const params = new URLSearchParams({ circleId, limit: "15" });
+        if (cursorParam) params.set("cursor", cursorParam);
+
+        const res = await fetch(`/api/posts?${params}`);
+        const data = await res.json();
+        const newPosts = data.posts ?? [];
+
+        setPosts((prev) => (isInitial ? newPosts : [...prev, ...newPosts]));
+        setCursor(data.nextCursor ?? null);
+        setHasMore(!!data.nextCursor);
+      } catch {
+        // ignore
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [circleId]
+  );
+
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
+
+  const lastCursorRef = useRef(cursor);
+  lastCursorRef.current = cursor;
+  const hasMoreRef = useRef(hasMore);
+  hasMoreRef.current = hasMore;
+  const loadingMoreRef = useRef(loadingMore);
+  loadingMoreRef.current = loadingMore;
+
+  useEffect(() => {
+    if (observerRef.current) observerRef.current.disconnect();
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (
+          entries[0].isIntersecting &&
+          hasMoreRef.current &&
+          !loadingMoreRef.current &&
+          lastCursorRef.current
+        ) {
+          fetchPosts(lastCursorRef.current);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (sentinelRef.current) {
+      observerRef.current.observe(sentinelRef.current);
+    }
+
+    return () => observerRef.current?.disconnect();
+  }, [fetchPosts]);
+
+  return (
+    <div className="space-y-4">
+      {isMember && (
+        <PostComposer circleId={circleId} onPostCreated={() => fetchPosts()} />
+      )}
+
+      {loading ? (
+        <div className="flex justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin" style={{ color: "var(--cg-accent)" }} />
+        </div>
+      ) : posts.length === 0 ? (
+        <div
+          className="rounded-xl p-8 text-center"
+          style={{ backgroundColor: "var(--cg-bg-card)", border: "1px solid var(--cg-border)" }}
+        >
+          <p className="text-sm" style={{ color: "var(--cg-text-muted)" }}>
+            No posts yet. Be the first to share!
+          </p>
+        </div>
+      ) : (
+        <>
+          {posts.map((post: any) => (
+            <PostCard
+              key={post.id}
+              post={post}
+              currentUserId={currentUserId}
+              onDeleted={() => setPosts((prev) => prev.filter((p) => p.id !== post.id))}
+            />
+          ))}
+
+          <div ref={sentinelRef} className="h-4" />
+
+          {loadingMore && (
+            <div className="flex justify-center py-4">
+              <Loader2 className="h-5 w-5 animate-spin" style={{ color: "var(--cg-accent)" }} />
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

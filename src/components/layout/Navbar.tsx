@@ -40,6 +40,7 @@ export function Navbar() {
               { href: "/about", label: "How It Works" },
               ...(session
                 ? [
+                    { href: "/feed", label: "Feed" },
                     { href: "/circles", label: "Circles" },
                     { href: "/journal", label: "Score Journal" },
                     { href: "/profile", label: "Profile" },
@@ -126,6 +127,7 @@ export function Navbar() {
                 { href: "/about", label: "How It Works" },
                 ...(session
                   ? [
+                      { href: "/feed", label: "Feed" },
                       { href: "/circles", label: "Circles" },
                       { href: "/journal", label: "Score Journal" },
                       { href: "/profile", label: "Profile" },

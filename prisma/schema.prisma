@@ -131,6 +131,9 @@ model Course {
   nearbyCourses     CourseNearbyCourses[] @relation("SourceCourse")
   nearbyFrom        CourseNearbyCourses[] @relation("NearbyCourse")
 
+  // Sprint 3
+  posts             Post[]
+
   @@map("courses")
 }
 
@@ -313,6 +316,14 @@ model User {
   memberships       CircleMembership[]
   invitesSent       CircleInvite[]     @relation("InvitesSent")
   invitesReceived   CircleInvite[]     @relation("InvitesReceived")
+
+  // Sprint 3
+  posts             Post[]
+  fistBumps         FistBump[]
+  comments          Comment[]
+  feedItems         FeedItem[]
+  feedActions       FeedItem[]         @relation("FeedActor")
+  mentionedIn       Mention[]
 
   @@map("users")
 }
@@ -671,6 +682,10 @@ model Circle {
   members             CircleMembership[]
   invites             CircleInvite[]
 
+  // Sprint 3
+  posts               Post[]
+  feedItems           FeedItem[]
+
   @@index([type])
   @@index([privacy])
   @@index([slug])
@@ -822,4 +837,110 @@ model NotificationPref {
 
   @@unique([userId, circleId])
   @@index([userId])
+}
+
+// ============================================================
+// Feed & Engagement — Sprint 3
+// ============================================================
+
+enum PostType {
+  TEXT
+  PHOTO
+  ROUND_RECAP
+  REVIEW
+}
+
+model Post {
+  id            String     @id @default(cuid())
+  authorId      String
+  author        User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  circleId      String
+  circle        Circle     @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  content       String?    @db.Text
+  type          PostType   @default(TEXT)
+  mediaUrls     String[]
+  courseId       Int?
+  course        Course?    @relation(fields: [courseId], references: [courseId])
+  isPinned      Boolean    @default(false)
+  fistBumpCount Int        @default(0)
+  commentCount  Int        @default(0)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  fistBumps     FistBump[]
+  comments      Comment[]
+  mentions      Mention[]
+  feedItems     FeedItem[]
+
+  @@index([circleId, createdAt(sort: Desc)])
+  @@index([authorId])
+  @@index([courseId])
+}
+
+model FistBump {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId        String
+  post          Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+
+  @@unique([userId, postId])
+  @@index([postId])
+  @@index([userId])
+}
+
+model Comment {
+  id            String    @id @default(cuid())
+  authorId      String
+  author        User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  postId        String
+  post          Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  content       String    @db.Text
+  parentId      String?
+  parent        Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies       Comment[] @relation("CommentReplies")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  mentions      Mention[]
+
+  @@index([postId, createdAt])
+  @@index([authorId])
+  @@index([parentId])
+}
+
+model FeedItem {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type          String
+  actorId       String
+  actor         User     @relation("FeedActor", fields: [actorId], references: [id])
+  circleId      String?
+  circle        Circle?  @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  postId        String?
+  post          Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  courseId       Int?
+  metadata      Json?
+  createdAt     DateTime @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, circleId, createdAt(sort: Desc)])
+  @@index([actorId])
+}
+
+model Mention {
+  id               String   @id @default(cuid())
+  mentionedUserId  String
+  mentionedUser    User     @relation(fields: [mentionedUserId], references: [id], onDelete: Cascade)
+  postId           String?
+  post             Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  commentId        String?
+  comment          Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+
+  @@index([mentionedUserId])
+  @@index([postId])
+  @@index([commentId])
 }
