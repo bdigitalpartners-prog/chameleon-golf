@@ -1,0 +1,40 @@
+import { Metadata } from "next";
+import { notFound } from "next/navigation";
+import prisma from "@/lib/prisma";
+import { ArticlePage } from "@/components/performance/ArticlePage";
+
+interface Props {
+  params: { slug: string };
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const article = await prisma.performanceArticle.findUnique({
+    where: { slug: params.slug },
+  });
+
+  if (!article) return { title: "Not Found — golfEQUALIZER" };
+
+  return {
+    title: `${article.title} — Performance Center — golfEQUALIZER`,
+    description: article.subtitle || article.title,
+  };
+}
+
+export default async function ArticleDetailPage({ params }: Props) {
+  const article = await prisma.performanceArticle.findUnique({
+    where: { slug: params.slug },
+  });
+
+  if (!article) notFound();
+
+  const relatedArticles = await prisma.performanceArticle.findMany({
+    where: {
+      category: article.category,
+      slug: { not: article.slug },
+    },
+    orderBy: { sortOrder: "asc" },
+    take: 3,
+  });
+
+  return <ArticlePage article={article} relatedArticles={relatedArticles} />;
+}

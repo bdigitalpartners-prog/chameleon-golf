@@ -1611,3 +1611,28 @@ model ContentReport {
   @@index([contentType, contentId])
   @@index([reporterId])
 }
+
+model PerformanceArticle {
+  id           String    @id @default(cuid())
+  slug         String    @unique
+  title        String    @db.VarChar(255)
+  subtitle     String?   @db.VarChar(500)
+  category     String    @db.VarChar(50) // swing-lab, fitness, mental-game, equipment-intel, stats-center
+  subcategory  String    @db.VarChar(50)
+  difficulty   String?   @db.VarChar(20) // beginner, intermediate, advanced
+  estimatedTime String?  @map("estimated_time") @db.VarChar(30)
+  heroImage    String?   @map("hero_image") @db.VarChar(500)
+  content      String    @db.Text
+  tags         String[]  @default([])
+  videoUrl     String?   @map("video_url") @db.VarChar(500)
+  publishedAt  DateTime  @default(now()) @map("published_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  featured     Boolean   @default(false)
+  sortOrder    Int       @default(0) @map("sort_order")
+
+  @@index([category])
+  @@index([category, subcategory])
+  @@index([featured])
+  @@index([slug])
+  @@map("performance_articles")
+}
