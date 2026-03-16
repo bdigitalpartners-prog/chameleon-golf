@@ -26,6 +26,8 @@ import { CircleCoursesTab } from "@/components/social/CircleCoursesTab";
 import { CircleConditionsTab } from "@/components/social/CircleConditionsTab";
 import { CircleEventsTab } from "@/components/social/CircleEventsTab";
 import { CircleDiscussionsTab } from "@/components/social/CircleDiscussionsTab";
+import { CircleGamesTab } from "@/components/social/CircleGamesTab";
+import { CircleLeaderboardTab } from "@/components/social/CircleLeaderboardTab";
 
 const TYPE_META: Record<string, { label: string; icon: any }> = {
   CREW: { label: "Crew", icon: Users },
@@ -41,7 +43,7 @@ const PRIVACY_META: Record<string, { label: string; icon: any }> = {
   SECRET: { label: "Secret", icon: EyeOff },
 };
 
-type Tab = "feed" | "courses" | "members" | "about" | "conditions" | "events" | "discussions";
+type Tab = "feed" | "courses" | "members" | "about" | "conditions" | "events" | "discussions" | "games" | "leaderboard";
 
 export default function CircleDetailPage() {
   const { data: session, status } = useSession();
@@ -142,6 +144,12 @@ export default function CircleDetailPage() {
           { key: "conditions" as Tab, label: "Conditions" },
           { key: "events" as Tab, label: "Events" },
           { key: "discussions" as Tab, label: "Discussions" },
+        ]
+      : []),
+    ...(circle.type === "GAME" || circle.type === "LEAGUE" || circle.type === "CLUB"
+      ? [
+          { key: "games" as Tab, label: "Games" },
+          { key: "leaderboard" as Tab, label: "Leaderboard" },
         ]
       : []),
     { key: "members", label: "Members" },
@@ -322,6 +330,8 @@ export default function CircleDetailPage() {
           {tab === "events" && <CircleEventsTab circleId={circleId} isAdmin={!!isAdmin} />}
 
           {tab === "discussions" && <CircleDiscussionsTab circleId={circleId} isAdmin={!!isAdmin} />}
+          {tab === "games" && <CircleGamesTab circleId={circleId} isAdmin={!!isAdmin} />}
+          {tab === "leaderboard" && <CircleLeaderboardTab circleId={circleId} />}
 
           {tab === "members" && <MembersPreview circleId={circleId} />}
 

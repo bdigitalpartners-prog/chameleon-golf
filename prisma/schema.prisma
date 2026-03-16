@@ -150,6 +150,9 @@ model Course {
   // Course Intelligence
   intelligenceNotes   CourseIntelligenceNote[]
 
+  // Sprint 6
+  games               Game[]
+
   @@map("courses")
 }
 
@@ -353,6 +356,14 @@ model User {
   eventRSVPs          EventRSVP[]
   threadsCreated      DiscussionThread[] @relation("ThreadsCreated")
   threadReplies       ThreadReply[]      @relation("ThreadReplies")
+
+  // Sprint 6
+  gamesCreated        Game[]
+  gamePlayers         GamePlayer[]
+  gameScores          GameScore[]
+  h2hAsUser1          HeadToHead[]       @relation("H2HUser1")
+  h2hAsUser2          HeadToHead[]       @relation("H2HUser2")
+  leagueStandings     LeagueStanding[]
 
   @@map("users")
 }
@@ -726,6 +737,11 @@ model Circle {
   conditionReports    ConditionReport[]
   circleEvents        CircleEvent[]
   discussionThreads   DiscussionThread[]
+
+  // Sprint 6
+  games               Game[]
+  headToHeads         HeadToHead[]
+  leagueSeasons       LeagueSeason[]
 
   @@index([type])
   @@index([privacy])
@@ -1262,4 +1278,169 @@ model ThreadReply {
 
   @@index([threadId, createdAt])
   @@index([authorId])
+}
+
+// ─── Sprint 6: Games & Competitions ────────────────────────────────
+
+enum GameFormat {
+  SKINS
+  NASSAU
+  WOLF
+  MATCH_PLAY
+  BEST_BALL
+  SCRAMBLE
+  STABLEFORD
+  SHAMBLE
+  STROKE_PLAY
+}
+
+enum GameStatus {
+  SETUP
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PlayerStatus {
+  CONFIRMED
+  TENTATIVE
+  WITHDRAWN
+}
+
+model Game {
+  id            String     @id @default(cuid())
+  circleId      String
+  circle        Circle     @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  createdById   String
+  createdBy     User       @relation(fields: [createdById], references: [id])
+  format        GameFormat
+  courseId       Int?
+  course        Course?    @relation(fields: [courseId], references: [courseId])
+  name          String?
+  startDate     DateTime?
+  endDate       DateTime?
+  status        GameStatus @default(SETUP)
+  config        Json?
+  holesPlayed   Int        @default(18)
+  results       Json?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  players       GamePlayer[]
+  scores        GameScore[]
+  sideGames     SideGame[]
+
+  @@index([circleId, status])
+  @@index([courseId])
+  @@index([createdById])
+}
+
+model GamePlayer {
+  id            String       @id @default(cuid())
+  gameId        String
+  game          Game         @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team          String?
+  handicap      Float?
+  startingHole  Int          @default(1)
+  status        PlayerStatus @default(CONFIRMED)
+  position      Int?
+
+  @@unique([gameId, userId])
+  @@index([gameId])
+  @@index([userId])
+}
+
+model GameScore {
+  id            String   @id @default(cuid())
+  gameId        String
+  game          Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  holeNumber    Int
+  strokes       Int
+  putts         Int?
+  penalties     Int?
+  fairwayHit    Boolean?
+  greenInReg    Boolean?
+  createdAt     DateTime @default(now())
+
+  @@unique([gameId, userId, holeNumber])
+  @@index([gameId, userId])
+  @@index([gameId, holeNumber])
+}
+
+model SideGame {
+  id          String   @id @default(cuid())
+  gameId      String
+  game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  name        String
+  type        String
+  stakes      String?
+  holeNumber  Int?
+  results     Json?
+  createdAt   DateTime @default(now())
+
+  @@index([gameId])
+}
+
+model HeadToHead {
+  id            String   @id @default(cuid())
+  userId1       String
+  user1         User     @relation("H2HUser1", fields: [userId1], references: [id], onDelete: Cascade)
+  userId2       String
+  user2         User     @relation("H2HUser2", fields: [userId2], references: [id], onDelete: Cascade)
+  circleId      String
+  circle        Circle   @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  wins1         Int      @default(0)
+  wins2         Int      @default(0)
+  ties          Int      @default(0)
+  lastPlayed    DateTime?
+  courseBreakdown Json?
+
+  @@unique([userId1, userId2, circleId])
+  @@index([circleId])
+  @@index([userId1])
+  @@index([userId2])
+}
+
+model LeagueSeason {
+  id            String   @id @default(cuid())
+  circleId      String
+  circle        Circle   @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  name          String
+  startDate     DateTime
+  endDate       DateTime
+  status        GameStatus @default(SETUP)
+  pointSystem   Json?
+  divisions     Json?
+  playoffConfig Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  standings     LeagueStanding[]
+
+  @@index([circleId, status])
+}
+
+model LeagueStanding {
+  id          String       @id @default(cuid())
+  seasonId    String
+  season      LeagueSeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  division    String?
+  points      Float        @default(0)
+  wins        Int          @default(0)
+  losses      Int          @default(0)
+  ties        Int          @default(0)
+  gamesPlayed Int          @default(0)
+  rank        Int?
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([seasonId, userId])
+  @@index([seasonId, rank])
+  @@index([userId])
 }
