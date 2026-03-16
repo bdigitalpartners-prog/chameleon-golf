@@ -1636,3 +1636,14 @@ model PerformanceArticle {
   @@index([slug])
   @@map("performance_articles")
 }
+
+model WaitlistSignup {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  handicap  String?  // e.g., "0-5", "6-10", "11-15", "16-20", "21+"
+  source    String?  // e.g., "homepage", "waitlist-page", "social"
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("waitlist_signups")
+}
