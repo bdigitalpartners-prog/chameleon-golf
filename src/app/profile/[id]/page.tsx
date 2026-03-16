@@ -15,6 +15,7 @@ import {
   Check,
   Clock,
   Ban,
+  BadgeCheck,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -31,6 +32,9 @@ interface ProfileData {
     coverUrl: string | null;
     location: string | null;
     isAvailableToPlay: boolean;
+    handicapIndex: number | null;
+    handicapVerified: boolean;
+    ghinNumber: string | null;
     tags: { tag: { id: string; name: string; slug: string; category: string | null } }[];
   } | null;
   connectionsCount: number;
@@ -171,11 +175,22 @@ export default function PublicProfilePage() {
                   <MapPin className="h-3.5 w-3.5" /> {p.location}
                 </span>
               )}
-              {p?.handicap !== null && p?.handicap !== undefined && (
+              {p?.handicapVerified && p?.handicapIndex !== null && p?.handicapIndex !== undefined ? (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold"
+                  style={{
+                    backgroundColor: "rgba(1, 105, 111, 0.15)",
+                    color: "#01696F",
+                  }}
+                >
+                  <BadgeCheck className="h-3.5 w-3.5" />
+                  HCP {p.handicapIndex.toFixed(1)} ✓
+                </span>
+              ) : p?.handicap !== null && p?.handicap !== undefined ? (
                 <span className="flex items-center gap-1">
                   <Trophy className="h-3.5 w-3.5" /> Handicap: {p.handicap}
                 </span>
-              )}
+              ) : null}
               {p?.homeClub && (
                 <span className="flex items-center gap-1">Home: {p.homeClub}</span>
               )}
