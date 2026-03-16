@@ -563,7 +563,11 @@ export function CourseDetailClient({ course }: { course: any }) {
                   <InfoRow label="Access" value={safeText(course.accessType)} />
                   <InfoRow label="Holes" value={course.numHoles} />
                   <InfoRow label="Par" value={course.par} />
-                  <InfoRow label="Architect" value={safeText(course.originalArchitect)} />
+                  <InfoRow label="Architect" value={
+                    course.architect?.slug
+                      ? <Link href={`/architects/${course.architect.slug}`} className="text-green-500 hover:text-green-400 transition-colors">{course.architect.name || safeText(course.originalArchitect)}</Link>
+                      : safeText(course.originalArchitect)
+                  } />
                   <InfoRow label="Year Opened" value={course.yearOpened} />
                   <InfoRow label="Renovation" value={
                     safeText(course.renovationArchitect)

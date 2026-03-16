@@ -44,6 +44,9 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
         where: { isVisible: true },
         orderBy: { generatedAt: "desc" },
       },
+      architect: {
+        select: { name: true, slug: true },
+      },
     },
   });
 

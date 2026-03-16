@@ -22,6 +22,7 @@ import {
   Crown,
   Layers,
   Calculator,
+  Pencil,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -30,6 +31,7 @@ const NAV_ITEMS = [
   { label: "Enrichment", href: "/admin/enrichment", icon: Database },
   { label: "Intelligence", href: "/admin/intelligence", icon: Lightbulb },
   { label: "Rankings", href: "/admin/rankings", icon: Trophy },
+  { label: "Architects", href: "/admin/architects", icon: Pencil },
   { label: "Scores", href: "/admin/scores", icon: Calculator },
   { label: "Users", href: "/admin/users", icon: Users },
   { label: "Reviews", href: "/admin/reviews", icon: Star },
