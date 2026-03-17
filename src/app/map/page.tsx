@@ -144,8 +144,28 @@ function MapPageInner() {
     }
   }, []);
 
-  // Sync URL → state on param change
+  // On mount, read filters from the actual browser URL (useSearchParams may
+  // be empty during initial hydration in a Suspense boundary).
+  const didInitialFetch = useRef(false);
   useEffect(() => {
+    if (didInitialFetch.current) return;
+    didInitialFetch.current = true;
+    const sp =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search)
+        : searchParams;
+    const initF = paramsToFilters(sp);
+    setFilters(initF);
+    fetchCourses(initF);
+  }, [fetchCourses, searchParams]);
+
+  // Sync URL → state on subsequent param changes
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     const newF = paramsToFilters(searchParams);
     setFilters(newF);
     fetchCourses(newF);

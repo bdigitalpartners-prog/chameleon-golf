@@ -33,15 +33,14 @@ export async function GET(req: NextRequest) {
       Prisma.sql`c.latitude IS NOT NULL AND c.longitude IS NOT NULL`,
     ];
 
-    // Preset queries
+    // Preset queries – top100/top50 use a subquery to pick the N most-ranked courses
+    let presetLimit: number | null = null;
     if (query === "top100") {
-      conditions.push(
-        Prisma.sql`EXISTS (SELECT 1 FROM ranking_entries re WHERE re.course_id = c.course_id)`
-      );
+      conditions.push(Prisma.sql`c.num_lists_appeared > 0`);
+      presetLimit = 100;
     } else if (query === "top50") {
-      conditions.push(
-        Prisma.sql`EXISTS (SELECT 1 FROM ranking_entries re WHERE re.course_id = c.course_id AND re.rank_position <= 50)`
-      );
+      conditions.push(Prisma.sql`c.num_lists_appeared > 0`);
+      presetLimit = 50;
     } else if (query === "hidden-gems") {
       conditions.push(
         Prisma.sql`c.num_lists_appeared <= 1 AND c.access_type = 'Open to Public'`
@@ -146,7 +145,7 @@ export async function GET(req: NextRequest) {
       LEFT JOIN chameleon_scores cs ON cs.course_id = c.course_id
       WHERE ${whereClause}
       ${orderClause}
-      LIMIT ${limit}
+      LIMIT ${presetLimit != null ? Math.min(presetLimit, limit) : limit}
     `);
 
     const total = rows.length > 0 ? Number(rows[0].total_count) : 0;
