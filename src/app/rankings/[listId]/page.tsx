@@ -92,6 +92,27 @@ export default function ListDetailPage() {
       });
   }, [listId]);
 
+  const sourceColor =
+    SOURCE_COLORS[data?.source?.sourceName ?? ""] ?? "var(--cg-accent)";
+
+  const mapCourses = useMemo<CourseMapItem[]>(() => {
+    if (!data?.courses) return [];
+    return data.courses
+      .filter((c) => c.latitude && c.longitude)
+      .map((c) => ({
+        courseId: c.courseId,
+        courseName: c.courseName,
+        facilityName: c.facilityName,
+        latitude: parseFloat(c.latitude!),
+        longitude: parseFloat(c.longitude!),
+        city: c.city,
+        state: c.state,
+        accessType: c.accessType,
+        originalArchitect: c.originalArchitect,
+        greenFeeHigh: c.greenFeeLow ? parseFloat(c.greenFeeLow) : null,
+      }));
+  }, [data?.courses]);
+
   if (loading) {
     return (
       <div
@@ -130,27 +151,6 @@ export default function ListDetailPage() {
       </div>
     );
   }
-
-  const sourceColor =
-    SOURCE_COLORS[data.source.sourceName] ?? "var(--cg-accent)";
-
-  const mapCourses = useMemo<CourseMapItem[]>(() => {
-    if (!data?.courses) return [];
-    return data.courses
-      .filter((c) => c.latitude && c.longitude)
-      .map((c) => ({
-        courseId: c.courseId,
-        courseName: c.courseName,
-        facilityName: c.facilityName,
-        latitude: parseFloat(c.latitude!),
-        longitude: parseFloat(c.longitude!),
-        city: c.city,
-        state: c.state,
-        accessType: c.accessType,
-        originalArchitect: c.originalArchitect,
-        greenFeeHigh: c.greenFeeLow ? parseFloat(c.greenFeeLow) : null,
-      }));
-  }, [data?.courses]);
 
   return (
     <div
