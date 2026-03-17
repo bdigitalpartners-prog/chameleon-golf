@@ -4,151 +4,158 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { withCircleAuth } from "@/lib/circle-auth";
 
-export const dynamic = 'force-dynamic';
-
-// GET — Event detail with RSVPs
+// GET /api/circles/[id]/events/[eventId] - Event detail with RSVPs
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string; eventId: string } }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const userId = (session.user as any).id;
-  const circleId = params.id;
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const userId = (session.user as any).id;
+    const { id: circleId, eventId } = params;
 
-  const auth = await withCircleAuth(circleId, userId, [
-    "OWNER",
-    "ADMIN",
-    "MEMBER",
-  ]);
-  if (!auth.authorized) {
-    return NextResponse.json(
-      { error: auth.error },
-      { status: auth.status }
-    );
-  }
+    const auth = await withCircleAuth(circleId, userId, ["OWNER", "ADMIN", "MEMBER"]);
+    if (!auth.authorized) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
 
-  const event = await prisma.circleEvent.findUnique({
-    where: { id: params.eventId },
-    include: {
-      createdBy: { select: { id: true, name: true, image: true } },
-      course: { select: { courseId: true, courseName: true } },
-      rsvps: {
-        include: {
-          user: { select: { id: true, name: true, image: true } },
+    const event = await prisma.circleEvent.findFirst({
+      where: { id: eventId, circleId },
+      include: {
+        rsvps: {
+          include: {
+            user: { select: { id: true, name: true, image: true } },
+          },
+          orderBy: { createdAt: "asc" },
         },
-        orderBy: { createdAt: "asc" },
+        createdBy: { select: { id: true, name: true, image: true } },
+        course: { select: { courseId: true, courseName: true } },
       },
-    },
-  });
+    });
 
-  if (!event || event.circleId !== circleId) {
-    return NextResponse.json({ error: "Event not found" }, { status: 404 });
-  }
+    if (!event) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    }
 
-  const goingCount = event.rsvps.filter((r) => r.status === "GOING").length;
-  const maybeCount = event.rsvps.filter((r) => r.status === "MAYBE").length;
-  const declinedCount = event.rsvps.filter(
-    (r) => r.status === "DECLINED"
-  ).length;
-  const userRsvp = event.rsvps.find((r) => r.userId === userId);
+    const goingCount = event.rsvps.filter((r) => r.status === "GOING").length;
+    const maybeCount = event.rsvps.filter((r) => r.status === "MAYBE").length;
+    const declinedCount = event.rsvps.filter((r) => r.status === "DECLINED").length;
+    const currentUserRsvp = event.rsvps.find((r) => r.userId === userId)?.status || null;
 
-  return NextResponse.json({
-    event: {
+    return NextResponse.json({
       ...event,
-      rsvpCounts: { going: goingCount, maybe: maybeCount, declined: declinedCount },
-      userRsvp: userRsvp ?? null,
-    },
-  });
+      goingCount,
+      maybeCount,
+      declinedCount,
+      currentUserRsvp,
+    });
+  } catch (error: any) {
+    console.error("GET /api/circles/[id]/events/[eventId] error:", error);
+    return NextResponse.json({ error: error.message || "Failed to fetch event" }, { status: 500 });
+  }
 }
 
-// PATCH — Update event (ADMIN/OWNER)
+// PATCH /api/circles/[id]/events/[eventId] - Update event
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string; eventId: string } }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const userId = (session.user as any).id;
+    const { id: circleId, eventId } = params;
+
+    const auth = await withCircleAuth(circleId, userId, ["OWNER", "ADMIN"]);
+    if (!auth.authorized) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
+    // Verify the event belongs to this circle
+    const existing = await prisma.circleEvent.findFirst({
+      where: { id: eventId, circleId },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    }
+
+    const body = await req.json();
+    const {
+      title,
+      description,
+      courseId,
+      eventType,
+      startDate,
+      endDate,
+      rsvpDeadline,
+      maxAttendees,
+      location,
+      coverUrl,
+    } = body;
+
+    const data: any = {};
+    if (title !== undefined) data.title = title;
+    if (description !== undefined) data.description = description;
+    if (courseId !== undefined) data.courseId = courseId ? Number(courseId) : null;
+    if (eventType !== undefined) data.eventType = eventType;
+    if (startDate !== undefined) data.startDate = new Date(startDate);
+    if (endDate !== undefined) data.endDate = endDate ? new Date(endDate) : null;
+    if (rsvpDeadline !== undefined) data.rsvpDeadline = rsvpDeadline ? new Date(rsvpDeadline) : null;
+    if (maxAttendees !== undefined) data.maxAttendees = maxAttendees ? Number(maxAttendees) : null;
+    if (location !== undefined) data.location = location;
+    if (coverUrl !== undefined) data.coverUrl = coverUrl;
+
+    const updated = await prisma.circleEvent.update({
+      where: { id: eventId },
+      data,
+      include: {
+        createdBy: { select: { id: true, name: true, image: true } },
+        course: { select: { courseId: true, courseName: true } },
+        rsvps: { select: { userId: true, status: true } },
+      },
+    });
+
+    return NextResponse.json(updated);
+  } catch (error: any) {
+    console.error("PATCH /api/circles/[id]/events/[eventId] error:", error);
+    return NextResponse.json({ error: error.message || "Failed to update event" }, { status: 500 });
   }
-  const userId = (session.user as any).id;
-  const circleId = params.id;
-
-  const auth = await withCircleAuth(circleId, userId, ["OWNER", "ADMIN"]);
-  if (!auth.authorized) {
-    return NextResponse.json(
-      { error: auth.error },
-      { status: auth.status }
-    );
-  }
-
-  const existing = await prisma.circleEvent.findUnique({
-    where: { id: params.eventId },
-  });
-  if (!existing || existing.circleId !== circleId) {
-    return NextResponse.json({ error: "Event not found" }, { status: 404 });
-  }
-
-  const body = await req.json();
-  const data: any = {};
-  if (body.title !== undefined) data.title = body.title;
-  if (body.description !== undefined) data.description = body.description;
-  if (body.courseId !== undefined)
-    data.courseId = body.courseId ? Number(body.courseId) : null;
-  if (body.eventType !== undefined) data.eventType = body.eventType;
-  if (body.startDate !== undefined) data.startDate = new Date(body.startDate);
-  if (body.endDate !== undefined)
-    data.endDate = body.endDate ? new Date(body.endDate) : null;
-  if (body.rsvpDeadline !== undefined)
-    data.rsvpDeadline = body.rsvpDeadline
-      ? new Date(body.rsvpDeadline)
-      : null;
-  if (body.maxAttendees !== undefined)
-    data.maxAttendees = body.maxAttendees ? Number(body.maxAttendees) : null;
-  if (body.location !== undefined) data.location = body.location;
-
-  const event = await prisma.circleEvent.update({
-    where: { id: params.eventId },
-    data,
-    include: {
-      createdBy: { select: { id: true, name: true, image: true } },
-      course: { select: { courseId: true, courseName: true } },
-    },
-  });
-
-  return NextResponse.json({ event });
 }
 
-// DELETE — Cancel event (ADMIN/OWNER)
+// DELETE /api/circles/[id]/events/[eventId] - Cancel/delete event
 export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string; eventId: string } }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const userId = (session.user as any).id;
+    const { id: circleId, eventId } = params;
+
+    const auth = await withCircleAuth(circleId, userId, ["OWNER", "ADMIN"]);
+    if (!auth.authorized) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
+    // Verify the event belongs to this circle
+    const existing = await prisma.circleEvent.findFirst({
+      where: { id: eventId, circleId },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
+    }
+
+    await prisma.circleEvent.delete({
+      where: { id: eventId },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("DELETE /api/circles/[id]/events/[eventId] error:", error);
+    return NextResponse.json({ error: error.message || "Failed to delete event" }, { status: 500 });
   }
-  const userId = (session.user as any).id;
-  const circleId = params.id;
-
-  const auth = await withCircleAuth(circleId, userId, ["OWNER", "ADMIN"]);
-  if (!auth.authorized) {
-    return NextResponse.json(
-      { error: auth.error },
-      { status: auth.status }
-    );
-  }
-
-  const existing = await prisma.circleEvent.findUnique({
-    where: { id: params.eventId },
-  });
-  if (!existing || existing.circleId !== circleId) {
-    return NextResponse.json({ error: "Event not found" }, { status: 404 });
-  }
-
-  await prisma.circleEvent.delete({ where: { id: params.eventId } });
-
-  return NextResponse.json({ success: true });
 }
