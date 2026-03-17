@@ -33,14 +33,20 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const body = await req.json().catch(() => ({}));
     const expiresInDays = body.expiresInDays ?? 7;
 
-    let code: string;
-    let attempts = 0;
-    do {
+    let code: string = "";
+    let codeIsUnique = false;
+    for (let attempts = 0; attempts < 10; attempts++) {
       code = generateCode();
       const existing = await prisma.circleInvite.findUnique({ where: { inviteCode: code } });
-      if (!existing) break;
-      attempts++;
-    } while (attempts < 10);
+      if (!existing) {
+        codeIsUnique = true;
+        break;
+      }
+    }
+
+    if (!codeIsUnique) {
+      return NextResponse.json({ error: "Failed to generate a unique invite code. Please try again." }, { status: 500 });
+    }
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + expiresInDays);

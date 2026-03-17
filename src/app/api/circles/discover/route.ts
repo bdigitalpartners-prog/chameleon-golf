@@ -23,7 +23,10 @@ export async function GET(req: NextRequest) {
     const where: any = {
       privacy: "PUBLIC",
       members: {
-        none: { userId },
+        none: {
+          userId,
+          role: { not: "PENDING" },
+        },
       },
     };
 

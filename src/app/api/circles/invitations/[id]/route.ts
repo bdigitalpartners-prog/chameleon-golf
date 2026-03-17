@@ -33,6 +33,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       return NextResponse.json({ error: "Invitation is no longer pending" }, { status: 400 });
     }
 
+    if (invite.expiresAt && new Date(invite.expiresAt) < new Date()) {
+      return NextResponse.json({ error: "Invitation has expired" }, { status: 400 });
+    }
+
     const { action } = await req.json();
 
     if (action === "accept") {

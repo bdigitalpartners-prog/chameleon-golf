@@ -8,101 +8,111 @@ import { GameFormat } from "@prisma/client";
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const userId = (session.user as any).id;
-  const circleId = params.id;
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const userId = (session.user as any).id;
+    const circleId = params.id;
 
-  const auth = await withCircleAuth(circleId, userId, ["OWNER", "ADMIN", "MEMBER"]);
-  if (!auth.authorized) return NextResponse.json({ error: auth.error }, { status: auth.status ?? 403 });
+    const auth = await withCircleAuth(circleId, userId, ["OWNER", "ADMIN", "MEMBER"]);
+    if (!auth.authorized) return NextResponse.json({ error: auth.error }, { status: auth.status ?? 403 });
 
-  const searchParams = req.nextUrl.searchParams;
-  const status = searchParams.get("status");
-  const page = Math.max(1, Number(searchParams.get("page") ?? 1));
-  const limit = Math.min(Number(searchParams.get("limit") ?? 20), 100);
+    const searchParams = req.nextUrl.searchParams;
+    const status = searchParams.get("status");
+    const page = Math.max(1, Number(searchParams.get("page") ?? 1));
+    const limit = Math.min(Number(searchParams.get("limit") ?? 20), 100);
 
-  const where: any = { circleId };
-  if (status) {
-    const statuses = status.split(",");
-    where.status = statuses.length > 1 ? { in: statuses } : statuses[0];
+    const where: any = { circleId };
+    if (status) {
+      const statuses = status.split(",");
+      where.status = statuses.length > 1 ? { in: statuses } : statuses[0];
+    }
+
+    const [games, total] = await Promise.all([
+      prisma.game.findMany({
+        where,
+        include: {
+          createdBy: { select: { id: true, name: true, image: true } },
+          course: { select: { courseId: true, courseName: true, facilityName: true } },
+          players: { include: { user: { select: { id: true, name: true, image: true } } } },
+          _count: { select: { scores: true, sideGames: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.game.count({ where }),
+    ]);
+
+    return NextResponse.json({ games, total, page, totalPages: Math.ceil(total / limit) });
+  } catch (error: any) {
+    console.error("GET /api/circles/[id]/games error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  const [games, total] = await Promise.all([
-    prisma.game.findMany({
-      where,
-      include: {
-        createdBy: { select: { id: true, name: true, image: true } },
-        course: { select: { courseId: true, courseName: true, facilityName: true } },
-        players: { include: { user: { select: { id: true, name: true, image: true } } } },
-        _count: { select: { scores: true, sideGames: true } },
-      },
-      orderBy: { createdAt: "desc" },
-      skip: (page - 1) * limit,
-      take: limit,
-    }),
-    prisma.game.count({ where }),
-  ]);
-
-  return NextResponse.json({ games, total, page, totalPages: Math.ceil(total / limit) });
 }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const userId = (session.user as any).id;
-  const circleId = params.id;
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const userId = (session.user as any).id;
+    const circleId = params.id;
 
-  const auth = await withCircleAuth(circleId, userId, ["OWNER", "ADMIN", "MEMBER"]);
-  if (!auth.authorized) return NextResponse.json({ error: auth.error }, { status: auth.status ?? 403 });
+    const auth = await withCircleAuth(circleId, userId, ["OWNER", "ADMIN", "MEMBER"]);
+    if (!auth.authorized) return NextResponse.json({ error: auth.error }, { status: auth.status ?? 403 });
 
-  const body = await req.json();
-  const { format, courseId, name, startDate, holesPlayed, config, status: gameStatus } = body;
+    const body = await req.json();
+    const { format, courseId, name, startDate, holesPlayed, config, status: gameStatus } = body;
 
-  if (!format) return NextResponse.json({ error: "Format is required" }, { status: 400 });
+    if (!format) return NextResponse.json({ error: "Format is required" }, { status: 400 });
 
-  // Validate format against GameFormat enum
-  const validFormats = Object.values(GameFormat);
-  if (!validFormats.includes(format)) {
-    return NextResponse.json(
-      { error: `Invalid game format. Must be one of: ${validFormats.join(", ")}` },
-      { status: 400 }
-    );
-  }
-
-  // Validate startDate if provided
-  if (startDate !== undefined && startDate !== null) {
-    const parsedDate = new Date(startDate);
-    if (isNaN(parsedDate.getTime())) {
-      return NextResponse.json({ error: "startDate must be a valid date" }, { status: 400 });
+    // Validate format against GameFormat enum
+    const validFormats = Object.values(GameFormat);
+    if (!validFormats.includes(format)) {
+      return NextResponse.json(
+        { error: `Invalid game format. Must be one of: ${validFormats.join(", ")}` },
+        { status: 400 }
+      );
     }
+
+    // Validate startDate if provided
+    if (startDate !== undefined && startDate !== null) {
+      const parsedDate = new Date(startDate);
+      if (isNaN(parsedDate.getTime())) {
+        return NextResponse.json({ error: "startDate must be a valid date" }, { status: 400 });
+      }
+    }
+
+    const game = await prisma.game.create({
+      data: {
+        circleId,
+        createdById: userId,
+        format,
+        courseId: courseId ? Number(courseId) : null,
+        name: name || null,
+        startDate: startDate ? new Date(startDate) : null,
+        holesPlayed: holesPlayed ?? 18,
+        config: config ?? undefined,
+        status: gameStatus ?? "SETUP",
+      },
+      include: {
+        createdBy: { select: { id: true, name: true, image: true } },
+        course: { select: { courseId: true, courseName: true } },
+      },
+    });
+
+    // Auto-add creator as first player
+    await prisma.gamePlayer.create({
+      data: {
+        gameId: game.id,
+        userId,
+        status: "CONFIRMED",
+      },
+    });
+
+    return NextResponse.json({ game }, { status: 201 });
+  } catch (error: any) {
+    console.error("POST /api/circles/[id]/games error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  const game = await prisma.game.create({
-    data: {
-      circleId,
-      createdById: userId,
-      format,
-      courseId: courseId ? Number(courseId) : null,
-      name: name || null,
-      startDate: startDate ? new Date(startDate) : null,
-      holesPlayed: holesPlayed ?? 18,
-      config: config ?? undefined,
-      status: gameStatus ?? "SETUP",
-    },
-    include: {
-      createdBy: { select: { id: true, name: true, image: true } },
-      course: { select: { courseId: true, courseName: true } },
-    },
-  });
-
-  // Auto-add creator as first player
-  await prisma.gamePlayer.create({
-    data: {
-      gameId: game.id,
-      userId,
-      status: "CONFIRMED",
-    },
-  });
-
-  return NextResponse.json({ game }, { status: 201 });
 }

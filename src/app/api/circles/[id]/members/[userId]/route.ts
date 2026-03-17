@@ -103,6 +103,9 @@ export async function PATCH(
         if (targetMembership.role === "OWNER") {
           return NextResponse.json({ error: "Cannot remove the owner" }, { status: 400 });
         }
+        if (targetMembership.role === "ADMIN" && auth.membership!.role !== "OWNER") {
+          return NextResponse.json({ error: "Only owners can remove admins" }, { status: 403 });
+        }
         await prisma.circleMembership.delete({
           where: { id: targetMembership.id },
         });

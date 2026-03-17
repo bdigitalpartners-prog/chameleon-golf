@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
       where: {
         inviteeId: userId,
         status: "PENDING",
+        OR: [{ expiresAt: null }, { expiresAt: { gte: new Date() } }],
       },
       include: {
         circle: {

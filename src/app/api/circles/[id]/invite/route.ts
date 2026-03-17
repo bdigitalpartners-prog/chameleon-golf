@@ -77,6 +77,16 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         // Check if email belongs to an existing user
         const existingUser = await prisma.user.findUnique({ where: { email } });
 
+        // Check if the user is already a member of the circle
+        if (existingUser) {
+          const existingMembership = await prisma.circleMembership.findUnique({
+            where: { circleId_userId: { circleId, userId: existingUser.id } },
+          });
+          if (existingMembership) {
+            return NextResponse.json({ error: "User is already a member" }, { status: 400 });
+          }
+        }
+
         const invite = await prisma.circleInvite.create({
           data: {
             circleId,
