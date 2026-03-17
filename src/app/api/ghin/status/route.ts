@@ -14,41 +14,52 @@ export async function GET(_request: NextRequest) {
   const userId = (session.user as any).id;
 
   try {
-    const profile = await prisma.userProfile.findUnique({
-      where: { userId },
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
       select: {
-        id: true,
-        handicapIndex: true,
-        handicapVerified: true,
         ghinNumber: true,
+        handicapIndex: true,
+        ghinVerified: true,
       },
     });
 
-    if (!profile) {
+    if (!user) {
       return NextResponse.json({ verification: null, profile: null });
     }
 
-    // Get the most recent verification
-    const verification = await prisma.ghinVerification.findFirst({
-      where: { userId: profile.id },
-      orderBy: { createdAt: "desc" },
+    // Get the most recent verification queue entry for this user
+    const queueEntry = await prisma.adminVerificationQueue.findFirst({
+      where: { userId },
+      orderBy: { submittedAt: "desc" },
       select: {
-        id: true,
+        queueId: true,
         ghinNumber: true,
-        handicapIndex: true,
         status: true,
-        reviewNote: true,
-        createdAt: true,
+        reviewNotes: true,
+        submittedAt: true,
         reviewedAt: true,
       },
     });
 
+    // Map AdminVerificationQueue fields to the shape the frontend expects
+    const verification = queueEntry
+      ? {
+          id: String(queueEntry.queueId),
+          ghinNumber: queueEntry.ghinNumber ?? "",
+          handicapIndex: user.handicapIndex ? Number(user.handicapIndex) : null,
+          status: queueEntry.status,
+          reviewNote: queueEntry.reviewNotes ?? null,
+          createdAt: queueEntry.submittedAt.toISOString(),
+          reviewedAt: queueEntry.reviewedAt?.toISOString() ?? null,
+        }
+      : null;
+
     return NextResponse.json({
       verification,
       profile: {
-        handicapIndex: profile.handicapIndex,
-        handicapVerified: profile.handicapVerified,
-        ghinNumber: profile.ghinNumber,
+        handicapIndex: user.handicapIndex ? Number(user.handicapIndex) : null,
+        handicapVerified: user.ghinVerified,
+        ghinNumber: user.ghinNumber ?? null,
       },
     });
   } catch (err) {
