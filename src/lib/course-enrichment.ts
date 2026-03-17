@@ -781,25 +781,56 @@ export function enrichCourse(course: CourseData): EnrichmentResult {
 // ─── Enrichment Completeness Calculation ─────────────────────────────
 
 export const ENRICHMENT_FIELDS = [
+  // Core info (high weight)
   { key: "description", label: "Description", weight: 3 },
   { key: "par", label: "Par", weight: 2 },
-  { key: "yearOpened", label: "Year Opened", weight: 1 },
   { key: "originalArchitect", label: "Architect", weight: 2 },
-  { key: "courseType", label: "Course Type", weight: 1 },
   { key: "accessType", label: "Access Type", weight: 2 },
+  { key: "yearOpened", label: "Year Opened", weight: 1 },
+  { key: "courseType", label: "Course Type", weight: 1 },
   { key: "courseStyle", label: "Course Style", weight: 1 },
+  { key: "tagline", label: "Tagline", weight: 1 },
+
+  // Pricing
   { key: "greenFeeLow", label: "Green Fee (Low)", weight: 1 },
   { key: "greenFeeHigh", label: "Green Fee (High)", weight: 1 },
+  { key: "priceTier", label: "Price Tier", weight: 1 },
+
+  // Policies
   { key: "walkingPolicy", label: "Walking Policy", weight: 1 },
   { key: "dressCode", label: "Dress Code", weight: 1 },
   { key: "caddieAvailability", label: "Caddie Availability", weight: 1 },
+  { key: "howToGetOn", label: "How to Get On", weight: 2 },
+  { key: "guestPolicy", label: "Guest Policy", weight: 1 },
+
+  // Course character & insider tips
+  { key: "whatToExpect", label: "What to Expect", weight: 2 },
+  { key: "courseStrategy", label: "Course Strategy", weight: 1 },
+  { key: "insiderTips", label: "Insider Tips", weight: 2 },
+  { key: "signatureHoleDescription", label: "Signature Hole", weight: 1 },
+  { key: "bestPar3", label: "Best Par 3", weight: 1 },
+  { key: "bestPar4", label: "Best Par 4", weight: 1 },
+  { key: "bestPar5", label: "Best Par 5", weight: 1 },
+  { key: "designPhilosophy", label: "Design Philosophy", weight: 1 },
+
+  // Conditions
+  { key: "fairwayGrass", label: "Fairway Grass", weight: 1 },
+  { key: "greenGrass", label: "Green Grass", weight: 1 },
+  { key: "greenSpeed", label: "Green Speed", weight: 1 },
+  { key: "bestConditionMonths", label: "Best Condition Months", weight: 1 },
   { key: "practiceFacilities", label: "Practice Facilities", weight: 1 },
+
+  // Season / timing
   { key: "bestTimeToPlay", label: "Best Time to Play", weight: 1 },
   { key: "bestMonths", label: "Best Months", weight: 1 },
   { key: "golfSeason", label: "Golf Season", weight: 1 },
   { key: "averageRoundTime", label: "Average Round Time", weight: 1 },
-  { key: "fairwayGrass", label: "Fairway Grass", weight: 1 },
-  { key: "greenGrass", label: "Green Grass", weight: 1 },
+
+  // History
+  { key: "championshipHistory", label: "Championship History", weight: 1 },
+  { key: "famousMoments", label: "Famous Moments", weight: 1 },
+
+  // Contact & location
   { key: "websiteUrl", label: "Website", weight: 1 },
   { key: "phone", label: "Phone", weight: 1 },
   { key: "latitude", label: "Coordinates", weight: 1 },
