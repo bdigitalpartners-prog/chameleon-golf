@@ -1,0 +1,119 @@
+/* ═══════════════════════════════════════════════════════ */
+/* CIRCLES SOCIAL WIDGET — Animations & Utility Classes   */
+/* ═══════════════════════════════════════════════════════ */
+
+/* Badge bounce animation */
+@keyframes cw-badge-bounce {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+/* Launcher pulse ring */
+@keyframes cw-launcher-pulse {
+  0%, 100% { opacity: 0; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.2); }
+}
+
+/* Panel slide up */
+@keyframes cw-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Toast slide in from right */
+@keyframes cw-slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(100%) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+/* Toast timer bar shrink */
+@keyframes cw-timer-shrink {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+/* Skeleton loading shimmer */
+@keyframes cw-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Message fade in */
+@keyframes cw-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Utility classes */
+.cw-badge-animate {
+  animation: cw-badge-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.cw-pulse-ring {
+  animation: cw-launcher-pulse 3s ease-in-out infinite;
+}
+
+.cw-toast-enter {
+  animation: cw-slide-in-right 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cw-timer-bar {
+  animation: cw-timer-shrink 5s linear forwards;
+}
+
+.cw-skeleton {
+  background: linear-gradient(90deg, var(--cg-bg-tertiary) 25%, var(--cg-bg-card-hover) 50%, var(--cg-bg-tertiary) 75%);
+  background-size: 200% 100%;
+  animation: cw-shimmer 1.5s ease-in-out infinite;
+}
+
+.cw-msg-enter {
+  animation: cw-fade-in 200ms ease-out;
+}
+
+.cw-slide-up {
+  animation: cw-slide-up 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cw-slide-in-right {
+  animation: cw-slide-in-right 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Scrollbar styling for widget panels */
+.cw-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.cw-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.cw-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--cg-border);
+  border-radius: 2px;
+}
+.cw-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--cg-border) transparent;
+}
+
+/* Mobile responsive: full-width panel */
+@media (max-width: 640px) {
+  .cw-slide-up {
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    bottom: 84px !important;
+  }
+}

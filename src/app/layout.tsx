@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { Navbar } from "@/components/layout/Navbar";
 import { Providers } from "@/components/layout/Providers";
 import { PiEasterEgg } from "@/components/layout/PiEasterEgg";
+import { CirclesSocialWidget } from "@/components/circles-widget/CirclesSocialWidget";
 
 export const metadata: Metadata = {
   title: "golfEQUALIZER — Dynamic Golf Course Rankings",
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <Navbar />
           <main className="min-h-screen">{children}</main>
+          <CirclesSocialWidget />
           <footer
             className="py-8 mt-0"
             style={{
