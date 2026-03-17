@@ -6,6 +6,7 @@ import { useState } from "react";
 import { ThemeProvider } from "./ThemeProvider";
 import { CompareProvider } from "@/contexts/CompareContext";
 import { BucketListProvider } from "@/contexts/BucketListContext";
+import { SidebarProvider } from "@/contexts/SidebarContext";
 import { ToastProvider } from "@/components/ui/ToastProvider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -17,12 +18,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <SessionProvider>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <CompareProvider>
-            <BucketListProvider>
-              {children}
-              <ToastProvider />
-            </BucketListProvider>
-          </CompareProvider>
+          <SidebarProvider>
+            <CompareProvider>
+              <BucketListProvider>
+                {children}
+                <ToastProvider />
+              </BucketListProvider>
+            </CompareProvider>
+          </SidebarProvider>
         </ThemeProvider>
       </QueryClientProvider>
     </SessionProvider>
