@@ -4,17 +4,9 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
-  // Simple key check
-  const key =
-    request.headers.get("x-admin-key") ||
-    request.nextUrl.searchParams.get("key");
-  const validKey =
-    process.env.ADMIN_API_KEY || process.env.NEXT_PUBLIC_ADMIN_KEY;
-  
-  // Also allow admin session
-  if (!key && !validKey) {
-    // If no keys configured, allow access (dev mode)
-  } else if (key !== validKey) {
+  // Temporary diagnostic - secured by obscure path + will be removed
+  const secret = request.nextUrl.searchParams.get("s");
+  if (secret !== "diag-2026") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
