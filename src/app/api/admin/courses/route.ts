@@ -52,7 +52,6 @@ export async function GET(request: NextRequest) {
           bestTimeToPlay: true,
           bestMonths: true,
           golfSeason: true,
-          averageRoundTime: true,
           fairwayGrass: true,
           greenGrass: true,
           websiteUrl: true,

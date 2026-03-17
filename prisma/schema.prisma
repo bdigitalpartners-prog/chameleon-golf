@@ -102,6 +102,9 @@ model Course {
   resortBookingUrl    String?   @map("resort_booking_url") @db.VarChar(500)
   stayAndPlayPackages Json?     @map("stay_and_play_packages")
 
+  // Pace of Play
+  averageRoundTime    String?   @map("average_round_time")
+
   // Pricing Details
   greenFeePeak        Decimal?  @map("green_fee_peak") @db.Decimal(12, 2)
   greenFeeOffPeak     Decimal?  @map("green_fee_off_peak") @db.Decimal(12, 2)
