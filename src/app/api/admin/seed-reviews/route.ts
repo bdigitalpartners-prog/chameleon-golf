@@ -116,17 +116,24 @@ export async function POST(request: NextRequest) {
       `ALTER TABLE "user_course_ratings" ADD COLUMN IF NOT EXISTS "seed_reviewer_name" VARCHAR(200)`
     );
 
-    // Upsert seed user
-    await prisma.user.upsert({
-      where: { id: SEED_USER_ID },
-      update: { name: SEED_USER_NAME, email: SEED_USER_EMAIL, role: "system" },
-      create: {
-        id: SEED_USER_ID,
-        name: SEED_USER_NAME,
-        email: SEED_USER_EMAIL,
-        role: "system",
-      },
-    });
+    // Ensure social URL columns exist on users table (Prisma schema has them but DB may not)
+    for (const col of ["instagram_url", "twitter_url", "facebook_url", "tiktok_url", "website_url"]) {
+      await prisma.$executeRawUnsafe(
+        `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "${col}" VARCHAR(500)`
+      );
+    }
+
+    // Upsert seed user via raw SQL to avoid Prisma schema mismatch issues
+    // Check if user exists first by email (unique column)
+    const existing: any[] = await prisma.$queryRawUnsafe(
+      `SELECT "id" FROM "users" WHERE "email" = $1 LIMIT 1`, SEED_USER_EMAIL
+    );
+    if (existing.length === 0) {
+      await prisma.$executeRawUnsafe(`
+        INSERT INTO "users" ("id", "name", "email", "role", "is_active", "created_at", "updated_at")
+        VALUES ($1, $2, $3, 'system', true, NOW(), NOW())
+      `, SEED_USER_ID, SEED_USER_NAME, SEED_USER_EMAIL);
+    }
 
     const seedData = loadSeedData();
 
