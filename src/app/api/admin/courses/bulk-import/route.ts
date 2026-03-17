@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { checkAdminAuth } from "@/lib/admin-auth";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -14,15 +15,17 @@ function normalize(s: string): string {
 }
 
 /**
- * POST /api/temp-import-b9ae703c2502a53f
- * Temporary one-time bulk import with dedup. Remove after use.
- * 
- * Dedup rules:
- * 1. Exact normalized name + state match -> skip
- * 2. Exact normalized name (no state) -> skip
- * 3. Substring match only if normalized names >= 8 chars AND same state
+ * POST /api/admin/courses/bulk-import
+ *
+ * Bulk-imports courses with deduplication.
+ * Checks against existing DB courses by normalized name + state.
+ *
+ * Body: { courses: Array<CourseData> }
  */
 export async function POST(req: NextRequest) {
+  const authError = await checkAdminAuth(req);
+  if (authError) return authError;
+
   try {
     const { courses } = await req.json();
 
@@ -35,21 +38,13 @@ export async function POST(req: NextRequest) {
       select: { courseId: true, courseName: true, city: true, state: true },
     });
 
-    // Build dedup indexes
-    const exactIndex = new Map<string, (typeof existingCourses)[0]>();
-    const nameOnlyIndex = new Map<string, (typeof existingCourses)[0]>();
-    // For substring: store by state
-    const byState = new Map<string, { normName: string; course: (typeof existingCourses)[0] }[]>();
-
+    // Build dedup index: normalized name -> course
+    const existingIndex = new Map<string, (typeof existingCourses)[0]>();
     for (const ec of existingCourses) {
-      const normName = normalize(ec.courseName);
-      const state = (ec.state || "").toLowerCase();
-      const key = `${normName}|${state}`;
-      exactIndex.set(key, ec);
-      nameOnlyIndex.set(normName, ec);
-
-      if (!byState.has(state)) byState.set(state, []);
-      byState.get(state)!.push({ normName, course: ec });
+      const key = `${normalize(ec.courseName)}|${(ec.state || "").toLowerCase()}`;
+      existingIndex.set(key, ec);
+      // Also index without state for broader matching
+      existingIndex.set(normalize(ec.courseName), ec);
     }
 
     const results = {
@@ -74,40 +69,34 @@ export async function POST(req: NextRequest) {
         const state = (course.state || "FL").toLowerCase();
         const key = `${normName}|${state}`;
 
-        // Check 1: exact normalized match with state
-        if (exactIndex.has(key)) {
-          results.duplicates.push(`${name} (exact+state: ${exactIndex.get(key)!.courseName})`);
-          results.skipped++;
-          continue;
-        }
+        // Check for duplicates — exact normalized match
+        const existing = existingIndex.get(key) || existingIndex.get(normName);
 
-        // Check 2: exact normalized match without state
-        if (nameOnlyIndex.has(normName)) {
-          results.duplicates.push(`${name} (exact name: ${nameOnlyIndex.get(normName)!.courseName})`);
-          results.skipped++;
-          continue;
-        }
-
-        // Check 3: Substring match — ONLY within same state, ONLY if both names >= 8 chars after normalization
+        // Also check substring matching for courses like "Seminole" vs "Seminole Golf Club"
         let substringMatch = false;
-        let substringMatchName = "";
-        const stateEntries = byState.get(state) || [];
-        if (normName.length >= 8) {
-          for (const entry of stateEntries) {
-            if (entry.normName.length < 8) continue;
-            if (entry.normName === normName) continue; // already handled by exact match
-            if (
-              entry.normName.includes(normName) || normName.includes(entry.normName)
-            ) {
-              substringMatch = true;
-              substringMatchName = entry.course.courseName;
-              break;
-            }
+        for (const [existKey, existCourse] of existingIndex) {
+          if (existKey.includes("|")) continue; // skip state-keyed entries
+          if (
+            (existKey.includes(normName) || normName.includes(existKey)) &&
+            existKey.length > 3
+          ) {
+            substringMatch = true;
+            results.duplicates.push(
+              `${name} (matches existing: ${existCourse.courseName})`
+            );
+            break;
           }
         }
 
+        if (existing) {
+          results.duplicates.push(
+            `${name} (exact match: ${existing.courseName})`
+          );
+          results.skipped++;
+          continue;
+        }
+
         if (substringMatch) {
-          results.duplicates.push(`${name} (substring in ${state.toUpperCase()}: ${substringMatchName})`);
           results.skipped++;
           continue;
         }
@@ -125,7 +114,12 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        const decimalFields = ["greenFeeLow", "greenFeeHigh", "latitude", "longitude"];
+        const decimalFields = [
+          "greenFeeLow",
+          "greenFeeHigh",
+          "latitude",
+          "longitude",
+        ];
         for (const f of decimalFields) {
           if (
             data[f] !== undefined &&
@@ -141,29 +135,26 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // Truncate description to 1000 chars (DB column limit)
-        if (typeof data.description === "string" && data.description.length > 1000) {
-          data.description = data.description.substring(0, 997) + "...";
-        }
-
-        // Remove non-schema fields
+        // Remove any fields not in the Prisma schema
         delete data.entity;
 
         await prisma.course.create({ data: data as any });
         results.created++;
         results.createdCourses.push(name);
 
-        // Prevent in-batch duplicates
-        const newEntry = {
+        // Add to index to prevent in-batch duplicates
+        existingIndex.set(key, {
           courseId: 0,
           courseName: name,
           city: course.city,
           state: course.state,
-        };
-        exactIndex.set(key, newEntry);
-        nameOnlyIndex.set(normName, newEntry);
-        if (!byState.has(state)) byState.set(state, []);
-        byState.get(state)!.push({ normName, course: newEntry });
+        });
+        existingIndex.set(normName, {
+          courseId: 0,
+          courseName: name,
+          city: course.city,
+          state: course.state,
+        });
       } catch (err: any) {
         results.errors.push(`${course.courseName}: ${err.message}`);
         results.skipped++;
