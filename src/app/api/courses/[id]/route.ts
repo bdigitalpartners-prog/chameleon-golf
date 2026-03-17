@@ -8,6 +8,16 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const courseId = parseInt(params.id);
     if (isNaN(courseId)) return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
 
+    // Ensure columns added after initial deployment exist
+    await prisma.$executeRawUnsafe(`ALTER TABLE "courses" ADD COLUMN IF NOT EXISTS "architect_id" INTEGER`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "courses" ADD COLUMN IF NOT EXISTS "instagram_url" VARCHAR(500)`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "courses" ADD COLUMN IF NOT EXISTS "twitter_url" VARCHAR(500)`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "courses" ADD COLUMN IF NOT EXISTS "facebook_url" VARCHAR(500)`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "courses" ADD COLUMN IF NOT EXISTS "tiktok_url" VARCHAR(500)`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "user_course_ratings" ADD COLUMN IF NOT EXISTS "is_seed" BOOLEAN NOT NULL DEFAULT false`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "user_course_ratings" ADD COLUMN IF NOT EXISTS "seed_source" VARCHAR(200)`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "user_course_ratings" ADD COLUMN IF NOT EXISTS "seed_reviewer_name" VARCHAR(200)`);
+
     const course = await prisma.course.findUnique({
       where: { courseId },
       include: {
@@ -37,14 +47,14 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
     if (!course) return NextResponse.json({ error: "Course not found" }, { status: 404 });
 
-    // Enrich ratings with seed review fields for frontend display
+    // Safely enrich ratings with seed review fields
     const enrichedCourse = {
       ...course,
-      ratings: course.ratings.map((r: any) => ({
+      ratings: (course.ratings || []).map((r: any) => ({
         ...r,
-        isSeed: r.isSeed || false,
-        seedReviewerName: r.seedReviewerName || null,
-        seedSource: r.seedSource || null,
+        isSeed: r.isSeed ?? false,
+        seedReviewerName: r.seedReviewerName ?? null,
+        seedSource: r.seedSource ?? null,
       })),
     };
 

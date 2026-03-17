@@ -1254,16 +1254,19 @@ export function CourseDetailClient({ course }: { course: any }) {
                   Insider Tips
                 </SectionHeading>
                 <ol className="space-y-3">
-                  {insiderTips.map((tip: string, i: number) => (
-                    <li key={i} className="flex items-start gap-3 rounded-lg p-3" style={{ backgroundColor: "var(--cg-bg-secondary)" }}>
-                      <span className="flex items-center justify-center h-6 w-6 rounded-full shrink-0 text-xs font-bold" style={{
-                        backgroundColor: "rgba(234,179,8,0.15)", color: "#fbbf24",
-                      }}>
-                        {i + 1}
-                      </span>
-                      <span className="text-sm leading-relaxed" style={secondaryText}>{tip}</span>
-                    </li>
-                  ))}
+                  {insiderTips.map((tip: any, i: number) => {
+                    const text = typeof tip === 'string' ? tip : (tip.tip || tip.text || tip.description || String(tip));
+                    return (
+                      <li key={i} className="flex items-start gap-3 rounded-lg p-3" style={{ backgroundColor: "var(--cg-bg-secondary)" }}>
+                        <span className="flex items-center justify-center h-6 w-6 rounded-full shrink-0 text-xs font-bold" style={{
+                          backgroundColor: "rgba(234,179,8,0.15)", color: "#fbbf24",
+                        }}>
+                          {i + 1}
+                        </span>
+                        <span className="text-sm leading-relaxed" style={secondaryText}>{text}</span>
+                      </li>
+                    );
+                  })}
                 </ol>
               </section>
             )}
