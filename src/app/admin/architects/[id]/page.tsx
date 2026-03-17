@@ -387,6 +387,29 @@ export default function ArchitectEditorPage() {
         </div>
       </div>
 
+      {/* Social Links */}
+      <div className="bg-[#111] border border-[#222] rounded-xl p-6 space-y-4">
+        <h2 className="text-lg font-semibold text-white">Social Links</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className={labelClass}>Instagram URL</label>
+            <input type="url" value={form.instagramUrl || ""} onChange={(e) => set("instagramUrl", e.target.value)} placeholder="https://instagram.com/..." className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass}>Twitter / X URL</label>
+            <input type="url" value={form.twitterUrl || ""} onChange={(e) => set("twitterUrl", e.target.value)} placeholder="https://x.com/..." className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass}>Facebook URL</label>
+            <input type="url" value={form.facebookUrl || ""} onChange={(e) => set("facebookUrl", e.target.value)} placeholder="https://facebook.com/..." className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass}>TikTok URL</label>
+            <input type="url" value={form.tiktokUrl || ""} onChange={(e) => set("tiktokUrl", e.target.value)} placeholder="https://tiktok.com/@..." className={inputClass} />
+          </div>
+        </div>
+      </div>
+
       {/* Courses & Features */}
       <div className="bg-[#111] border border-[#222] rounded-xl p-6 space-y-4">
         <h2 className="text-lg font-semibold text-white">Courses & Features</h2>

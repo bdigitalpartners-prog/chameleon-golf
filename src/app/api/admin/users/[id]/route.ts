@@ -12,6 +12,15 @@ export async function GET(
   if (authError) return authError;
 
   try {
+    // Ensure social link columns exist (safe migration)
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS instagram_url VARCHAR(500);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS twitter_url VARCHAR(500);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS facebook_url VARCHAR(500);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS tiktok_url VARCHAR(500);
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS website_url VARCHAR(500);
+    `);
+
     const user = await prisma.user.findUnique({
       where: { id: params.id },
       include: {
@@ -52,6 +61,11 @@ export async function GET(
       ghinVerifiedAt: user.ghinVerifiedAt,
       isActive: user.isActive,
       createdAt: user.createdAt,
+      instagramUrl: (user as any).instagramUrl || null,
+      twitterUrl: (user as any).twitterUrl || null,
+      facebookUrl: (user as any).facebookUrl || null,
+      tiktokUrl: (user as any).tiktokUrl || null,
+      websiteUrl: (user as any).websiteUrl || null,
       ratings: user.ratings.map((r) => ({
         ratingId: r.ratingId,
         courseId: r.courseId,
@@ -91,7 +105,7 @@ export async function PUT(
 
   try {
     const body = await request.json();
-    const { role, isActive, ghinVerified } = body;
+    const { role, isActive, ghinVerified, instagramUrl, twitterUrl, facebookUrl, tiktokUrl, websiteUrl } = body;
 
     const data: any = {};
     if (role !== undefined) data.role = role;
@@ -100,6 +114,11 @@ export async function PUT(
       data.ghinVerified = ghinVerified;
       data.ghinVerifiedAt = ghinVerified ? new Date() : null;
     }
+    if (instagramUrl !== undefined) data.instagramUrl = instagramUrl || null;
+    if (twitterUrl !== undefined) data.twitterUrl = twitterUrl || null;
+    if (facebookUrl !== undefined) data.facebookUrl = facebookUrl || null;
+    if (tiktokUrl !== undefined) data.tiktokUrl = tiktokUrl || null;
+    if (websiteUrl !== undefined) data.websiteUrl = websiteUrl || null;
 
     const updated = await prisma.user.update({
       where: { id: params.id },

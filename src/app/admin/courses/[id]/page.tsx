@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Save, Loader2, Plus, Trash2, X, Star, Pencil, ImageIcon, Sparkles, CheckCircle, AlertCircle } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Plus, Trash2, X, Star, Pencil, ImageIcon, Sparkles, CheckCircle, AlertCircle, Video, Instagram, Play, Link as LinkIcon, ExternalLink } from "lucide-react";
 
 function getAdminKey() {
   if (typeof window === "undefined") return "";
@@ -451,6 +451,29 @@ export default function CourseEditorPage() {
                 Enriched
               </label>
             </div>
+
+            {/* Social Links */}
+            <div className="md:col-span-2 pt-4 border-t border-[#222]">
+              <h3 className="text-sm font-semibold text-gray-400 mb-3">Social Links</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Instagram URL</label>
+                  <input type="url" value={form.instagramUrl || ""} onChange={(e) => set("instagramUrl", e.target.value)} placeholder="https://instagram.com/..." className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Twitter / X URL</label>
+                  <input type="url" value={form.twitterUrl || ""} onChange={(e) => set("twitterUrl", e.target.value)} placeholder="https://x.com/..." className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Facebook URL</label>
+                  <input type="url" value={form.facebookUrl || ""} onChange={(e) => set("facebookUrl", e.target.value)} placeholder="https://facebook.com/..." className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>TikTok URL</label>
+                  <input type="url" value={form.tiktokUrl || ""} onChange={(e) => set("tiktokUrl", e.target.value)} placeholder="https://tiktok.com/@..." className={inputClass} />
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -797,6 +820,28 @@ export default function CourseEditorPage() {
 
 /* ─────────────────────────── Media Tab Component ─────────────────────────── */
 
+function getVideoThumbnail(url: string): string | null {
+  // YouTube
+  const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if (ytMatch) return `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+  // Vimeo — can't easily get thumbnail without API, return null
+  return null;
+}
+
+function getVideoEmbedUrl(url: string): string | null {
+  const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+  return null;
+}
+
+function detectVideoType(url: string): string {
+  if (url.match(/youtube\.com|youtu\.be/i)) return "youtube";
+  if (url.match(/vimeo\.com/i)) return "vimeo";
+  return "direct";
+}
+
 function MediaTab({
   courseId,
   adminKey,
@@ -809,7 +854,7 @@ function MediaTab({
   onMediaChange: () => void;
 }) {
   const [media, setMedia] = useState<any[]>(initialMedia);
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [showAddForm, setShowAddForm] = useState<"photo" | "video" | "instagram" | null>(null);
   const [addUrl, setAddUrl] = useState("");
   const [addCaption, setAddCaption] = useState("");
   const [addCredit, setAddCredit] = useState("");
@@ -833,32 +878,41 @@ function MediaTab({
     setTimeout(() => setMediaMessage(null), 3000);
   };
 
-  const handleAdd = async () => {
+  const resetForm = () => {
+    setShowAddForm(null);
+    setAddUrl("");
+    setAddCaption("");
+    setAddCredit("");
+    setAddIsPrimary(false);
+    setPreviewError(false);
+  };
+
+  const handleAdd = async (mediaType: string) => {
     if (!addUrl.trim()) return;
     setAdding(true);
     try {
+      const body: any = {
+        url: addUrl.trim(),
+        caption: addCaption.trim() || null,
+        credit: addCredit.trim() || null,
+        mediaType,
+        isPrimary: mediaType === "image" ? addIsPrimary : false,
+      };
+      if (mediaType === "video") {
+        body.imageType = detectVideoType(addUrl.trim());
+      }
       const res = await fetch(`/api/admin/courses/${courseId}/media`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
-        body: JSON.stringify({
-          url: addUrl.trim(),
-          caption: addCaption.trim() || null,
-          credit: addCredit.trim() || null,
-          mediaType: "image",
-          isPrimary: addIsPrimary,
-        }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || "Failed to add");
       }
-      setShowAddForm(false);
-      setAddUrl("");
-      setAddCaption("");
-      setAddCredit("");
-      setAddIsPrimary(false);
-      setPreviewError(false);
-      showMsg("success", "Photo added successfully");
+      resetForm();
+      const labels: Record<string, string> = { image: "Photo", video: "Video", instagram: "Instagram post" };
+      showMsg("success", `${labels[mediaType] || "Media"} added successfully`);
       onMediaChange();
     } catch (err: any) {
       showMsg("error", err.message);
@@ -880,7 +934,7 @@ function MediaTab({
         throw new Error(data.error || "Failed to delete");
       }
       setDeleteId(null);
-      showMsg("success", "Photo deleted");
+      showMsg("success", "Media deleted");
       onMediaChange();
     } catch (err: any) {
       showMsg("error", err.message);
@@ -933,18 +987,36 @@ function MediaTab({
     "w-full px-3 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-white text-sm focus:outline-none focus:border-[#22c55e]";
   const labelClass = "block text-xs text-gray-400 mb-1";
 
+  const videoThumb = showAddForm === "video" && addUrl.trim() ? getVideoThumbnail(addUrl.trim()) : null;
+
   return (
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-medium text-white">Course Media ({media.length})</h3>
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#22c55e] text-black text-sm font-medium hover:bg-[#16a34a] transition-colors"
-        >
-          <Plus size={16} />
-          Add Photo
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowAddForm("photo")}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#22c55e] text-black text-sm font-medium hover:bg-[#16a34a] transition-colors"
+          >
+            <Plus size={16} />
+            Add Photo
+          </button>
+          <button
+            onClick={() => setShowAddForm("video")}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
+          >
+            <Video size={16} />
+            Add Video
+          </button>
+          <button
+            onClick={() => setShowAddForm("instagram")}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-pink-600 text-white text-sm font-medium hover:bg-pink-700 transition-colors"
+          >
+            <Instagram size={16} />
+            Add Instagram
+          </button>
+        </div>
       </div>
 
       {/* Message */}
@@ -959,11 +1031,11 @@ function MediaTab({
       )}
 
       {/* Add Photo Form */}
-      {showAddForm && (
+      {showAddForm === "photo" && (
         <div className="mb-6 p-4 rounded-xl bg-[#0d0d0d] border border-[#333]">
           <div className="flex items-center justify-between mb-4">
             <h4 className="text-sm font-medium text-white">Add Photo by URL</h4>
-            <button onClick={() => { setShowAddForm(false); setAddUrl(""); setAddCaption(""); setAddCredit(""); setPreviewError(false); }} className="text-gray-500 hover:text-white">
+            <button onClick={resetForm} className="text-gray-500 hover:text-white">
               <X size={18} />
             </button>
           </div>
@@ -1020,17 +1092,142 @@ function MediaTab({
 
             <div className="flex gap-2 pt-1">
               <button
-                onClick={handleAdd}
+                onClick={() => handleAdd("image")}
                 disabled={adding || !addUrl.trim()}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#22c55e] text-black text-sm font-medium hover:bg-[#16a34a] disabled:opacity-50 transition-colors"
               >
                 {adding ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
                 {adding ? "Adding..." : "Add Photo"}
               </button>
+              <button onClick={resetForm} className="px-4 py-2 rounded-lg border border-[#333] text-gray-400 text-sm hover:text-white hover:border-[#555] transition-colors">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Video Form */}
+      {showAddForm === "video" && (
+        <div className="mb-6 p-4 rounded-xl bg-[#0d0d0d] border border-[#333]">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-sm font-medium text-white flex items-center gap-2">
+              <Video size={16} className="text-blue-400" />
+              Add Video by URL
+            </h4>
+            <button onClick={resetForm} className="text-gray-500 hover:text-white">
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <label className={labelClass}>Video URL * (YouTube, Vimeo, or direct video link)</label>
+              <input
+                type="url"
+                value={addUrl}
+                onChange={(e) => { setAddUrl(e.target.value); setPreviewError(false); }}
+                placeholder="https://www.youtube.com/watch?v=... or https://vimeo.com/..."
+                className={inputClass}
+              />
+            </div>
+
+            {/* Video Preview */}
+            {addUrl.trim() && (
+              <div>
+                <label className={labelClass}>Preview</label>
+                <div className="rounded-lg border border-[#333] overflow-hidden bg-[#1a1a1a] max-w-sm">
+                  {videoThumb ? (
+                    <div className="relative">
+                      <img src={videoThumb} alt="Video thumbnail" className="w-full h-40 object-cover" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-12 h-12 rounded-full bg-black/70 flex items-center justify-center">
+                          <Play size={20} className="text-white ml-0.5" />
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-full h-40 flex flex-col items-center justify-center text-gray-500 text-sm gap-2">
+                      <Video size={24} />
+                      <span className="text-xs">{detectVideoType(addUrl.trim())} video</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label className={labelClass}>Caption / Title</label>
+              <input type="text" value={addCaption} onChange={(e) => setAddCaption(e.target.value)} placeholder="e.g., Course flyover video" className={inputClass} />
+            </div>
+
+            <div className="flex gap-2 pt-1">
               <button
-                onClick={() => { setShowAddForm(false); setAddUrl(""); setAddCaption(""); setAddCredit(""); setPreviewError(false); }}
-                className="px-4 py-2 rounded-lg border border-[#333] text-gray-400 text-sm hover:text-white hover:border-[#555] transition-colors"
+                onClick={() => handleAdd("video")}
+                disabled={adding || !addUrl.trim()}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
               >
+                {adding ? <Loader2 size={14} className="animate-spin" /> : <Video size={14} />}
+                {adding ? "Adding..." : "Add Video"}
+              </button>
+              <button onClick={resetForm} className="px-4 py-2 rounded-lg border border-[#333] text-gray-400 text-sm hover:text-white hover:border-[#555] transition-colors">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Instagram Form */}
+      {showAddForm === "instagram" && (
+        <div className="mb-6 p-4 rounded-xl bg-[#0d0d0d] border border-[#333]">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-sm font-medium text-white flex items-center gap-2">
+              <Instagram size={16} className="text-pink-400" />
+              Add Instagram Post
+            </h4>
+            <button onClick={resetForm} className="text-gray-500 hover:text-white">
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <label className={labelClass}>Instagram Post or Reel URL *</label>
+              <input
+                type="url"
+                value={addUrl}
+                onChange={(e) => setAddUrl(e.target.value)}
+                placeholder="https://www.instagram.com/p/... or https://www.instagram.com/reel/..."
+                className={inputClass}
+              />
+            </div>
+
+            {addUrl.trim() && (
+              <div>
+                <label className={labelClass}>Preview</label>
+                <div className="rounded-lg border border-[#333] overflow-hidden bg-[#1a1a1a] max-w-sm p-4 flex flex-col items-center gap-2">
+                  <Instagram size={24} className="text-pink-400" />
+                  <span className="text-xs text-gray-400 break-all text-center">{addUrl.trim()}</span>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label className={labelClass}>Caption / Description</label>
+              <input type="text" value={addCaption} onChange={(e) => setAddCaption(e.target.value)} placeholder="e.g., Beautiful aerial view from @golfer" className={inputClass} />
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => handleAdd("instagram")}
+                disabled={adding || !addUrl.trim()}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-pink-600 text-white text-sm font-medium hover:bg-pink-700 disabled:opacity-50 transition-colors"
+              >
+                {adding ? <Loader2 size={14} className="animate-spin" /> : <Instagram size={14} />}
+                {adding ? "Adding..." : "Add Instagram"}
+              </button>
+              <button onClick={resetForm} className="px-4 py-2 rounded-lg border border-[#333] text-gray-400 text-sm hover:text-white hover:border-[#555] transition-colors">
                 Cancel
               </button>
             </div>
@@ -1042,8 +1239,8 @@ function MediaTab({
       {deleteId !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
           <div className="bg-[#111] border border-[#333] rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
-            <h4 className="text-white font-medium mb-2">Delete Photo</h4>
-            <p className="text-gray-400 text-sm mb-4">Are you sure you want to delete this photo? This action cannot be undone.</p>
+            <h4 className="text-white font-medium mb-2">Delete Media</h4>
+            <p className="text-gray-400 text-sm mb-4">Are you sure you want to delete this item? This action cannot be undone.</p>
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setDeleteId(null)}
@@ -1068,107 +1265,143 @@ function MediaTab({
       {/* Media Grid */}
       {media.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {media.map((m: any) => (
-            <div key={m.mediaId} className="group rounded-lg border border-[#222] overflow-hidden bg-[#0d0d0d] relative">
-              {/* Image */}
-              <div className="relative">
-                {m.mediaType === "image" || m.url?.match(/\.(jpg|jpeg|png|gif|webp)/i) ? (
-                  <img src={m.url} alt={m.caption || "Course media"} className="w-full h-40 object-cover" />
-                ) : (
-                  <div className="w-full h-40 flex items-center justify-center text-gray-600 text-sm">
-                    <ImageIcon size={24} className="mr-2" />
-                    {m.mediaType || "Media"}
-                  </div>
-                )}
+          {media.map((m: any) => {
+            const isVideo = m.mediaType === "video";
+            const isInstagram = m.mediaType === "instagram";
+            const isImage = !isVideo && !isInstagram;
+            const thumbUrl = isVideo ? getVideoThumbnail(m.url) : null;
 
-                {/* Overlay actions */}
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-start justify-end p-2 gap-1 opacity-0 group-hover:opacity-100">
-                  <button
-                    onClick={() => handleTogglePrimary(m.mediaId, m.isPrimary)}
-                    title={m.isPrimary ? "Remove primary" : "Set as primary"}
-                    className={`p-1.5 rounded-lg transition-colors ${m.isPrimary ? "bg-yellow-500 text-black" : "bg-black/60 text-white hover:bg-black/80"}`}
-                  >
-                    <Star size={14} fill={m.isPrimary ? "currentColor" : "none"} />
-                  </button>
-                  <button
-                    onClick={() => startEdit(m)}
-                    title="Edit caption"
-                    className="p-1.5 rounded-lg bg-black/60 text-white hover:bg-black/80 transition-colors"
-                  >
-                    <Pencil size={14} />
-                  </button>
-                  <button
-                    onClick={() => setDeleteId(m.mediaId)}
-                    title="Delete photo"
-                    className="p-1.5 rounded-lg bg-black/60 text-red-400 hover:bg-red-600 hover:text-white transition-colors"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+            return (
+              <div key={m.mediaId} className="group rounded-lg border border-[#222] overflow-hidden bg-[#0d0d0d] relative">
+                {/* Media preview */}
+                <div className="relative">
+                  {isImage && (m.url?.match(/\.(jpg|jpeg|png|gif|webp)/i) || m.mediaType === "image") ? (
+                    <img src={m.url} alt={m.caption || "Course media"} className="w-full h-40 object-cover" />
+                  ) : isVideo && thumbUrl ? (
+                    <div className="relative cursor-pointer" onClick={() => window.open(m.url, "_blank")}>
+                      <img src={thumbUrl} alt={m.caption || "Video"} className="w-full h-40 object-cover" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-12 h-12 rounded-full bg-black/70 flex items-center justify-center">
+                          <Play size={20} className="text-white ml-0.5" />
+                        </div>
+                      </div>
+                      <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-blue-600 text-white text-xs font-medium flex items-center gap-1">
+                        <Video size={10} />
+                        {m.imageType || "Video"}
+                      </div>
+                    </div>
+                  ) : isVideo ? (
+                    <div className="w-full h-40 flex flex-col items-center justify-center text-blue-400 bg-blue-900/10 cursor-pointer" onClick={() => window.open(m.url, "_blank")}>
+                      <Video size={28} />
+                      <span className="text-xs mt-2 text-gray-400">{m.imageType || "Video"}</span>
+                      <span className="text-xs text-gray-600 mt-1">Click to open</span>
+                    </div>
+                  ) : isInstagram ? (
+                    <div className="w-full h-40 flex flex-col items-center justify-center bg-gradient-to-br from-pink-900/20 to-purple-900/20 cursor-pointer" onClick={() => window.open(m.url, "_blank")}>
+                      <Instagram size={28} className="text-pink-400" />
+                      <span className="text-xs mt-2 text-gray-400">Instagram Post</span>
+                      <span className="text-xs text-pink-400/60 mt-1 flex items-center gap-1">
+                        <ExternalLink size={10} /> View on Instagram
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="w-full h-40 flex items-center justify-center text-gray-600 text-sm">
+                      <ImageIcon size={24} className="mr-2" />
+                      {m.mediaType || "Media"}
+                    </div>
+                  )}
+
+                  {/* Overlay actions */}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-start justify-end p-2 gap-1 opacity-0 group-hover:opacity-100">
+                    {isImage && (
+                      <button
+                        onClick={() => handleTogglePrimary(m.mediaId, m.isPrimary)}
+                        title={m.isPrimary ? "Remove primary" : "Set as primary"}
+                        className={`p-1.5 rounded-lg transition-colors ${m.isPrimary ? "bg-yellow-500 text-black" : "bg-black/60 text-white hover:bg-black/80"}`}
+                      >
+                        <Star size={14} fill={m.isPrimary ? "currentColor" : "none"} />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => startEdit(m)}
+                      title="Edit caption"
+                      className="p-1.5 rounded-lg bg-black/60 text-white hover:bg-black/80 transition-colors"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      onClick={() => setDeleteId(m.mediaId)}
+                      title="Delete"
+                      className="p-1.5 rounded-lg bg-black/60 text-red-400 hover:bg-red-600 hover:text-white transition-colors"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+
+                  {/* Primary badge */}
+                  {m.isPrimary && isImage && (
+                    <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-yellow-500 text-black text-xs font-medium flex items-center gap-1">
+                      <Star size={10} fill="currentColor" />
+                      Primary
+                    </div>
+                  )}
                 </div>
 
-                {/* Primary badge */}
-                {m.isPrimary && (
-                  <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-yellow-500 text-black text-xs font-medium flex items-center gap-1">
-                    <Star size={10} fill="currentColor" />
-                    Primary
-                  </div>
-                )}
-              </div>
-
-              {/* Info / Edit */}
-              <div className="p-3">
-                {editingId === m.mediaId ? (
-                  <div className="space-y-2">
-                    <input
-                      type="text"
-                      value={editCaption}
-                      onChange={(e) => setEditCaption(e.target.value)}
-                      placeholder="Caption"
-                      className={inputClass}
-                      autoFocus
-                    />
-                    <input
-                      type="text"
-                      value={editCredit}
-                      onChange={(e) => setEditCredit(e.target.value)}
-                      placeholder="Credit"
-                      className={inputClass}
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleEditSave}
-                        disabled={editSaving}
-                        className="flex items-center gap-1 px-3 py-1 rounded bg-[#22c55e] text-black text-xs font-medium hover:bg-[#16a34a] disabled:opacity-50"
-                      >
-                        {editSaving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
-                        Save
-                      </button>
-                      <button
-                        onClick={() => setEditingId(null)}
-                        className="px-3 py-1 rounded border border-[#333] text-gray-400 text-xs hover:text-white"
-                      >
-                        Cancel
-                      </button>
+                {/* Info / Edit */}
+                <div className="p-3">
+                  {editingId === m.mediaId ? (
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        value={editCaption}
+                        onChange={(e) => setEditCaption(e.target.value)}
+                        placeholder="Caption"
+                        className={inputClass}
+                        autoFocus
+                      />
+                      <input
+                        type="text"
+                        value={editCredit}
+                        onChange={(e) => setEditCredit(e.target.value)}
+                        placeholder="Credit"
+                        className={inputClass}
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleEditSave}
+                          disabled={editSaving}
+                          className="flex items-center gap-1 px-3 py-1 rounded bg-[#22c55e] text-black text-xs font-medium hover:bg-[#16a34a] disabled:opacity-50"
+                        >
+                          {editSaving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                          Save
+                        </button>
+                        <button
+                          onClick={() => setEditingId(null)}
+                          className="px-3 py-1 rounded border border-[#333] text-gray-400 text-xs hover:text-white"
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <>
-                    <p className="text-xs text-gray-400">{m.caption || "No caption"}</p>
-                    {m.credit && <p className="text-xs text-gray-600 mt-0.5">Credit: {m.credit}</p>}
-                    <p className="text-xs text-gray-600 mt-1">
-                      {m.mediaType} &middot; Order: {m.sortOrder}
-                    </p>
-                  </>
-                )}
+                  ) : (
+                    <>
+                      <p className="text-xs text-gray-400">{m.caption || "No caption"}</p>
+                      {m.credit && <p className="text-xs text-gray-600 mt-0.5">Credit: {m.credit}</p>}
+                      <p className="text-xs text-gray-600 mt-1">
+                        {m.mediaType}{m.imageType && m.mediaType === "video" ? ` (${m.imageType})` : ""} &middot; Order: {m.sortOrder}
+                      </p>
+                    </>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="text-center py-12">
           <ImageIcon size={32} className="mx-auto text-gray-600 mb-3" />
           <p className="text-gray-500 text-sm">No media uploaded</p>
-          <p className="text-gray-600 text-xs mt-1">Click "Add Photo" to get started</p>
+          <p className="text-gray-600 text-xs mt-1">Add photos, videos, or Instagram posts to get started</p>
         </div>
       )}
     </div>

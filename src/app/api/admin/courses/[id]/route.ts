@@ -17,6 +17,14 @@ export async function GET(
   }
 
   try {
+    // Ensure social link columns exist (safe migration)
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE courses ADD COLUMN IF NOT EXISTS instagram_url VARCHAR(500);
+      ALTER TABLE courses ADD COLUMN IF NOT EXISTS twitter_url VARCHAR(500);
+      ALTER TABLE courses ADD COLUMN IF NOT EXISTS facebook_url VARCHAR(500);
+      ALTER TABLE courses ADD COLUMN IF NOT EXISTS tiktok_url VARCHAR(500);
+    `);
+
     const course = await prisma.course.findUnique({
       where: { courseId },
       include: {

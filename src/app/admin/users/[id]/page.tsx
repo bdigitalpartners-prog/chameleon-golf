@@ -19,6 +19,11 @@ interface UserDetail {
   ghinVerifiedAt: string | null;
   isActive: boolean;
   createdAt: string;
+  instagramUrl: string | null;
+  twitterUrl: string | null;
+  facebookUrl: string | null;
+  tiktokUrl: string | null;
+  websiteUrl: string | null;
   ratings: Array<{
     ratingId: number;
     courseId: number;
@@ -72,6 +77,11 @@ export default function UserDetailPage() {
   const [role, setRole] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [successMsg, setSuccessMsg] = useState("");
+  const [instagramUrl, setInstagramUrl] = useState("");
+  const [twitterUrl, setTwitterUrl] = useState("");
+  const [facebookUrl, setFacebookUrl] = useState("");
+  const [tiktokUrl, setTiktokUrl] = useState("");
+  const [websiteUrl, setWebsiteUrl] = useState("");
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -86,6 +96,11 @@ export default function UserDetailPage() {
         setUser(data);
         setRole(data.role);
         setIsActive(data.isActive);
+        setInstagramUrl(data.instagramUrl || "");
+        setTwitterUrl(data.twitterUrl || "");
+        setFacebookUrl(data.facebookUrl || "");
+        setTiktokUrl(data.tiktokUrl || "");
+        setWebsiteUrl(data.websiteUrl || "");
       } catch {
         setError("Failed to load user");
       } finally {
@@ -102,7 +117,7 @@ export default function UserDetailPage() {
     try {
       const res = await fetchAdmin(`/api/admin/users/${userId}`, {
         method: "PUT",
-        body: JSON.stringify({ role, isActive }),
+        body: JSON.stringify({ role, isActive, instagramUrl, twitterUrl, facebookUrl, tiktokUrl, websiteUrl }),
       });
       const data = await res.json();
       if (data.success) {
@@ -259,6 +274,41 @@ export default function UserDetailPage() {
             {user.ghinVerified ? "Unverify" : "Verify"}
           </button>
         </div>
+      </div>
+
+      {/* Social Links */}
+      <div className="rounded-xl border border-[#222] bg-[#111] p-6 space-y-4">
+        <h3 className="text-sm font-semibold text-gray-400">Social Links</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Instagram URL</label>
+            <input type="url" value={instagramUrl} onChange={(e) => setInstagramUrl(e.target.value)} placeholder="https://instagram.com/..." className="w-full px-3 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-white text-sm focus:outline-none focus:border-[#22c55e]" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Twitter / X URL</label>
+            <input type="url" value={twitterUrl} onChange={(e) => setTwitterUrl(e.target.value)} placeholder="https://x.com/..." className="w-full px-3 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-white text-sm focus:outline-none focus:border-[#22c55e]" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Facebook URL</label>
+            <input type="url" value={facebookUrl} onChange={(e) => setFacebookUrl(e.target.value)} placeholder="https://facebook.com/..." className="w-full px-3 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-white text-sm focus:outline-none focus:border-[#22c55e]" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">TikTok URL</label>
+            <input type="url" value={tiktokUrl} onChange={(e) => setTiktokUrl(e.target.value)} placeholder="https://tiktok.com/@..." className="w-full px-3 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-white text-sm focus:outline-none focus:border-[#22c55e]" />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Website URL</label>
+            <input type="url" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} placeholder="https://..." className="w-full px-3 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-white text-sm focus:outline-none focus:border-[#22c55e]" />
+          </div>
+        </div>
+        <button
+          onClick={saveChanges}
+          disabled={saving}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#22c55e] text-black font-medium text-sm hover:bg-[#16a34a] disabled:opacity-50"
+        >
+          <Save size={14} />
+          {saving ? "Saving..." : "Save Changes"}
+        </button>
       </div>
 
       {/* Activity Tabs */}

@@ -130,6 +130,12 @@ model Course {
   nearbyRvParks     CourseNearbyRvParks[]
   intelligenceNotes CourseIntelligenceNotes[]
 
+  // Social Links
+  instagramUrl      String?   @map("instagram_url") @db.VarChar(500)
+  twitterUrl        String?   @map("twitter_url") @db.VarChar(500)
+  facebookUrl       String?   @map("facebook_url") @db.VarChar(500)
+  tiktokUrl         String?   @map("tiktok_url") @db.VarChar(500)
+
   // Architect enrichment
   architectId       Int?      @map("architect_id")
   architect         Architect? @relation(fields: [architectId], references: [id])
@@ -301,6 +307,11 @@ model User {
   ghinLastSynced  DateTime? @map("ghin_last_synced")
   role            String    @default("user") @db.VarChar(20)
   isActive        Boolean   @default(true) @map("is_active")
+  instagramUrl    String?   @map("instagram_url") @db.VarChar(500)
+  twitterUrl      String?   @map("twitter_url") @db.VarChar(500)
+  facebookUrl     String?   @map("facebook_url") @db.VarChar(500)
+  tiktokUrl       String?   @map("tiktok_url") @db.VarChar(500)
+  websiteUrl      String?   @map("website_url") @db.VarChar(500)
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @default(now()) @map("updated_at")
 
@@ -660,6 +671,10 @@ model Architect {
   heroImageUrl        String?  @map("hero_image_url") @db.VarChar(500)
   portraitUrl         String?  @map("portrait_url") @db.VarChar(500)
   isPartnership       Boolean  @default(false) @map("is_partnership")
+  instagramUrl        String?  @map("instagram_url") @db.VarChar(500)
+  twitterUrl          String?  @map("twitter_url") @db.VarChar(500)
+  facebookUrl         String?  @map("facebook_url") @db.VarChar(500)
+  tiktokUrl           String?  @map("tiktok_url") @db.VarChar(500)
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @default(now()) @map("updated_at")
 
