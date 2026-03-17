@@ -32,6 +32,8 @@ export async function GET(request: NextRequest) {
   const accessType = searchParams.get("accessType") || "";
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "25");
+  const sortBy = searchParams.get("sortBy") || "courseName";
+  const sortOrder = (searchParams.get("sortOrder") || "asc") as "asc" | "desc";
 
   const where: Record<string, unknown> = {};
   if (search) {
@@ -44,12 +46,25 @@ export async function GET(request: NextRequest) {
     where.accessType = accessType;
   }
 
+  // Build orderBy — chameleonScore lives on a relation
+  const DIRECT_SORT_FIELDS = ["courseName", "city", "state", "accessType", "courseType"];
+  let orderBy: Record<string, unknown>;
+  if (sortBy === "chameleonScore") {
+    orderBy = { chameleonScores: { chameleonScore: sortOrder } };
+  } else if (sortBy === "enrichment") {
+    orderBy = { isEnriched: sortOrder };
+  } else if (DIRECT_SORT_FIELDS.includes(sortBy)) {
+    orderBy = { [sortBy]: sortOrder };
+  } else {
+    orderBy = { courseName: "asc" };
+  }
+
   try {
     const [total, courses] = await Promise.all([
       prisma.course.count({ where }),
       prisma.course.findMany({
         where,
-        orderBy: { courseName: "asc" },
+        orderBy,
         skip: (page - 1) * limit,
         take: limit,
         include: {

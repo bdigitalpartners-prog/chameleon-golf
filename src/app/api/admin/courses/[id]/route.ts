@@ -46,6 +46,60 @@ export async function GET(
   }
 }
 
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const authErr = await checkAdminAuth(request);
+  if (authErr) return authErr;
+
+  const courseId = parseInt(params.id);
+  if (isNaN(courseId)) {
+    return NextResponse.json({ error: "Invalid course ID" }, { status: 400 });
+  }
+
+  try {
+    // Clean up non-cascading relations first
+    await prisma.$transaction(async (tx) => {
+      await tx.courseNearbyDining.deleteMany({ where: { courseId } });
+      await tx.courseNearbyLodging.deleteMany({ where: { courseId } });
+      await tx.courseNearbyAttractions.deleteMany({ where: { courseId } });
+      await tx.courseNearbyCourses.deleteMany({ where: { courseId } });
+      await tx.courseNearbyCourses.deleteMany({ where: { nearbyCourseId: courseId } });
+      await tx.courseNearbyRvParks.deleteMany({ where: { courseId } });
+      await tx.courseNearbyMetroDistance.deleteMany({ where: { courseId } });
+      await tx.courseIntelligenceNote.deleteMany({ where: { courseId } });
+      await tx.courseWishlist.deleteMany({ where: { courseId } });
+      await tx.conditionReport.deleteMany({ where: { courseId } });
+      await tx.post.updateMany({ where: { courseId }, data: { courseId: null } });
+      await tx.game.deleteMany({ where: { courseId } });
+      await tx.event.deleteMany({ where: { courseId } });
+      await tx.eventMatch.deleteMany({ where: { courseId } });
+      await tx.prediction.deleteMany({ where: { courseId } });
+      await tx.prepPack.deleteMany({ where: { courseId } });
+      await tx.roundHistory.deleteMany({ where: { courseId } });
+      await tx.leagueRound.deleteMany({ where: { courseId } });
+      await tx.tripRound.deleteMany({ where: { courseId } });
+      await tx.tripCourse.deleteMany({ where: { courseId } });
+      await tx.tripVote.deleteMany({ where: { courseId } });
+      await tx.circleConsensus.deleteMany({ where: { courseId } });
+      await tx.circleEvent.deleteMany({ where: { courseId } });
+      await tx.circleCourseAggregate.deleteMany({ where: { courseId } });
+      await tx.circleCourseRating.deleteMany({ where: { courseId } });
+      await tx.courseCheckIn.deleteMany({ where: { courseId } });
+      await tx.courseRecommendation.deleteMany({ where: { courseId } });
+
+      // Now delete the course (cascading relations handle the rest)
+      await tx.course.delete({ where: { courseId } });
+    });
+
+    return NextResponse.json({ message: `Course #${courseId} deleted` });
+  } catch (err) {
+    console.error("Course DELETE error:", err);
+    return NextResponse.json({ error: "Failed to delete course" }, { status: 500 });
+  }
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
