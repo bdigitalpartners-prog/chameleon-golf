@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
+  const suggest = searchParams.get("suggest") === "true";
   const search = searchParams.get("search") || "";
   const era = searchParams.get("era") || "";
   const page = parseInt(searchParams.get("page") || "1", 10);
@@ -19,6 +20,36 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Suggest mode: lightweight response for autocomplete
+    if (suggest) {
+      const architects = await prisma.architect.findMany({
+        where,
+        select: { id: true, name: true, slug: true },
+        orderBy: { name: "asc" },
+        take: Math.min(limit, 50),
+      });
+
+      // Get course counts
+      const architectNames = architects.map((a) => a.name);
+      const courseCounts = await prisma.course.groupBy({
+        by: ["originalArchitect"],
+        where: { originalArchitect: { in: architectNames } },
+        _count: { courseId: true },
+      });
+      const courseCountMap = new Map(
+        courseCounts.map((c) => [c.originalArchitect, c._count.courseId])
+      );
+
+      return NextResponse.json(
+        architects.map((a) => ({
+          id: a.id,
+          name: a.name,
+          slug: a.slug,
+          courseCount: courseCountMap.get(a.name) || 0,
+        }))
+      );
+    }
+
     const [architects, total] = await Promise.all([
       prisma.architect.findMany({
         where,

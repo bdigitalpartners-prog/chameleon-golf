@@ -230,6 +230,7 @@ export async function GET(req: NextRequest) {
       sortBy === "name" ? { courseName: sortDir }
       : sortBy === "fee" ? { greenFeeLow: sortDir }
       : sortBy === "rank" ? { numListsAppeared: sortDir }
+      : sortBy === "architect" ? { originalArchitect: sortDir }
       : sortBy === "chameleon"
         ? [{ chameleonScores: { chameleonScore: sortDir } }, { numListsAppeared: "desc" }]
         : { numListsAppeared: "desc" };
