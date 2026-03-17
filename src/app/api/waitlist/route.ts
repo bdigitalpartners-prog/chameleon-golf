@@ -25,6 +25,44 @@ function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+async function createHubSpotContact(email: string): Promise<void> {
+  const accessToken = process.env.HUBSPOT_ACCESS_TOKEN;
+  if (!accessToken) {
+    console.log("HUBSPOT_ACCESS_TOKEN not configured, skipping HubSpot sync");
+    return;
+  }
+
+  try {
+    const res = await fetch("https://api.hubapi.com/crm/v3/objects/contacts", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        properties: {
+          email,
+          lifecyclestage: "subscriber",
+          hs_lead_status: "NEW",
+          notes_last_contacted: "golfEQUALIZER Early Access Signup",
+        },
+      }),
+    });
+
+    if (res.status === 409) {
+      console.log(`HubSpot: contact already exists for ${email}`);
+      return;
+    }
+
+    if (!res.ok) {
+      const body = await res.text();
+      console.error(`HubSpot API error (${res.status}): ${body}`);
+    }
+  } catch (err) {
+    console.error("HubSpot API request failed:", err);
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? "unknown";
@@ -59,7 +97,7 @@ export async function POST(req: NextRequest) {
       });
       return NextResponse.json({
         success: true,
-        message: "You're already on the waitlist!",
+        message: "You're on the list! We'll be in touch soon.",
         position,
         alreadySignedUp: true,
       });
@@ -77,10 +115,15 @@ export async function POST(req: NextRequest) {
 
     const position = await prisma.waitlistSignup.count();
 
+    // Create contact in HubSpot (non-blocking — don't fail the request if this errors)
+    createHubSpotContact(trimmedEmail).catch((err) =>
+      console.error("Background HubSpot sync failed:", err)
+    );
+
     return NextResponse.json(
       {
         success: true,
-        message: "Welcome to the waitlist!",
+        message: "You're on the list! We'll be in touch soon.",
         position,
         alreadySignedUp: false,
       },
