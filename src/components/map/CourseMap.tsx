@@ -31,7 +31,6 @@ export interface CourseMapProps {
   height?: string;
   showSearch?: boolean;
   showList?: boolean;
-  onCourseSelect?: (course: CourseMapItem) => void;
   clusterMarkers?: boolean;
   colorBy?: "accessType" | "priceTier" | "state" | "rating" | "none";
   selectedCourseId?: number | null;
@@ -94,7 +93,6 @@ export default function CourseMap({
   center,
   zoom,
   height = "600px",
-  onCourseSelect,
   clusterMarkers = true,
   colorBy = "accessType",
   selectedCourseId,
@@ -229,12 +227,6 @@ export default function CourseMap({
               fontSize: "12px",
               fontWeight: 600,
               textDecoration: "none",
-            }}
-            onClick={(e) => {
-              if (onCourseSelect) {
-                e.preventDefault();
-                onCourseSelect(course);
-              }
             }}
           >
             View Course →

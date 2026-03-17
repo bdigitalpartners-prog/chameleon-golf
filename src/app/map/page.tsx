@@ -499,9 +499,6 @@ function MapPageInner() {
               clusterMarkers
               colorBy="accessType"
               selectedCourseId={selectedCourseId}
-              onCourseSelect={(c) => {
-                setSelectedCourseId(c.courseId);
-              }}
             />
           </div>
 

@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import {
   ArrowLeft,
   Trophy,
@@ -70,7 +70,6 @@ const SOURCE_COLORS: Record<string, string> = {
 
 export default function ListDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const listId = params.listId as string;
   const [data, setData] = useState<ListData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -295,7 +294,6 @@ export default function ListDetailPage() {
                 height="500px"
                 clusterMarkers={true}
                 colorBy="accessType"
-                onCourseSelect={(course) => router.push(`/course/${course.courseId}`)}
               />
             ) : (
               <div

@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo } from "react";
-import { useRouter } from "next/navigation";
 import CourseMap from "@/components/map";
 import type { CourseMapItem } from "@/components/map";
 
@@ -17,8 +16,6 @@ interface ArchitectCourse {
 }
 
 export function ArchitectPortfolioMap({ courses }: { courses: ArchitectCourse[] }) {
-  const router = useRouter();
-
   const mapCourses = useMemo<CourseMapItem[]>(() => {
     return courses
       .filter((c) => c.latitude && c.longitude)
@@ -64,7 +61,6 @@ export function ArchitectPortfolioMap({ courses }: { courses: ArchitectCourse[] 
         height="400px"
         clusterMarkers={mapCourses.length > 20}
         colorBy="accessType"
-        onCourseSelect={(course) => router.push(`/course/${course.courseId}`)}
       />
     </section>
   );

@@ -3,7 +3,6 @@
 export const dynamic = "force-dynamic";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import { CourseCard } from "@/components/course/CourseCard";
 import { CourseListRow } from "@/components/course/CourseListRow";
 import { CourseListHeader } from "@/components/course/CourseListHeader";
@@ -104,8 +103,6 @@ export default function ExplorePage() {
   }, []);
 
   const showWeightedScore = activeWeights !== null;
-  const router = useRouter();
-
   // Map-ready course data
   const mapCourses = useMemo<CourseMapItem[]>(() => {
     if (!data?.items) return [];
@@ -248,7 +245,6 @@ export default function ExplorePage() {
                         height="calc(100vh - 220px)"
                         clusterMarkers={true}
                         colorBy="accessType"
-                        onCourseSelect={(course) => router.push(`/course/${course.courseId}`)}
                       />
                     ) : (
                       <div
