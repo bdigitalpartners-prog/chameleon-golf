@@ -128,7 +128,6 @@ model Course {
   nearbyCourses     CourseNearbyCourses[] @relation("SourceCourse")
   nearbyFrom        CourseNearbyCourses[] @relation("NearbyCourse")
   nearbyRvParks     CourseNearbyRvParks[]
-  nearbyMetroDistances CourseNearbyMetroDistance[]
   intelligenceNotes CourseIntelligenceNotes[]
 
   // Social Links
@@ -143,6 +142,7 @@ model Course {
   courseArchitects   CourseArchitect[]
   externalContent   ContentCourseLink[]
   books             BookCourseLink[]
+  courseContent      CourseContent?
 
   @@map("courses")
 }
@@ -324,8 +324,6 @@ model User {
   scores          PostedScore[]
   weightProfiles  UserWeightProfile[]
   wishlists       CourseWishlist[]
-  conversationParticipants ConversationParticipant[]
-  messages        Message[]
 
   @@map("users")
 }
@@ -427,6 +425,9 @@ model UserCourseRating {
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @default(now()) @map("updated_at")
   isPublished       Boolean   @default(true) @map("is_published")
+  isSeed            Boolean   @default(false) @map("is_seed")
+  seedSource        String?   @map("seed_source") @db.VarChar(200)
+  seedReviewerName  String?   @map("seed_reviewer_name") @db.VarChar(200)
 
   user              User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   course            Course @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
@@ -460,47 +461,6 @@ model ChameleonScore {
   course               Course @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
 
   @@map("chameleon_scores")
-}
-
-model BatchEnrichmentRun {
-  id              Int       @id @default(autoincrement())
-  startedAt       DateTime  @default(now()) @map("started_at")
-  completedAt     DateTime? @map("completed_at")
-  status          String    @default("running") @db.VarChar(20) // running, completed, failed, stopped
-  priority        String    @default("least-enriched") @db.VarChar(30) // top-ranked-first, least-enriched-first
-  batchSize       Int       @default(50) @map("batch_size")
-  totalCourses    Int       @default(0) @map("total_courses")
-  coursesProcessed Int      @default(0) @map("courses_processed")
-  coursesUpdated  Int       @default(0) @map("courses_updated")
-  coursesErrored  Int       @default(0) @map("courses_errored")
-  totalFieldsFilled Int     @default(0) @map("total_fields_filled")
-  avgBefore       Decimal?  @map("avg_before") @db.Decimal(5, 2)
-  avgAfter        Decimal?  @map("avg_after") @db.Decimal(5, 2)
-  errorSummary    String?   @map("error_summary")
-  dryRun          Boolean   @default(false) @map("dry_run")
-
-  logs            CourseEnrichmentLog[]
-
-  @@map("batch_enrichment_runs")
-}
-
-model CourseEnrichmentLog {
-  id              Int       @id @default(autoincrement())
-  runId           Int?      @map("run_id")
-  courseId        Int       @map("course_id")
-  courseName      String    @map("course_name") @db.VarChar(255)
-  enrichedAt      DateTime  @default(now()) @map("enriched_at")
-  beforePct       Decimal   @map("before_pct") @db.Decimal(5, 2)
-  afterPct        Decimal   @map("after_pct") @db.Decimal(5, 2)
-  fieldsEnriched  Int       @default(0) @map("fields_enriched")
-  ruleBasedFields String[]  @map("rule_based_fields")
-  aiFields        String[]  @map("ai_fields")
-  status          String    @default("success") @db.VarChar(20) // success, error, no_changes
-  errorMessage    String?   @map("error_message")
-
-  run             BatchEnrichmentRun? @relation(fields: [runId], references: [id], onDelete: Cascade)
-
-  @@map("course_enrichment_logs")
 }
 
 model RatingHistory {
@@ -603,7 +563,6 @@ model CourseNearbyLodging {
   bookingUrl      String?  @map("booking_url") @db.VarChar(500)
   isOnSite        Boolean  @default(false) @map("is_on_site")
   isPartner       Boolean  @default(false) @map("is_partner")
-  isGolfPackage   Boolean  @default(false) @map("is_golf_package")
   sortOrder       Int      @default(0) @map("sort_order")
   createdAt       DateTime @default(now()) @map("created_at")
 
@@ -911,20 +870,6 @@ model WaitlistSignup {
   @@map("waitlist_signups")
 }
 
-model CourseNearbyMetroDistance {
-  id               Int      @id @default(autoincrement())
-  courseId          Int      @map("course_id")
-  metroName        String   @map("metro_name") @db.VarChar(255)
-  distanceMiles    Decimal? @map("distance_miles") @db.Decimal(6, 1)
-  driveTimeMinutes Int?     @map("drive_time_minutes")
-  createdAt        DateTime @default(now()) @map("created_at")
-
-  course           Course   @relation(fields: [courseId], references: [courseId])
-
-  @@unique([courseId, metroName])
-  @@map("course_nearby_metro_distances")
-}
-
 model FoundingAdvisoryFeedback {
   id                    Int      @id @default(autoincrement())
   fullName              String   @map("full_name") @db.VarChar(255)
@@ -945,63 +890,21 @@ model FoundingAdvisoryFeedback {
   @@map("founding_advisory_feedback")
 }
 
-// ─── Circles Social Messaging ──────────────────────────────────────────────────
+model CourseContent {
+  id                  Int      @id @default(autoincrement())
+  courseId             Int      @unique @map("course_id")
+  richDescription     String?  @map("rich_description")
+  whatToExpect         String?  @map("what_to_expect")
+  strategyLowHcp      String?  @map("strategy_low_hcp")
+  strategyMidHcp      String?  @map("strategy_mid_hcp")
+  strategyHighHcp     String?  @map("strategy_high_hcp")
+  threeThingsToKnow   Json?    @map("three_things_to_know")
+  firstTimerGuide     String?  @map("first_timer_guide")
+  generatedAt         DateTime @default(now()) @map("generated_at")
+  updatedAt           DateTime @default(now()) @map("updated_at")
+  modelUsed           String?  @map("model_used") @db.VarChar(100)
 
-enum ConversationType {
-  DIRECT
-  CIRCLE
-  COURSE
-}
+  course              Course   @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
 
-model Conversation {
-  id          String           @id @default(cuid())
-  type        ConversationType @default(DIRECT)
-  title       String?          @db.VarChar(255)
-  circleId    String?          @map("circle_id")
-  courseId    Int?             @map("course_id")
-  createdAt   DateTime         @default(now()) @map("created_at")
-  updatedAt   DateTime         @default(now()) @updatedAt @map("updated_at")
-
-  participants ConversationParticipant[]
-  messages     Message[]
-
-  @@index([circleId])
-  @@index([courseId])
-  @@map("conversations")
-}
-
-model ConversationParticipant {
-  id             String   @id @default(cuid())
-  conversationId String   @map("conversation_id")
-  userId         String   @map("user_id")
-  joinedAt       DateTime @default(now()) @map("joined_at")
-  lastReadAt     DateTime @default(now()) @map("last_read_at")
-  muted          Boolean  @default(false)
-
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([conversationId, userId])
-  @@index([userId])
-  @@map("conversation_participants")
-}
-
-model Message {
-  id             String   @id @default(cuid())
-  conversationId String   @map("conversation_id")
-  senderId       String   @map("sender_id")
-  content        String
-  videoUrl       String?  @map("video_url") @db.VarChar(500)
-  videoTitle     String?  @map("video_title") @db.VarChar(255)
-  replyToId      String?  @map("reply_to_id")
-  createdAt      DateTime @default(now()) @map("created_at")
-
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
-  replyTo      Message?     @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
-  replies      Message[]    @relation("MessageReplies")
-
-  @@index([conversationId, createdAt])
-  @@index([senderId])
-  @@map("messages")
+  @@map("course_content")
 }

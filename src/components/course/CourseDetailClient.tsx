@@ -651,13 +651,46 @@ export function CourseDetailClient({ course }: { course: any }) {
             {/* Main Column */}
             <div className="lg:col-span-2 space-y-8">
 
-              {/* About */}
-              {safeText(course.description) && (
+              {/* About — prefer AI-generated rich description, fall back to basic */}
+              {(safeText(course.courseContent?.richDescription) || safeText(course.description)) && (
                 <section style={cardStyle}>
-                  <SectionHeading lastUpdated={course.updatedAt}>About {course.courseName}</SectionHeading>
+                  <SectionHeading lastUpdated={course.courseContent?.updatedAt || course.updatedAt}>About {course.courseName}</SectionHeading>
                   <p className="text-sm leading-relaxed" style={{ color: "var(--cg-text-secondary)", lineHeight: "1.75" }}>
-                    {safeText(course.description)}
+                    {safeText(course.courseContent?.richDescription) || safeText(course.description)}
                   </p>
+                </section>
+              )}
+
+              {/* What to Expect — AI-generated */}
+              {safeText(course.courseContent?.whatToExpect) && (
+                <section style={cardStyle}>
+                  <SectionHeading icon={<Flag className="h-5 w-5" style={{ color: "#c084fc" }} />}>
+                    What to Expect
+                  </SectionHeading>
+                  <p className="text-sm leading-relaxed" style={{ color: "var(--cg-text-secondary)", lineHeight: "1.75" }}>
+                    {safeText(course.courseContent?.whatToExpect)}
+                  </p>
+                </section>
+              )}
+
+              {/* 3 Things to Know — AI-generated */}
+              {Array.isArray(course.courseContent?.threeThingsToKnow) && course.courseContent.threeThingsToKnow.length > 0 && (
+                <section style={cardStyle}>
+                  <SectionHeading icon={<Lightbulb className="h-5 w-5" style={{ color: "#fbbf24" }} />}>
+                    3 Things to Know
+                  </SectionHeading>
+                  <ol className="space-y-3">
+                    {(course.courseContent.threeThingsToKnow as string[]).map((thing: string, i: number) => (
+                      <li key={i} className="flex items-start gap-3 rounded-lg p-3" style={{ backgroundColor: "var(--cg-bg-secondary)" }}>
+                        <span className="flex items-center justify-center h-6 w-6 rounded-full shrink-0 text-xs font-bold" style={{
+                          backgroundColor: "rgba(234,179,8,0.15)", color: "#fbbf24",
+                        }}>
+                          {i + 1}
+                        </span>
+                        <span className="text-sm leading-relaxed" style={secondaryText}>{thing}</span>
+                      </li>
+                    ))}
+                  </ol>
                 </section>
               )}
 
@@ -1238,7 +1271,8 @@ export function CourseDetailClient({ course }: { course: any }) {
              insiderTips.length === 0 && !safeText(course.courseStrategy) && !safeText(course.whatToExpect) &&
              !safeText(course.bestTimeToPlay) && !course.weatherData && !safeText(course.bestConditionMonths) &&
              !safeText(course.fairwayGrass) && !safeText(course.greenGrass) && !safeText(course.greenSpeed) &&
-             !safeText(course.aerationSchedule) && !safeText(course.golfSeason) && !safeText(course.paceOfPlayNotes) && (
+             !safeText(course.aerationSchedule) && !safeText(course.golfSeason) && !safeText(course.paceOfPlayNotes) &&
+             !safeText(course.courseContent?.strategyLowHcp) && !safeText(course.courseContent?.firstTimerGuide) && (
               <section style={cardStyle}>
                 <EmptyState
                   icon={<Brain className="h-8 w-8" />}
@@ -1303,6 +1337,27 @@ export function CourseDetailClient({ course }: { course: any }) {
               </section>
             )}
 
+            {/* Strategy Tips by Handicap — AI-generated */}
+            {(safeText(course.courseContent?.strategyLowHcp) || safeText(course.courseContent?.strategyMidHcp) || safeText(course.courseContent?.strategyHighHcp)) && (
+              <section style={cardStyle}>
+                <SectionHeading icon={<SlidersHorizontal className="h-5 w-5" style={{ color: "#60a5fa" }} />}>
+                  Strategy by Handicap
+                </SectionHeading>
+                <div className="space-y-4">
+                  {[
+                    { label: "Low Handicap (0-10)", text: safeText(course.courseContent?.strategyLowHcp), color: "#22c55e" },
+                    { label: "Mid Handicap (11-20)", text: safeText(course.courseContent?.strategyMidHcp), color: "#60a5fa" },
+                    { label: "High Handicap (21+)", text: safeText(course.courseContent?.strategyHighHcp), color: "#f59e0b" },
+                  ].filter(({ text }) => text).map(({ label, text, color }) => (
+                    <div key={label} className="rounded-lg p-4" style={{ backgroundColor: "var(--cg-bg-secondary)" }}>
+                      <span className="text-xs font-semibold mb-1.5 block" style={{ color }}>{label}</span>
+                      <p className="text-sm leading-relaxed" style={secondaryText}>{text}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {/* What to Expect */}
             {safeText(course.whatToExpect) && (
               <section style={cardStyle}>
@@ -1310,6 +1365,16 @@ export function CourseDetailClient({ course }: { course: any }) {
                   What to Expect
                 </SectionHeading>
                 <p className="text-sm leading-relaxed" style={secondaryText}>{safeText(course.whatToExpect)}</p>
+              </section>
+            )}
+
+            {/* First-Timer Guide — AI-generated */}
+            {safeText(course.courseContent?.firstTimerGuide) && (
+              <section style={cardStyle}>
+                <SectionHeading icon={<Compass className="h-5 w-5" style={{ color: "#f472b6" }} />}>
+                  First-Timer Guide
+                </SectionHeading>
+                <p className="text-sm leading-relaxed" style={secondaryText}>{safeText(course.courseContent?.firstTimerGuide)}</p>
               </section>
             )}
 

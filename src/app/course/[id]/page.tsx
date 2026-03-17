@@ -81,6 +81,7 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
           where: { isVisible: true },
           orderBy: { generatedAt: "desc" },
         },
+        courseContent: true,
         architect: {
           select: {
             id: true,
