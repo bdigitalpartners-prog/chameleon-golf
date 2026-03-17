@@ -9,6 +9,9 @@ export async function PATCH(request: NextRequest) {
   if (authError) return authError;
 
   try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "course_media" ADD COLUMN IF NOT EXISTS "is_active" BOOLEAN NOT NULL DEFAULT true`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "course_media" ADD COLUMN IF NOT EXISTS "source_url" VARCHAR(500)`);
+
     const body = await request.json();
     const { sourceName, isActive } = body;
 
