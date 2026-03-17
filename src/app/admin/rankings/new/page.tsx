@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Download, Loader2, CheckCircle, AlertCircle, XCircle } from "lucide-react";
 import Link from "next/link";
 
 interface SourceOption {
@@ -37,6 +37,10 @@ export default function NewRankingListPage() {
   const [newSourceName, setNewSourceName] = useState("");
   const [newSourceUrl, setNewSourceUrl] = useState("");
 
+  const [importUrl, setImportUrl] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<any>(null);
+
   const [form, setForm] = useState({
     sourceId: "",
     listName: "",
@@ -46,6 +50,7 @@ export default function NewRankingListPage() {
     cycleLabel: "",
     prestigeTier: "regional",
     listWeight: "0.4",
+    url: "",
   });
 
   useEffect(() => {
@@ -79,8 +84,34 @@ export default function NewRankingListPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleImportPreview = async () => {
+    const url = importUrl || form.url;
+    if (!url) {
+      setError("Enter a URL to import from");
+      return;
+    }
+    setImporting(true);
+    setError("");
+    setImportResult(null);
+    try {
+      const res = await fetchAdmin("/api/admin/rankings/import", {
+        method: "POST",
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setError(data.error);
+      } else {
+        setImportResult(data);
+      }
+    } catch {
+      setError("Import failed");
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleCreateAndImport = async () => {
     if (!form.sourceId || !form.listName || !form.yearPublished) {
       setError("Source, list name, and year are required");
       return;
@@ -88,20 +119,61 @@ export default function NewRankingListPage() {
     setSaving(true);
     setError("");
     try {
-      const res = await fetchAdmin("/api/admin/rankings", {
+      // Step 1: Create the list
+      const createRes = await fetchAdmin("/api/admin/rankings", {
         method: "POST",
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, url: importUrl || form.url }),
       });
-      const data = await res.json();
-      if (data.listId) {
-        router.push(`/admin/rankings/${data.listId}`);
-      } else {
-        setError(data.error || "Failed to create list");
+      const listData = await createRes.json();
+      if (!listData.listId) {
+        setError(listData.error || "Failed to create list");
+        return;
       }
+
+      // Step 2: Import entries if we have preview data
+      if (importResult?.entries?.length) {
+        const importRes = await fetchAdmin("/api/admin/rankings/import", {
+          method: "POST",
+          body: JSON.stringify({ url: importUrl || form.url, listId: listData.listId }),
+        });
+        await importRes.json();
+      }
+
+      router.push(`/admin/rankings/${listData.listId}`);
     } catch {
       setError("Failed to create list");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (importResult?.entries?.length) {
+      await handleCreateAndImport();
+    } else {
+      if (!form.sourceId || !form.listName || !form.yearPublished) {
+        setError("Source, list name, and year are required");
+        return;
+      }
+      setSaving(true);
+      setError("");
+      try {
+        const res = await fetchAdmin("/api/admin/rankings", {
+          method: "POST",
+          body: JSON.stringify({ ...form, url: importUrl || form.url }),
+        });
+        const data = await res.json();
+        if (data.listId) {
+          router.push(`/admin/rankings/${data.listId}`);
+        } else {
+          setError(data.error || "Failed to create list");
+        }
+      } catch {
+        setError("Failed to create list");
+      } finally {
+        setSaving(false);
+      }
     }
   };
 
@@ -173,6 +245,73 @@ export default function NewRankingListPage() {
             </div>
           )}
 
+          {/* URL + Import */}
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Source URL</label>
+            <div className="flex gap-2">
+              <input
+                value={importUrl || form.url}
+                onChange={(e) => { setImportUrl(e.target.value); set("url", e.target.value); }}
+                placeholder="https://www.golfdigest.com/story/americas-100-greatest-golf-courses"
+                className={inputClass + " flex-1"}
+              />
+              <button
+                type="button"
+                onClick={handleImportPreview}
+                disabled={importing}
+                className="px-4 py-2 rounded-lg border border-[#22c55e] text-[#22c55e] hover:bg-[#22c55e]/10 text-sm font-medium flex items-center gap-2 disabled:opacity-50 whitespace-nowrap"
+              >
+                {importing ? (
+                  <><Loader2 size={14} className="animate-spin" /> Importing...</>
+                ) : (
+                  <><Download size={14} /> Import List</>
+                )}
+              </button>
+            </div>
+            <p className="text-xs text-gray-600 mt-1">Paste a ranking list URL to auto-extract courses and populate entries</p>
+          </div>
+
+          {/* Import Results Preview */}
+          {importResult && (
+            <div className="rounded-lg bg-[#0a0a0a] border border-[#333] p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-white">Import Preview</p>
+                <div className="flex gap-3 text-xs">
+                  <span className="text-[#22c55e]">{importResult.matched} matched</span>
+                  <span className="text-yellow-500">{importResult.unmatched} unmatched</span>
+                  <span className="text-gray-500">{importResult.totalExtracted} total</span>
+                </div>
+              </div>
+              <div className="max-h-64 overflow-y-auto space-y-1">
+                {importResult.entries?.map((entry: any, i: number) => (
+                  <div key={i} className="flex items-center gap-3 text-xs py-1 border-b border-[#1a1a1a] last:border-0">
+                    <span className="text-gray-500 w-8 text-right">#{entry.rank}</span>
+                    <span className={entry.matchedCourseId ? "text-white" : "text-gray-500"}>
+                      {entry.courseName}
+                    </span>
+                    {entry.matchedCourseId ? (
+                      <span className="ml-auto flex items-center gap-1">
+                        {entry.confidence === "exact" && <CheckCircle size={12} className="text-[#22c55e]" />}
+                        {entry.confidence === "high" && <CheckCircle size={12} className="text-blue-400" />}
+                        {entry.confidence === "partial" && <AlertCircle size={12} className="text-yellow-500" />}
+                        <span className="text-gray-500">{entry.matchedCourseName}</span>
+                      </span>
+                    ) : (
+                      <span className="ml-auto flex items-center gap-1 text-gray-600">
+                        <XCircle size={12} /> No match
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {importResult.matched > 0 && (
+                <p className="text-xs text-gray-500">
+                  {importResult.matched} courses will be imported when you create the list (exact + high confidence matches only)
+                </p>
+              )}
+            </div>
+          )}
+
           {/* List Name */}
           <div>
             <label className="block text-xs text-gray-500 mb-1">List Name *</label>
@@ -220,7 +359,11 @@ export default function NewRankingListPage() {
             disabled={saving}
             className="px-6 py-2 rounded-lg bg-[#22c55e] text-black font-medium text-sm hover:bg-[#16a34a] disabled:opacity-50"
           >
-            {saving ? "Creating..." : "Create List"}
+            {saving
+              ? "Creating..."
+              : importResult?.matched
+                ? `Create List & Import ${importResult.matched} Courses`
+                : "Create List"}
           </button>
         </div>
       </form>

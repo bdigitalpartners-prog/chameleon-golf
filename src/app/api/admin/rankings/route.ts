@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { sourceId, listName, listType, region, yearPublished, cycleLabel, prestigeTier, listWeight } = body;
+    const { sourceId, listName, listType, region, yearPublished, cycleLabel, prestigeTier, listWeight, url } = body;
 
     if (!sourceId || !listName || !yearPublished) {
       return NextResponse.json({ error: "sourceId, listName, and yearPublished are required" }, { status: 400 });
@@ -112,6 +112,7 @@ export async function POST(request: NextRequest) {
         cycleLabel: cycleLabel || null,
         prestigeTier: prestigeTier || "regional",
         listWeight: listWeight ? parseFloat(listWeight) : 0.4,
+        url: url || null,
       },
     });
 
