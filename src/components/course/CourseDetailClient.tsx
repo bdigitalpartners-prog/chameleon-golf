@@ -15,6 +15,8 @@ import { CoursePlaceholder } from "./CoursePlaceholder";
 import { CircleRatingsSection } from "./CircleRatingsSection";
 import { PoweredByBadge } from "@/components/brand/PoweredByBadge";
 import { CourseContentSections } from "./CourseContentSections";
+import { BucketListButton } from "@/components/bucket-list/BucketListButton";
+import { BucketListCounter } from "@/components/bucket-list/BucketListCounter";
 
 /* ─── Safe Text Helper ─── */
 
@@ -484,9 +486,10 @@ export function CourseDetailClient({ course }: { course: any }) {
           )}
         </div>
 
-        {/* CF Score ring - top right */}
-        {scoreNum !== null && (
-          <div className="absolute top-4 right-4 md:top-6 md:right-6">
+        {/* CF Score ring + Bucket List - top right */}
+        <div className="absolute top-4 right-4 md:top-6 md:right-6 flex items-center gap-2">
+          <BucketListButton courseId={course.courseId} courseName={course.courseName} size="lg" />
+          {scoreNum !== null && (
             <div
               className="flex items-center justify-center rounded-full h-16 w-16 text-lg font-bold shadow-lg"
               style={{
@@ -496,8 +499,8 @@ export function CourseDetailClient({ course }: { course: any }) {
             >
               {Math.round(scoreNum)}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Hero text - bottom */}
         <div className="absolute bottom-0 left-0 right-0 px-4 pb-5 md:px-6 md:pb-6">
@@ -1882,6 +1885,9 @@ export function CourseDetailClient({ course }: { course: any }) {
                 </div>
               </section>
             )}
+
+            {/* Bucket List Social Counters */}
+            <BucketListCounter courseId={course.courseId} />
 
             {/* Community Ratings */}
             <section style={cardStyle}>

@@ -6,6 +6,7 @@ import type { CourseCard as CourseCardType } from "@/types";
 import { formatCurrency } from "@/lib/utils";
 import { useCompare } from "@/contexts/CompareContext";
 import { CoursePlaceholder } from "./CoursePlaceholder";
+import { BucketListButton } from "@/components/bucket-list/BucketListButton";
 
 function ScoreRing({ score, label }: { score: number | null; label?: string }) {
   if (score === null)
@@ -97,6 +98,9 @@ export function CourseCard({ course, showWeightedScore }: { course: CourseCardTy
                 {course.accessType}
               </span>
             )}
+            <div className="absolute bottom-3 left-3" style={{ zIndex: 10 }}>
+              <BucketListButton courseId={course.courseId} courseName={course.courseName} size="sm" />
+            </div>
           </div>
           <div className="p-4">
             <h3

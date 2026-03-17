@@ -142,6 +142,7 @@ model Course {
   courseArchitects   CourseArchitect[]
   externalContent   ContentCourseLink[]
   books             BookCourseLink[]
+  bucketListItems   BucketListItem[]
 
   @@map("courses")
 }
@@ -323,6 +324,7 @@ model User {
   scores          PostedScore[]
   weightProfiles  UserWeightProfile[]
   wishlists       CourseWishlist[]
+  bucketListItems BucketListItem[]
 
   @@map("users")
 }
@@ -835,6 +837,26 @@ model BookCourseLink {
 
   @@unique([bookId, courseId])
   @@map("book_course_links")
+}
+
+model BucketListItem {
+  id          Int       @id @default(autoincrement())
+  userId      String    @map("user_id")
+  courseId     Int       @map("course_id")
+  priority    String    @default("Medium") @db.VarChar(20)
+  notes       String?
+  targetDate  DateTime? @map("target_date") @db.Date
+  status      String    @default("Want to Play") @db.VarChar(30)
+  playedAt    DateTime? @map("played_at") @db.Date
+  rating      Decimal?  @db.Decimal(3, 1)
+  addedAt     DateTime  @default(now()) @map("added_at")
+  updatedAt   DateTime  @default(now()) @map("updated_at")
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course      Course    @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@map("bucket_list_items")
 }
 
 model PerformanceArticle {
