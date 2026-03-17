@@ -670,3 +670,14 @@ model PerformanceArticle {
 
   @@map("performance_articles")
 }
+
+model WaitlistSignup {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique @db.VarChar(255)
+  name      String?  @db.VarChar(255)
+  handicap  String?  @db.VarChar(50)
+  source    String?  @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("waitlist_signups")
+}
