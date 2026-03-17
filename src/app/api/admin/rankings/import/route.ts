@@ -28,6 +28,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Ensure url column exists on ranking_lists (migration safety)
+    try {
+      await prisma.$executeRawUnsafe(
+        `ALTER TABLE "ranking_lists" ADD COLUMN IF NOT EXISTS "url" VARCHAR(500)`
+      );
+    } catch { /* column likely already exists */ }
+
     if (!PERPLEXITY_API_KEY) {
       return NextResponse.json(
         { error: "Perplexity API key not configured" },

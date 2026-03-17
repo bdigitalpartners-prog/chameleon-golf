@@ -102,6 +102,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "sourceId, listName, and yearPublished are required" }, { status: 400 });
     }
 
+    // Ensure url column exists (migration safety)
+    try {
+      await prisma.$executeRawUnsafe(
+        `ALTER TABLE "ranking_lists" ADD COLUMN IF NOT EXISTS "url" VARCHAR(500)`
+      );
+    } catch { /* already exists */ }
+
     const list = await prisma.rankingList.create({
       data: {
         sourceId: parseInt(sourceId, 10),
