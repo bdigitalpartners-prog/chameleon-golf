@@ -46,6 +46,8 @@ export async function GET(
       city: e.course.city,
       state: e.course.state,
       country: e.course.country,
+      latitude: e.course.latitude?.toString() ?? null,
+      longitude: e.course.longitude?.toString() ?? null,
       courseStyle: e.course.courseStyle,
       accessType: e.course.accessType,
       originalArchitect: e.course.originalArchitect,

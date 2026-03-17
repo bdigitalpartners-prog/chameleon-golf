@@ -2,9 +2,9 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Trophy,
@@ -15,8 +15,12 @@ import {
   ChevronDown,
   Minus,
   Image as ImageIcon,
+  MapIcon,
+  List,
 } from "lucide-react";
 import { CoursePlaceholder } from "@/components/course/CoursePlaceholder";
+import CourseMap from "@/components/map";
+import type { CourseMapItem } from "@/components/map";
 
 interface ListCourse {
   entryId: number;
@@ -30,6 +34,8 @@ interface ListCourse {
   city: string | null;
   state: string | null;
   country: string | null;
+  latitude: string | null;
+  longitude: string | null;
   courseStyle: string | null;
   accessType: string | null;
   originalArchitect: string | null;
@@ -64,10 +70,12 @@ const SOURCE_COLORS: Record<string, string> = {
 
 export default function ListDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const listId = params.listId as string;
   const [data, setData] = useState<ListData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "map">("list");
 
   useEffect(() => {
     fetch(`/api/rankings/${listId}`)
@@ -126,6 +134,24 @@ export default function ListDetailPage() {
 
   const sourceColor =
     SOURCE_COLORS[data.source.sourceName] ?? "var(--cg-accent)";
+
+  const mapCourses = useMemo<CourseMapItem[]>(() => {
+    if (!data?.courses) return [];
+    return data.courses
+      .filter((c) => c.latitude && c.longitude)
+      .map((c) => ({
+        courseId: c.courseId,
+        courseName: c.courseName,
+        facilityName: c.facilityName,
+        latitude: parseFloat(c.latitude!),
+        longitude: parseFloat(c.longitude!),
+        city: c.city,
+        state: c.state,
+        accessType: c.accessType,
+        originalArchitect: c.originalArchitect,
+        greenFeeHigh: c.greenFeeLow ? parseFloat(c.greenFeeLow) : null,
+      }));
+  }, [data?.courses]);
 
   return (
     <div
@@ -222,7 +248,68 @@ export default function ListDetailPage() {
           </div>
         </div>
 
+        {/* View Toggle */}
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-sm" style={{ color: "var(--cg-text-muted)" }}>
+            {mapCourses.length > 0 && viewMode === "map"
+              ? `Showing ${mapCourses.length} of ${data.totalCourses} courses on map`
+              : `${data.totalCourses} ranked courses`}
+          </span>
+          <div
+            className="inline-flex rounded-lg overflow-hidden"
+            style={{ border: "1px solid var(--cg-border)" }}
+          >
+            <button
+              onClick={() => setViewMode("list")}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors"
+              style={{
+                backgroundColor: viewMode === "list" ? "var(--cg-accent-bg)" : "transparent",
+                color: viewMode === "list" ? "var(--cg-accent)" : "var(--cg-text-muted)",
+              }}
+            >
+              <List className="h-3.5 w-3.5" /> List
+            </button>
+            <button
+              onClick={() => setViewMode("map")}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors"
+              style={{
+                backgroundColor: viewMode === "map" ? "var(--cg-accent-bg)" : "transparent",
+                color: viewMode === "map" ? "var(--cg-accent)" : "var(--cg-text-muted)",
+                borderLeft: "1px solid var(--cg-border)",
+              }}
+            >
+              <MapIcon className="h-3.5 w-3.5" /> Map
+            </button>
+          </div>
+        </div>
+
+        {/* Map View */}
+        {viewMode === "map" && (
+          <div
+            className="rounded-xl overflow-hidden mb-8"
+            style={{ border: "1px solid var(--cg-border)" }}
+          >
+            {mapCourses.length > 0 ? (
+              <CourseMap
+                courses={mapCourses}
+                height="500px"
+                clusterMarkers={true}
+                colorBy="accessType"
+                onCourseSelect={(course) => router.push(`/course/${course.courseId}`)}
+              />
+            ) : (
+              <div
+                className="flex items-center justify-center py-20"
+                style={{ color: "var(--cg-text-muted)" }}
+              >
+                No courses with location data in this ranking list.
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Course list */}
+        {viewMode === "list" && (
         <div
           className="rounded-xl overflow-hidden"
           style={{
@@ -426,6 +513,7 @@ export default function ListDetailPage() {
             </div>
           )}
         </div>
+        )}
       </div>
     </div>
   );

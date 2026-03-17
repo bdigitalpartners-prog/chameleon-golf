@@ -261,6 +261,8 @@ export async function GET(req: NextRequest) {
       city: c.city,
       state: c.state,
       country: c.country,
+      latitude: c.latitude?.toString() ?? null,
+      longitude: c.longitude?.toString() ?? null,
       courseStyle: c.courseStyle,
       courseType: c.courseType,
       accessType: c.accessType,

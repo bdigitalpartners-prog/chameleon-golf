@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArchitectContentSections } from "./ArchitectContentSections";
+import { ArchitectPortfolioMap } from "@/components/architect/ArchitectPortfolioMap";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +47,8 @@ export default async function ArchitectDetailPage({ params }: Props) {
       city: true,
       state: true,
       country: true,
+      latitude: true,
+      longitude: true,
       accessType: true,
       yearOpened: true,
       chameleonScores: { select: { chameleonScore: true } },
@@ -64,6 +67,8 @@ export default async function ArchitectDetailPage({ params }: Props) {
           city: true,
           state: true,
           country: true,
+          latitude: true,
+          longitude: true,
           accessType: true,
           yearOpened: true,
           originalArchitect: true,
@@ -224,6 +229,20 @@ export default async function ArchitectDetailPage({ params }: Props) {
             </p>
           </section>
         )}
+
+        {/* Course Portfolio Map */}
+        <ArchitectPortfolioMap
+          courses={courses.map((c) => ({
+            courseId: c.courseId,
+            courseName: c.courseName,
+            city: c.city,
+            state: c.state,
+            country: c.country,
+            latitude: c.latitude?.toString() ?? null,
+            longitude: c.longitude?.toString() ?? null,
+            accessType: c.accessType,
+          }))}
+        />
 
         <div className="grid gap-6 md:grid-cols-2 mb-6">
           {/* Signature Courses */}

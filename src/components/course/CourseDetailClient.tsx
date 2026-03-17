@@ -14,6 +14,8 @@ import { CoursePlaceholder } from "./CoursePlaceholder";
 import { CircleRatingsSection } from "./CircleRatingsSection";
 import { PoweredByBadge } from "@/components/brand/PoweredByBadge";
 import { CourseContentSections } from "./CourseContentSections";
+import { CourseDetailMap } from "@/components/map";
+import type { POIMarker } from "@/components/map";
 
 /* ─── Safe Text Helper ─── */
 
@@ -411,6 +413,56 @@ export function CourseDetailClient({ course }: { course: any }) {
   const nearbyAttractions = course.nearbyAttractions || [];
   const nearbyRvParks = course.nearbyRvParks || [];
   const nearbyCourses = course.nearbyCourses || [];
+
+  /* ─── Map Markers for Travel & Stay ─── */
+  const mapMarkers = useMemo(() => {
+    const markers: POIMarker[] = [];
+    const lat = parseFloat(course.latitude);
+    const lng = parseFloat(course.longitude);
+    if (!lat || !lng) return markers;
+    // Primary course marker
+    markers.push({
+      id: `course-${course.courseId}`,
+      name: course.courseName,
+      type: "course",
+      latitude: lat,
+      longitude: lng,
+      subtitle: [course.city, course.state].filter(Boolean).join(", "),
+      url: `/course/${course.courseId}`,
+      isPrimary: true,
+    });
+    // Nearby courses
+    nearbyCourses.forEach((nc: any) => {
+      const nearby = nc.nearbyCourse;
+      if (!nearby?.latitude || !nearby?.longitude) return;
+      markers.push({
+        id: `nearby-${nearby.courseId}`,
+        name: nearby.courseName,
+        type: "nearbyCourse",
+        latitude: parseFloat(nearby.latitude),
+        longitude: parseFloat(nearby.longitude),
+        subtitle: [nearby.city, nearby.state].filter(Boolean).join(", "),
+        distance: nc.distanceMiles ? `${parseFloat(nc.distanceMiles).toFixed(0)} mi` : null,
+        url: `/course/${nearby.courseId}`,
+      });
+    });
+    // Airports
+    (course.airports || []).forEach((a: any) => {
+      if (!a.airport?.latitude || !a.airport?.longitude) return;
+      markers.push({
+        id: `airport-${a.airport.airportId}`,
+        name: a.airport.iataCode ? `${a.airport.iataCode} — ${a.airport.airportName}` : a.airport.airportName,
+        type: "airport",
+        latitude: parseFloat(a.airport.latitude),
+        longitude: parseFloat(a.airport.longitude),
+        subtitle: a.airport.airportType || null,
+        distance: a.distanceMiles ? `${parseFloat(a.distanceMiles).toFixed(0)} mi` : null,
+      });
+    });
+    // Dining (no lat/lng in DB, skip unless available)
+    // Lodging, Attractions, RV Parks — same, no coordinates in POI tables
+    return markers;
+  }, [course, nearbyCourses]);
 
   /* ─────────── RENDER ─────────── */
 
@@ -1171,6 +1223,25 @@ export function CourseDetailClient({ course }: { course: any }) {
 
             {/* ── Overview sub-tab ── */}
             {(travelSubTab || "overview") === "overview" && (
+              <div className="space-y-8">
+                {/* Location Map */}
+                {mapMarkers.length > 0 && (
+                  <section style={cardStyle}>
+                    <SectionHeading icon={<Map className="h-5 w-5" style={{ color: "var(--cg-accent)" }} />}>
+                      Location &amp; Nearby
+                    </SectionHeading>
+                    <div className="mt-3" style={{ marginLeft: "-1.5rem", marginRight: "-1.5rem", marginBottom: "-1.5rem" }}>
+                      <CourseDetailMap
+                        markers={mapMarkers}
+                        center={[parseFloat(course.latitude), parseFloat(course.longitude)]}
+                        zoom={10}
+                        height="350px"
+                        showLegend={true}
+                      />
+                    </div>
+                  </section>
+                )}
+
               <div className="grid gap-8 lg:grid-cols-2">
                 {!course.airports?.length && nearbyCourses.length === 0 &&
                  nearbyLodging.length === 0 && nearbyDining.length === 0 &&
@@ -1364,6 +1435,7 @@ export function CourseDetailClient({ course }: { course: any }) {
                     </section>
                   )}
                 </div>
+              </div>
               </div>
             )}
 
