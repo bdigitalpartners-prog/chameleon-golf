@@ -615,15 +615,18 @@ export function CourseDetailClient({ course }: { course: any }) {
                   <div className="mt-5">
                     <h3 className="text-sm font-semibold mb-2" style={secondaryText}>Practice Facilities</h3>
                     <div className="flex flex-wrap gap-2">
-                      {practiceFacilities.map((f: string, i: number) => (
-                        <span key={i} className="rounded-full px-3 py-1 text-xs" style={{
-                          backgroundColor: "var(--cg-bg-tertiary)",
-                          color: "var(--cg-text-secondary)",
-                          border: "1px solid var(--cg-border)",
-                        }}>
-                          {f}
-                        </span>
-                      ))}
+                      {practiceFacilities.map((f: any, i: number) => {
+                        const label = typeof f === 'string' ? f : (f.details || f.type || 'Facility');
+                        return (
+                          <span key={i} className="rounded-full px-3 py-1 text-xs" style={{
+                            backgroundColor: "var(--cg-bg-tertiary)",
+                            color: "var(--cg-text-secondary)",
+                            border: "1px solid var(--cg-border)",
+                          }}>
+                            {label}
+                          </span>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -749,12 +752,15 @@ export function CourseDetailClient({ course }: { course: any }) {
                     <div>
                       <SubHeading>Famous Moments</SubHeading>
                       <ul className="space-y-2">
-                        {famousMoments.map((moment: string, i: number) => (
-                          <li key={i} className="flex items-start gap-2 text-sm" style={secondaryText}>
-                            <Star className="h-4 w-4 shrink-0 mt-0.5" style={{ color: "#f59e0b" }} />
-                            {moment}
-                          </li>
-                        ))}
+                        {famousMoments.map((moment: any, i: number) => {
+                          const text = typeof moment === 'string' ? moment : (moment.year ? `${moment.year}: ${moment.description}` : moment.description || String(moment));
+                          return (
+                            <li key={i} className="flex items-start gap-2 text-sm" style={secondaryText}>
+                              <Star className="h-4 w-4 shrink-0 mt-0.5" style={{ color: "#f59e0b" }} />
+                              {text}
+                            </li>
+                          );
+                        })}
                       </ul>
                     </div>
                   )}
