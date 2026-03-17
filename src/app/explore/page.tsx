@@ -24,8 +24,8 @@ export default function ExplorePage() {
   const [filters, setFilters] = useState<CourseFilters>({
     page: 1,
     limit: 50,
-    sortBy: "chameleon",
-    sortDir: "desc",
+    sortBy: "gd100",
+    sortDir: "asc",
   });
 
   const { data, isLoading, error } = useCourses(filters);
@@ -97,7 +97,7 @@ export default function ExplorePage() {
       } else {
         // Clear weights
         const { w_expert, w_conditioning, w_layout, w_aesthetics, w_challenge, w_value, w_walkability, w_pace, w_amenities, w_service, ...rest } = next;
-        return { ...rest, sortBy: "chameleon" as CourseFilters["sortBy"] };
+        return { ...rest, sortBy: "gd100" as CourseFilters["sortBy"], sortDir: "asc" as CourseFilters["sortDir"] };
       }
     });
   }, []);

@@ -202,6 +202,151 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ items, total, page, limit, totalPages: Math.ceil(total / limit) });
     }
 
+    // --- Golf Digest Top 100 sort (raw SQL) ---
+    if (sortBy === "gd100") {
+      const conditions: Prisma.Sql[] = [Prisma.sql`1=1`];
+      if (country) conditions.push(Prisma.sql`c.country = ${country}`);
+      if (state) conditions.push(Prisma.sql`c.state = ${state}`);
+      if (courseStyle) conditions.push(Prisma.sql`c.course_style = ${courseStyle}`);
+      if (accessType) conditions.push(Prisma.sql`c.access_type = ${accessType}`);
+      if (feeMin !== undefined) conditions.push(Prisma.sql`c.green_fee_low >= ${feeMin}`);
+      if (feeMax !== undefined) conditions.push(Prisma.sql`c.green_fee_low <= ${feeMax}`);
+      if (walkingPolicy) conditions.push(Prisma.sql`c.walking_policy = ${walkingPolicy}`);
+      if (yearMin !== undefined) conditions.push(Prisma.sql`c.year_opened >= ${yearMin}`);
+      if (yearMax !== undefined) conditions.push(Prisma.sql`c.year_opened <= ${yearMax}`);
+      if (architect) conditions.push(Prisma.sql`c.original_architect ILIKE ${"%" + architect + "%"}`);
+      if (listId !== undefined) conditions.push(Prisma.sql`EXISTS (SELECT 1 FROM ranking_entries re2 WHERE re2.course_id = c.course_id AND re2.list_id = ${listId})`);
+
+      const whereClause = conditions.reduce((acc, cond) => Prisma.sql`${acc} AND ${cond}`);
+
+      type GdRawCourse = {
+        course_id: bigint;
+        course_name: string;
+        facility_name: string | null;
+        city: string | null;
+        state: string | null;
+        country: string;
+        latitude: string | null;
+        longitude: string | null;
+        course_style: string | null;
+        course_type: string | null;
+        access_type: string | null;
+        par: number | null;
+        num_holes: number | null;
+        year_opened: number | null;
+        original_architect: string | null;
+        green_fee_low: string | null;
+        green_fee_high: string | null;
+        walking_policy: string | null;
+        num_lists_appeared: number | null;
+        chameleon_score: string | null;
+        prestige_score: string | null;
+        primary_image_url: string | null;
+        gd_rank: number | null;
+        total_count: bigint;
+      };
+
+      const rows = await prisma.$queryRaw<GdRawCourse[]>(Prisma.sql`
+        SELECT
+          c.course_id,
+          c.course_name,
+          c.facility_name,
+          c.city,
+          c.state,
+          c.country,
+          c.latitude::text,
+          c.longitude::text,
+          c.course_style,
+          c.course_type,
+          c.access_type,
+          c.par,
+          c.num_holes,
+          c.year_opened,
+          c.original_architect,
+          c.green_fee_low::text,
+          c.green_fee_high::text,
+          c.walking_policy,
+          c.num_lists_appeared,
+          cs.chameleon_score::text,
+          cs.prestige_score::text,
+          (SELECT cm.url FROM course_media cm WHERE cm.course_id = c.course_id AND cm.is_primary = true LIMIT 1) as primary_image_url,
+          re.rank_position as gd_rank,
+          COUNT(*) OVER() as total_count
+        FROM courses c
+        LEFT JOIN ranking_entries re ON re.course_id = c.course_id
+          AND re.list_id = (
+            SELECT rl.list_id FROM ranking_lists rl
+            JOIN ranking_sources rs ON rs.source_id = rl.source_id
+            WHERE rs.source_name ILIKE '%Golf Digest%'
+            AND rl.list_name ILIKE '%100 Greatest%'
+            ORDER BY rl.year_published DESC LIMIT 1
+          )
+        LEFT JOIN chameleon_scores cs ON cs.course_id = c.course_id
+        WHERE ${whereClause}
+        ORDER BY
+          CASE WHEN re.rank_position IS NOT NULL THEN 0 ELSE 1 END,
+          re.rank_position ASC NULLS LAST,
+          cs.chameleon_score DESC NULLS LAST
+        LIMIT ${limit} OFFSET ${skip}
+      `);
+
+      const total = rows.length > 0 ? Number(rows[0].total_count) : 0;
+
+      const courseIds = rows.map((r) => Number(r.course_id));
+      const rankingsData = courseIds.length > 0
+        ? await prisma.rankingEntry.findMany({
+            where: { courseId: { in: courseIds } },
+            include: { list: { include: { source: true } } },
+            orderBy: { rankPosition: "asc" },
+          })
+        : [];
+
+      const rankingsByCourseId = new Map<number, typeof rankingsData>();
+      for (const r of rankingsData) {
+        if (!rankingsByCourseId.has(r.courseId)) rankingsByCourseId.set(r.courseId, []);
+        rankingsByCourseId.get(r.courseId)!.push(r);
+      }
+
+      const items = rows.map((r) => {
+        const cId = Number(r.course_id);
+        const rankings = rankingsByCourseId.get(cId) ?? [];
+        return {
+          courseId: cId,
+          courseName: r.course_name,
+          facilityName: r.facility_name,
+          city: r.city,
+          state: r.state,
+          country: r.country,
+          latitude: r.latitude,
+          longitude: r.longitude,
+          courseStyle: r.course_style,
+          courseType: r.course_type,
+          accessType: r.access_type,
+          par: r.par,
+          numHoles: r.num_holes,
+          yearOpened: r.year_opened,
+          originalArchitect: r.original_architect,
+          greenFeeLow: r.green_fee_low,
+          greenFeeHigh: r.green_fee_high,
+          walkingPolicy: r.walking_policy,
+          numListsAppeared: r.num_lists_appeared,
+          chameleonScore: r.chameleon_score ? parseFloat(r.chameleon_score) : null,
+          prestigeScore: r.prestige_score,
+          primaryImageUrl: r.primary_image_url,
+          bestRank: rankings[0]?.rankPosition ?? null,
+          bestSource: rankings[0]?.list?.source?.sourceName ?? null,
+          rankings: rankings.slice(0, 3).map((re) => ({
+            rank: re.rankPosition,
+            list: re.list?.listName ?? "",
+            source: re.list?.source?.sourceName ?? "",
+          })),
+          weightedScore: null,
+        };
+      });
+
+      return NextResponse.json({ items, total, page, limit, totalPages: Math.ceil(total / limit) });
+    }
+
     // --- Standard Prisma query path ---
     const where: any = {};
     if (country) where.country = country;

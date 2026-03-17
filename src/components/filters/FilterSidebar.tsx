@@ -122,7 +122,7 @@ export function FilterSidebar({ filters, onChange, filterOptions }: FilterSideba
           Filters
         </div>
         <button
-          onClick={() => onChange({ page: 1, limit: filters.limit ?? 24, sortBy: "chameleon", sortDir: "desc" })}
+          onClick={() => onChange({ page: 1, limit: filters.limit ?? 24, sortBy: "gd100", sortDir: "asc" })}
           className="text-xs font-medium"
           style={{ color: "var(--cg-accent)" }}
         >
@@ -327,7 +327,7 @@ export function FilterSidebar({ filters, onChange, filterOptions }: FilterSideba
 
       <FilterSection title="Sort By">
         <select
-          value={`${filters.sortBy ?? "chameleon"}-${filters.sortDir ?? "desc"}`}
+          value={`${filters.sortBy ?? "gd100"}-${filters.sortDir ?? "asc"}`}
           onChange={(e) => {
             const [sortBy, sortDir] = e.target.value.split("-") as [CourseFilters["sortBy"], CourseFilters["sortDir"]];
             update({ sortBy, sortDir });
@@ -335,6 +335,7 @@ export function FilterSidebar({ filters, onChange, filterOptions }: FilterSideba
           className="w-full rounded-lg px-3 py-2 text-sm outline-none"
           style={selectStyle}
         >
+          <option value="gd100-asc">Golf Digest Top 100</option>
           <option value="chameleon-desc">CF Score (High to Low)</option>
           <option value="name-asc">Name (A-Z)</option>
           <option value="name-desc">Name (Z-A)</option>
