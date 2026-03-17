@@ -13,13 +13,12 @@ export async function GET(
 
   try {
     // Ensure social link columns exist (safe migration)
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS instagram_url VARCHAR(500);
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS twitter_url VARCHAR(500);
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS facebook_url VARCHAR(500);
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS tiktok_url VARCHAR(500);
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS website_url VARCHAR(500);
-    `);
+    await prisma.$executeRawUnsafe(`ALTER TABLE users ADD COLUMN IF NOT EXISTS instagram_url VARCHAR(500)`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE users ADD COLUMN IF NOT EXISTS twitter_url VARCHAR(500)`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE users ADD COLUMN IF NOT EXISTS facebook_url VARCHAR(500)`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE users ADD COLUMN IF NOT EXISTS tiktok_url VARCHAR(500)`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE users ADD COLUMN IF NOT EXISTS website_url VARCHAR(500)`);
+
 
     const user = await prisma.user.findUnique({
       where: { id: params.id },
