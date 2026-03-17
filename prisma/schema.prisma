@@ -142,6 +142,7 @@ model Course {
   courseArchitects   CourseArchitect[]
   externalContent   ContentCourseLink[]
   books             BookCourseLink[]
+  courseContent      CourseContent?
 
   @@map("courses")
 }
@@ -887,4 +888,23 @@ model FoundingAdvisoryFeedback {
   submittedAt           DateTime @default(now()) @map("submitted_at")
 
   @@map("founding_advisory_feedback")
+}
+
+model CourseContent {
+  id                  Int      @id @default(autoincrement())
+  courseId             Int      @unique @map("course_id")
+  richDescription     String?  @map("rich_description")
+  whatToExpect         String?  @map("what_to_expect")
+  strategyLowHcp      String?  @map("strategy_low_hcp")
+  strategyMidHcp      String?  @map("strategy_mid_hcp")
+  strategyHighHcp     String?  @map("strategy_high_hcp")
+  threeThingsToKnow   Json?    @map("three_things_to_know")
+  firstTimerGuide     String?  @map("first_timer_guide")
+  generatedAt         DateTime @default(now()) @map("generated_at")
+  updatedAt           DateTime @default(now()) @map("updated_at")
+  modelUsed           String?  @map("model_used") @db.VarChar(100)
+
+  course              Course   @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+
+  @@map("course_content")
 }
