@@ -151,6 +151,7 @@ export function Navbar() {
               { href: "/map", label: "Map" },
               { href: "/architects", label: "Architects" },
               { href: "/performance", label: "Performance" },
+              { href: "/shop", label: "Pro Shop" },
               { href: "/about", label: "How It Works" },
               ...(session
                 ? [
@@ -228,6 +229,7 @@ export function Navbar() {
                 { href: "/map", label: "Map" },
                 { href: "/architects", label: "Architects" },
                 { href: "/performance", label: "Performance" },
+                { href: "/shop", label: "Pro Shop" },
                 { href: "/about", label: "How It Works" },
                 ...(session
                   ? [
