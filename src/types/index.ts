@@ -35,7 +35,7 @@ export interface CourseFilters {
   feeMax?: number;
   maxAirportDistance?: number;
   rankingSource?: string;
-  sortBy?: "chameleon" | "name" | "rank" | "fee" | "weighted" | "architect";
+  sortBy?: "chameleon" | "name" | "rank" | "fee" | "weighted" | "architect" | "gd100";
   sortDir?: "asc" | "desc";
   page?: number;
   limit?: number;
