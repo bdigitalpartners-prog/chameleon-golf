@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "User ID not found" }, { status: 400 });
   }
 
-  const { ghinNumber, screenshotUrl } = await req.json();
+  const { ghinNumber, handicapIndex, screenshotUrl } = await req.json();
 
   if (!ghinNumber || typeof ghinNumber !== "string" || ghinNumber.length < 5) {
     return NextResponse.json({ error: "Valid GHIN number required (minimum 5 characters)" }, { status: 400 });
@@ -36,10 +36,15 @@ export async function POST(req: NextRequest) {
     }, { status: 409 });
   }
 
-  // Update user's GHIN number
+  // Update user's GHIN number and handicap index
   await prisma.user.update({
     where: { id: userId },
-    data: { ghinNumber },
+    data: {
+      ghinNumber,
+      ...(handicapIndex != null && !isNaN(Number(handicapIndex))
+        ? { handicapIndex: Number(handicapIndex) }
+        : {}),
+    },
   });
 
   // Create verification queue entry
