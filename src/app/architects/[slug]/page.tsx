@@ -66,58 +66,64 @@ export default async function ArchitectDetailPage({ params }: Props) {
     : [];
 
   // Standard text-based course matching + FK-based matching
+  // Build list of name variants: architect.name + all aliases
   let courses: any[] = [];
   let courseArchitectLinks: any[] = [];
   let rankingPresence: any[] = [];
   let relatedArchitects: any[] = [];
   try {
-    const [fkCourses, textCourses] = await Promise.all([
+    const aliases = await prisma.architectAlias.findMany({
+      where: { architectId: architect.id },
+      select: { aliasName: true },
+    });
+    const nameVariants = [architect.name, ...aliases.map((a) => a.aliasName)];
+
+    const courseSelect = {
+      courseId: true,
+      courseName: true,
+      city: true,
+      state: true,
+      country: true,
+      accessType: true,
+      yearOpened: true,
+      chameleonScores: { select: { chameleonScore: true } },
+      media: {
+        where: { isPrimary: true },
+        select: { url: true },
+        take: 1,
+      },
+    } as const;
+
+    const [fkCourses, textCourses, junctionCourses] = await Promise.all([
+      // 1. FK-based: architectId points to this architect
       prisma.course.findMany({
         where: { architectId: architect.id },
-        select: {
-          courseId: true,
-          courseName: true,
-          city: true,
-          state: true,
-          country: true,
-          accessType: true,
-          yearOpened: true,
-          chameleonScores: { select: { chameleonScore: true } },
-          media: {
-            where: { isPrimary: true },
-            select: { url: true },
-            take: 1,
-          },
-        },
+        select: courseSelect,
         orderBy: { courseName: "asc" },
       }),
+      // 2. Text-based: originalArchitect matches name or any alias (case-insensitive)
       prisma.course.findMany({
         where: {
-          originalArchitect: architect.name,
-          architectId: { not: architect.id },
+          OR: nameVariants.map((name) => ({
+            originalArchitect: { equals: name, mode: "insensitive" as const },
+          })),
         },
-        select: {
-          courseId: true,
-          courseName: true,
-          city: true,
-          state: true,
-          country: true,
-          accessType: true,
-          yearOpened: true,
-          chameleonScores: { select: { chameleonScore: true } },
-          media: {
-            where: { isPrimary: true },
-            select: { url: true },
-            take: 1,
-          },
+        select: courseSelect,
+        orderBy: { courseName: "asc" },
+      }),
+      // 3. Junction table: CourseArchitect links
+      prisma.course.findMany({
+        where: {
+          courseArchitects: { some: { architectId: architect.id } },
         },
+        select: courseSelect,
         orderBy: { courseName: "asc" },
       }),
     ]);
 
     // Merge and deduplicate by courseId
     const seen = new Set<number>();
-    courses = [...fkCourses, ...textCourses].filter((c) => {
+    courses = [...fkCourses, ...textCourses, ...junctionCourses].filter((c) => {
       if (seen.has(c.courseId)) return false;
       seen.add(c.courseId);
       return true;
