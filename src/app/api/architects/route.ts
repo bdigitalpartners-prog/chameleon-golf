@@ -29,23 +29,68 @@ export async function GET(request: NextRequest) {
         take: Math.min(limit, 50),
       });
 
-      // Get course counts
+      // Get course counts using all three matching strategies
+      const architectIds = architects.map((a) => a.id);
       const architectNames = architects.map((a) => a.name);
-      const courseCounts = await prisma.course.groupBy({
-        by: ["originalArchitect"],
-        where: { originalArchitect: { in: architectNames } },
-        _count: { courseId: true },
+
+      // Also fetch aliases for these architects
+      const aliases = await prisma.architectAlias.findMany({
+        where: { architectId: { in: architectIds } },
+        select: { architectId: true, aliasName: true },
       });
-      const courseCountMap = new Map(
-        courseCounts.map((c) => [c.originalArchitect, c._count.courseId])
-      );
+      const allNames = [
+        ...architectNames,
+        ...aliases.map((a) => a.aliasName),
+      ];
+
+      // Build alias lookup: aliasName -> architectId
+      const aliasToArchitectId = new Map<string, number>();
+      for (const a of architects) {
+        aliasToArchitectId.set(a.name.toLowerCase(), a.id);
+      }
+      for (const al of aliases) {
+        aliasToArchitectId.set(al.aliasName.toLowerCase(), al.architectId);
+      }
+
+      const [fkCourses, textCourses, junctionCourses] = await Promise.all([
+        prisma.course.findMany({
+          where: { architectId: { in: architectIds } },
+          select: { courseId: true, architectId: true },
+        }),
+        prisma.course.findMany({
+          where: { originalArchitect: { in: allNames, mode: "insensitive" } },
+          select: { courseId: true, originalArchitect: true },
+        }),
+        prisma.courseArchitect.findMany({
+          where: { architectId: { in: architectIds } },
+          select: { courseId: true, architectId: true },
+        }),
+      ]);
+
+      // Merge all course IDs per architect (deduplicating across strategies)
+      const courseIdsByArchitect = new Map<number, Set<number>>();
+      const ensureSet = (id: number) => {
+        if (!courseIdsByArchitect.has(id)) courseIdsByArchitect.set(id, new Set());
+        return courseIdsByArchitect.get(id)!;
+      };
+
+      for (const c of fkCourses) {
+        if (c.architectId != null) ensureSet(c.architectId).add(c.courseId);
+      }
+      for (const c of textCourses) {
+        const archId = aliasToArchitectId.get((c.originalArchitect || "").toLowerCase());
+        if (archId != null) ensureSet(archId).add(c.courseId);
+      }
+      for (const c of junctionCourses) {
+        ensureSet(c.architectId).add(c.courseId);
+      }
 
       return NextResponse.json(
         architects.map((a) => ({
           id: a.id,
           name: a.name,
           slug: a.slug,
-          courseCount: courseCountMap.get(a.name) || 0,
+          courseCount: courseIdsByArchitect.get(a.id)?.size || 0,
         }))
       );
     }
@@ -60,23 +105,62 @@ export async function GET(request: NextRequest) {
       prisma.architect.count({ where }),
     ]);
 
-    // Get course counts for each architect by matching originalArchitect field
+    // Get course counts using all three matching strategies (FK, text with aliases, junction)
+    const architectIds = architects.map((a) => a.id);
     const architectNames = architects.map((a) => a.name);
-    const courseCounts = await prisma.course.groupBy({
-      by: ["originalArchitect"],
-      where: {
-        originalArchitect: { in: architectNames },
-      },
-      _count: { courseId: true },
-    });
 
-    const courseCountMap = new Map(
-      courseCounts.map((c) => [c.originalArchitect, c._count.courseId])
-    );
+    const aliases = await prisma.architectAlias.findMany({
+      where: { architectId: { in: architectIds } },
+      select: { architectId: true, aliasName: true },
+    });
+    const allNames = [
+      ...architectNames,
+      ...aliases.map((a) => a.aliasName),
+    ];
+
+    const aliasToArchitectId = new Map<string, number>();
+    for (const a of architects) {
+      aliasToArchitectId.set(a.name.toLowerCase(), a.id);
+    }
+    for (const al of aliases) {
+      aliasToArchitectId.set(al.aliasName.toLowerCase(), al.architectId);
+    }
+
+    const [fkCourses, textCourses, junctionLinks] = await Promise.all([
+      prisma.course.findMany({
+        where: { architectId: { in: architectIds } },
+        select: { courseId: true, architectId: true },
+      }),
+      prisma.course.findMany({
+        where: { originalArchitect: { in: allNames, mode: "insensitive" } },
+        select: { courseId: true, originalArchitect: true },
+      }),
+      prisma.courseArchitect.findMany({
+        where: { architectId: { in: architectIds } },
+        select: { courseId: true, architectId: true },
+      }),
+    ]);
+
+    const courseIdsByArchitect = new Map<number, Set<number>>();
+    const ensureSet = (id: number) => {
+      if (!courseIdsByArchitect.has(id)) courseIdsByArchitect.set(id, new Set());
+      return courseIdsByArchitect.get(id)!;
+    };
+
+    for (const c of fkCourses) {
+      if (c.architectId != null) ensureSet(c.architectId).add(c.courseId);
+    }
+    for (const c of textCourses) {
+      const archId = aliasToArchitectId.get((c.originalArchitect || "").toLowerCase());
+      if (archId != null) ensureSet(archId).add(c.courseId);
+    }
+    for (const c of junctionLinks) {
+      ensureSet(c.architectId).add(c.courseId);
+    }
 
     const result = architects.map((a) => ({
       ...a,
-      courseCount: courseCountMap.get(a.name) || 0,
+      courseCount: courseIdsByArchitect.get(a.id)?.size || 0,
     }));
 
     return NextResponse.json({

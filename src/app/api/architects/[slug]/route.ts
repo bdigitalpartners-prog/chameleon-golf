@@ -19,20 +19,55 @@ export async function GET(
       );
     }
 
-    // Find courses by this architect
-    const courses = await prisma.course.findMany({
-      where: { originalArchitect: architect.name },
-      select: {
-        courseId: true,
-        courseName: true,
-        city: true,
-        state: true,
-        country: true,
-        accessType: true,
-        yearOpened: true,
-        chameleonScores: { select: { chameleonScore: true } },
-      },
-      orderBy: { courseName: "asc" },
+    // Build name variants: architect.name + all aliases
+    const aliases = await prisma.architectAlias.findMany({
+      where: { architectId: architect.id },
+      select: { aliasName: true },
+    });
+    const nameVariants = [architect.name, ...aliases.map((a) => a.aliasName)];
+
+    const courseSelect = {
+      courseId: true,
+      courseName: true,
+      city: true,
+      state: true,
+      country: true,
+      accessType: true,
+      yearOpened: true,
+      chameleonScores: { select: { chameleonScore: true } },
+    } as const;
+
+    // Find courses via FK, text match (case-insensitive with aliases), and junction table
+    const [fkCourses, textCourses, junctionCourses] = await Promise.all([
+      prisma.course.findMany({
+        where: { architectId: architect.id },
+        select: courseSelect,
+        orderBy: { courseName: "asc" },
+      }),
+      prisma.course.findMany({
+        where: {
+          OR: nameVariants.map((name) => ({
+            originalArchitect: { equals: name, mode: "insensitive" as const },
+          })),
+        },
+        select: courseSelect,
+        orderBy: { courseName: "asc" },
+      }),
+      prisma.course.findMany({
+        where: {
+          courseArchitects: { some: { architectId: architect.id } },
+        },
+        select: courseSelect,
+        orderBy: { courseName: "asc" },
+      }),
+    ]);
+
+    // Deduplicate
+    const seen = new Set<number>();
+    const courses = [...fkCourses, ...textCourses, ...junctionCourses].filter((c) => {
+      if (seen.has(c.courseId)) return false;
+      seen.add(c.courseId);
+      return true;
     });
 
     const serializedCourses = courses.map((c) => ({
