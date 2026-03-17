@@ -9,9 +9,9 @@ export async function GET(request: NextRequest) {
   if (authError) return authError;
 
   try {
-    // Ensure columns exist (safe migration)
-    await prisma.$executeRawUnsafe(`ALTER TABLE "course_media" ADD COLUMN IF NOT EXISTS "is_active" BOOLEAN NOT NULL DEFAULT true`);
-    await prisma.$executeRawUnsafe(`ALTER TABLE "course_media" ADD COLUMN IF NOT EXISTS "source_url" VARCHAR(500)`);
+    // Ensure course_media columns exist for Golf Digest image integration
+    await prisma.$executeRawUnsafe(`ALTER TABLE course_media ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE course_media ADD COLUMN IF NOT EXISTS source_url VARCHAR(500)`);
 
     const { searchParams } = new URL(request.url);
     const activeFilter = searchParams.get("isActive");

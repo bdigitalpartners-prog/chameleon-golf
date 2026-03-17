@@ -8,6 +8,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const courseId = parseInt(params.id);
     if (isNaN(courseId)) return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
 
+    // Ensure course_media columns exist for Golf Digest image integration
+    await prisma.$executeRawUnsafe(`ALTER TABLE course_media ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE course_media ADD COLUMN IF NOT EXISTS source_url VARCHAR(500)`);
+
     const course = await prisma.course.findUnique({
       where: { courseId },
       include: {

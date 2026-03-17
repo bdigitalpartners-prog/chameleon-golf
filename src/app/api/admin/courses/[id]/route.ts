@@ -22,6 +22,9 @@ export async function GET(
     await prisma.$executeRawUnsafe(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS twitter_url VARCHAR(500)`);
     await prisma.$executeRawUnsafe(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS facebook_url VARCHAR(500)`);
     await prisma.$executeRawUnsafe(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS tiktok_url VARCHAR(500)`);
+    // Ensure course_media columns exist for Golf Digest image integration
+    await prisma.$executeRawUnsafe(`ALTER TABLE course_media ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE course_media ADD COLUMN IF NOT EXISTS source_url VARCHAR(500)`);
 
 
     const course = await prisma.course.findUnique({
