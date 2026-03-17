@@ -14,13 +14,14 @@ import { FilterSidebar } from "@/components/filters/FilterSidebar";
 import { WeightSliders } from "@/components/filters/WeightSliders";
 import { CompareDrawer } from "@/components/course/CompareDrawer";
 import { useCourses } from "@/hooks/useCourses";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, PanelRightClose, PanelRightOpen } from "lucide-react";
 import type { CourseFilters, WeightSliderValues } from "@/types";
 
 export default function ExplorePage() {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [pageSize, setPageSize] = useState<PageSize>(50);
   const [activeWeights, setActiveWeights] = useState<WeightSliderValues | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [filters, setFilters] = useState<CourseFilters>({
     page: 1,
     limit: 50,
@@ -46,7 +47,7 @@ export default function ExplorePage() {
     });
   }, []);
 
-  // Persist view + page-size preferences
+  // Persist view + page-size + sidebar preferences
   useEffect(() => {
     try {
       const savedView = localStorage.getItem("cg-view-mode");
@@ -59,6 +60,8 @@ export default function ExplorePage() {
           setFilters((f) => ({ ...f, limit: parsed === "all" ? 2000 : parsed, page: 1 }));
         }
       }
+      const savedSidebar = localStorage.getItem("cg-sidebar-open");
+      if (savedSidebar !== null) setSidebarOpen(savedSidebar === "true");
     } catch {}
   }, []);
 
@@ -72,6 +75,12 @@ export default function ExplorePage() {
     const numericLimit = s === "all" ? 2000 : s;
     setFilters((f) => ({ ...f, limit: numericLimit, page: 1 }));
     try { localStorage.setItem("cg-page-size", String(s)); } catch {}
+  };
+
+  const toggleSidebar = () => {
+    const next = !sidebarOpen;
+    setSidebarOpen(next);
+    try { localStorage.setItem("cg-sidebar-open", String(next)); } catch {}
   };
 
   const handleWeightsChange = useCallback((weights: WeightSliderValues | null) => {
@@ -164,17 +173,23 @@ export default function ExplorePage() {
           <div className="flex items-center gap-3 flex-wrap">
             <PageSizeToggle size={pageSize} onChange={handlePageSizeChange} />
             <ViewToggle mode={viewMode} onChange={handleViewChange} showMap />
+            <button
+              onClick={toggleSidebar}
+              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
+              style={{
+                backgroundColor: sidebarOpen ? "var(--cg-accent)" : "var(--cg-bg-tertiary)",
+                color: sidebarOpen ? "var(--cg-text-inverse)" : "var(--cg-text-secondary)",
+                border: `1px solid ${sidebarOpen ? "var(--cg-accent)" : "var(--cg-border)"}`,
+              }}
+              title={sidebarOpen ? "Hide filters" : "Show filters"}
+            >
+              {sidebarOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+              <span className="hidden sm:inline">Filters</span>
+            </button>
           </div>
         </div>
 
         <div className="flex flex-col gap-8 lg:flex-row">
-          {/* Sidebar */}
-          <div className="w-full lg:w-72 flex-shrink-0">
-            {/* Weight Sliders Panel */}
-            <WeightSliders onChange={handleWeightsChange} />
-            <FilterSidebar filters={filters} onChange={setFilters} filterOptions={filterOptions} />
-          </div>
-
           {/* Results */}
           <div className="flex-1 min-w-0">
             {isLoading && (
@@ -301,6 +316,20 @@ export default function ExplorePage() {
                 )}
               </>
             )}
+          </div>
+
+          {/* Sidebar – right side, collapsible */}
+          <div
+            className="flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out"
+            style={{
+              width: sidebarOpen ? undefined : "0px",
+              opacity: sidebarOpen ? 1 : 0,
+            }}
+          >
+            <div className="w-full lg:w-72">
+              <WeightSliders onChange={handleWeightsChange} />
+              <FilterSidebar filters={filters} onChange={setFilters} filterOptions={filterOptions} />
+            </div>
           </div>
         </div>
       </div>
