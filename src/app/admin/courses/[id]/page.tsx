@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Save, Loader2, Plus, Trash2, X, Star, Pencil, ImageIcon } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Plus, Trash2, X, Star, Pencil, ImageIcon, Sparkles, CheckCircle, AlertCircle } from "lucide-react";
 
 function getAdminKey() {
   if (typeof window === "undefined") return "";
@@ -35,6 +35,15 @@ export default function CourseEditorPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [enriching, setEnriching] = useState(false);
+  const [enrichResult, setEnrichResult] = useState<{
+    fieldsEnriched: number;
+    ruleBasedFields: string[];
+    aiFields: string[];
+    beforePct: number;
+    afterPct: number;
+    aiError?: string | null;
+  } | null>(null);
 
   const fetchCourse = useCallback(async () => {
     try {
@@ -86,6 +95,98 @@ export default function CourseEditorPage() {
     }
   };
 
+  const handleEnrich = async () => {
+    setEnriching(true);
+    setEnrichResult(null);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/admin/courses/${courseId}/enrich`, {
+        method: "POST",
+        headers: { "x-admin-key": getAdminKey() },
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Enrichment failed");
+      }
+      const data = await res.json();
+      setEnrichResult({
+        fieldsEnriched: data.fieldsEnriched,
+        ruleBasedFields: data.ruleBasedFields || [],
+        aiFields: data.aiFields || [],
+        beforePct: data.beforePct,
+        afterPct: data.afterPct,
+        aiError: data.aiError,
+      });
+      if (data.fieldsEnriched > 0) {
+        setMessage({ type: "success", text: `Enriched ${data.fieldsEnriched} fields (${data.beforePct}% → ${data.afterPct}%)` });
+        // Refresh course data to pick up enriched fields
+        await fetchCourse();
+      } else {
+        setMessage({ type: "success", text: "No additional data could be found" });
+      }
+    } catch (err: any) {
+      setMessage({ type: "error", text: err.message });
+    } finally {
+      setEnriching(false);
+    }
+  };
+
+  // Calculate enrichment completeness percentage
+  const ENRICHMENT_CHECK_FIELDS = [
+    { key: "description", weight: 3 },
+    { key: "par", weight: 2 },
+    { key: "yearOpened", weight: 1 },
+    { key: "originalArchitect", weight: 2 },
+    { key: "courseType", weight: 1 },
+    { key: "accessType", weight: 2 },
+    { key: "courseStyle", weight: 1 },
+    { key: "greenFeeLow", weight: 1 },
+    { key: "greenFeeHigh", weight: 1 },
+    { key: "walkingPolicy", weight: 1 },
+    { key: "dressCode", weight: 1 },
+    { key: "caddieAvailability", weight: 1 },
+    { key: "practiceFacilities", weight: 1 },
+    { key: "bestTimeToPlay", weight: 1 },
+    { key: "bestMonths", weight: 1 },
+    { key: "golfSeason", weight: 1 },
+    { key: "averageRoundTime", weight: 1 },
+    { key: "fairwayGrass", weight: 1 },
+    { key: "greenGrass", weight: 1 },
+    { key: "websiteUrl", weight: 1 },
+    { key: "phone", weight: 1 },
+    { key: "latitude", weight: 1 },
+    { key: "streetAddress", weight: 1 },
+  ];
+
+  const enrichmentPct = course
+    ? (() => {
+        let totalWeight = 0;
+        let filledWeight = 0;
+        for (const f of ENRICHMENT_CHECK_FIELDS) {
+          totalWeight += f.weight;
+          const val = (course as any)[f.key];
+          if (val !== null && val !== undefined && val !== "") {
+            filledWeight += f.weight;
+          }
+        }
+        return totalWeight > 0 ? Math.round((filledWeight / totalWeight) * 100) : 0;
+      })()
+    : 0;
+
+  const enrichmentColor =
+    enrichmentPct >= 80 ? "text-green-400" :
+    enrichmentPct >= 60 ? "text-blue-400" :
+    enrichmentPct >= 40 ? "text-yellow-400" :
+    enrichmentPct >= 20 ? "text-orange-400" :
+    "text-red-400";
+
+  const enrichmentBgColor =
+    enrichmentPct >= 80 ? "bg-green-500" :
+    enrichmentPct >= 60 ? "bg-blue-500" :
+    enrichmentPct >= 40 ? "bg-yellow-500" :
+    enrichmentPct >= 20 ? "bg-orange-500" :
+    "bg-red-500";
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -125,15 +226,32 @@ export default function CourseEditorPage() {
               {[course.city, course.state].filter(Boolean).join(", ")} &middot; ID {course.courseId}
             </p>
           </div>
+          {/* Enrichment completeness indicator */}
+          <div className="flex items-center gap-2 ml-2">
+            <div className="w-24 h-2 rounded-full bg-[#222] overflow-hidden">
+              <div className={`h-full rounded-full ${enrichmentBgColor} transition-all duration-500`} style={{ width: `${enrichmentPct}%` }} />
+            </div>
+            <span className={`text-xs font-medium ${enrichmentColor}`}>{enrichmentPct}%</span>
+          </div>
         </div>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-2 px-5 py-2 rounded-lg bg-[#22c55e] text-black font-medium hover:bg-[#16a34a] disabled:opacity-50 transition-colors"
-        >
-          {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-          {saving ? "Saving..." : "Save Changes"}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleEnrich}
+            disabled={enriching}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700 disabled:opacity-50 transition-colors"
+          >
+            {enriching ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+            {enriching ? "Enriching..." : "Enrich Course"}
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 px-5 py-2 rounded-lg bg-[#22c55e] text-black font-medium hover:bg-[#16a34a] disabled:opacity-50 transition-colors"
+          >
+            {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+            {saving ? "Saving..." : "Save Changes"}
+          </button>
+        </div>
       </div>
 
       {/* Message */}
@@ -143,7 +261,54 @@ export default function CourseEditorPage() {
             ? "bg-green-900/30 border border-green-800 text-green-400"
             : "bg-red-900/30 border border-red-800 text-red-400"
         }`}>
-          {message.text}
+          <div className="flex items-center gap-2">
+            {message.type === "success" ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
+            {message.text}
+          </div>
+        </div>
+      )}
+
+      {/* Enrichment Results */}
+      {enrichResult && enrichResult.fieldsEnriched > 0 && (
+        <div className="p-4 rounded-lg bg-purple-900/20 border border-purple-800/50 text-sm">
+          <div className="flex items-center gap-2 text-purple-300 font-medium mb-2">
+            <Sparkles size={16} />
+            Enrichment Complete — {enrichResult.fieldsEnriched} fields updated
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-2">
+            <div className="text-center p-2 rounded bg-[#111]">
+              <div className="text-lg font-bold text-white">{enrichResult.beforePct}%</div>
+              <div className="text-xs text-gray-500">Before</div>
+            </div>
+            <div className="text-center p-2 rounded bg-[#111]">
+              <div className="text-lg font-bold text-green-400">{enrichResult.afterPct}%</div>
+              <div className="text-xs text-gray-500">After</div>
+            </div>
+            <div className="text-center p-2 rounded bg-[#111]">
+              <div className="text-lg font-bold text-blue-400">{enrichResult.ruleBasedFields.length}</div>
+              <div className="text-xs text-gray-500">Rule-based</div>
+            </div>
+            <div className="text-center p-2 rounded bg-[#111]">
+              <div className="text-lg font-bold text-purple-400">{enrichResult.aiFields.length}</div>
+              <div className="text-xs text-gray-500">AI-powered</div>
+            </div>
+          </div>
+          {enrichResult.aiFields.length > 0 && (
+            <p className="text-xs text-gray-400">
+              <span className="text-purple-400">AI fields:</span> {enrichResult.aiFields.join(", ")}
+            </p>
+          )}
+          {enrichResult.ruleBasedFields.length > 0 && (
+            <p className="text-xs text-gray-400 mt-1">
+              <span className="text-blue-400">Rule-based:</span> {enrichResult.ruleBasedFields.join(", ")}
+            </p>
+          )}
+          {enrichResult.aiError && (
+            <p className="text-xs text-yellow-400 mt-1">{enrichResult.aiError}</p>
+          )}
+          <button onClick={() => setEnrichResult(null)} className="text-xs text-gray-500 hover:text-gray-300 mt-2">
+            Dismiss
+          </button>
         </div>
       )}
 
