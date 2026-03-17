@@ -24,6 +24,15 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ error: "Circle not found" }, { status: 404 });
     }
 
+    // Membership check: only members can list members (prevents leaking SECRET circle data)
+    const userId = (session.user as any).id;
+    const requesterMembership = await prisma.circleMembership.findUnique({
+      where: { circleId_userId: { circleId, userId } },
+    });
+    if (!requesterMembership) {
+      return NextResponse.json({ error: "Not a member of this circle" }, { status: 403 });
+    }
+
     const where: any = { circleId };
     if (roleFilter) {
       where.role = roleFilter;
@@ -69,19 +78,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       }));
     }
 
-    // Get current user's role
-    const userId = (session.user as any).id;
-    const currentMembership = await prisma.circleMembership.findUnique({
-      where: { circleId_userId: { circleId, userId } },
-      select: { role: true },
-    });
-
     return NextResponse.json({
       members: membersWithVerification,
       total,
       page,
       totalPages: Math.ceil(total / limit),
-      userRole: currentMembership?.role ?? null,
+      userRole: requesterMembership.role,
     });
   } catch (error: any) {
     console.error("GET /api/circles/[id]/members error:", error);

@@ -20,6 +20,20 @@ export async function PATCH(
   const body = await req.json();
   const { team, handicap, status } = body;
 
+  // Authorization for handicap changes: only the player themselves, game creator, or circle admin
+  if (handicap !== undefined) {
+    const game = await prisma.game.findUnique({ where: { id: params.gameId } });
+    if (!game || game.circleId !== params.id) {
+      return NextResponse.json({ error: "Game not found" }, { status: 404 });
+    }
+    const isSelf = params.userId === currentUserId;
+    const isGameCreator = game.createdById === currentUserId;
+    const isAdmin = auth.membership?.role === "OWNER" || auth.membership?.role === "ADMIN";
+    if (!isSelf && !isGameCreator && !isAdmin) {
+      return NextResponse.json({ error: "Not authorized to change this player's handicap" }, { status: 403 });
+    }
+  }
+
   const player = await prisma.gamePlayer.findUnique({
     where: { gameId_userId: { gameId: params.gameId, userId: params.userId } },
   });

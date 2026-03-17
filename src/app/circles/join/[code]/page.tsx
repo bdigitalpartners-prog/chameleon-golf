@@ -51,7 +51,7 @@ export default function JoinByCodePage() {
           else setError(data.error);
         } else {
           setCircle(data.circle ?? data);
-          if (data.alreadyMember) setAlreadyMember(true);
+          if (data.isMember) setAlreadyMember(true);
         }
       })
       .catch(() => setError("Failed to load invite"))

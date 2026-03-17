@@ -32,7 +32,7 @@ interface GameDetail {
     user: { id: string; name: string | null; image: string | null };
   }>;
   scores: Array<{ userId: string; holeNumber: number; strokes: number; putts: number | null }>;
-  sideGames: Array<{ id: string; type: string; stakes: string | null; result: any }>;
+  sideGames: Array<{ id: string; type: string; stakes: string | null; results: any }>;
 }
 
 interface LeaderboardEntry {
@@ -409,9 +409,9 @@ export default function GameDetailPage() {
                       </span>
                     )}
                   </div>
-                  {sg.result && (
+                  {sg.results && (
                     <p className="text-sm mt-1" style={{ color: "var(--cg-accent)" }}>
-                      Result: {typeof sg.result === "string" ? sg.result : JSON.stringify(sg.result)}
+                      Result: {typeof sg.results === "string" ? sg.results : JSON.stringify(sg.results)}
                     </p>
                   )}
                 </div>

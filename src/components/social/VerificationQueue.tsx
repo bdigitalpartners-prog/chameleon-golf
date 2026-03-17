@@ -33,8 +33,11 @@ interface Verification {
 }
 
 interface QueueData {
-  verifications: Verification[];
-  verifiedCount: number;
+  pending: Verification[];
+  approved: Verification[];
+  rejected: Verification[];
+  total: number;
+  approvedCount: number;
 }
 
 interface VerificationQueueProps {
@@ -143,8 +146,8 @@ export default function VerificationQueue({ circleId }: VerificationQueueProps) 
     );
   }
 
-  const verifications = data?.verifications ?? [];
-  const verifiedCount = data?.verifiedCount ?? 0;
+  const verifications = data?.pending ?? [];
+  const verifiedCount = data?.approvedCount ?? 0;
 
   return (
     <div>

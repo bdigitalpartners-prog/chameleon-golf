@@ -38,8 +38,10 @@ interface EventData {
   maxAttendees: number | null;
   course: { courseId: number; courseName: string } | null;
   createdBy: { id: string; name: string; image: string | null };
-  rsvpCounts: { going: number; maybe: number; declined: number };
-  userRsvp: { status: string; guestCount: number } | null;
+  goingCount: number;
+  maybeCount: number;
+  declinedCount: number;
+  currentUserRsvp: string | null;
 }
 
 export function CircleEventsTab({ circleId, isAdmin }: { circleId: string; isAdmin: boolean }) {
@@ -270,7 +272,7 @@ export function CircleEventsTab({ circleId, isAdmin }: { circleId: string; isAdm
           {events.map((event) => {
             const eventTypeLabel = EVENT_TYPES.find((t) => t.key === event.eventType)?.label ?? event.eventType;
             const startDate = new Date(event.startDate);
-            const userStatus = event.userRsvp?.status;
+            const userStatus = event.currentUserRsvp;
 
             return (
               <div
@@ -313,7 +315,7 @@ export function CircleEventsTab({ circleId, isAdmin }: { circleId: string; isAdm
                   )}
                   <span className="flex items-center gap-1">
                     <Users className="h-3 w-3" />
-                    {event.rsvpCounts.going} going
+                    {event.goingCount} going
                     {event.maxAttendees ? ` / ${event.maxAttendees}` : ""}
                   </span>
                 </div>

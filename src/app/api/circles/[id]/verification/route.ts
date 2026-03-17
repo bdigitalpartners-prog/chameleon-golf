@@ -19,6 +19,14 @@ export async function GET(
   const userId = (session.user as any).id;
   const circleId = params.id;
 
+  // Verify the user is a member of this circle
+  const membership = await prisma.circleMembership.findUnique({
+    where: { circleId_userId: { circleId, userId } },
+  });
+  if (!membership) {
+    return NextResponse.json({ error: "Not a member of this circle" }, { status: 403 });
+  }
+
   const verification = await prisma.clubVerification.findUnique({
     where: { circleId_userId: { circleId, userId } },
     include: {

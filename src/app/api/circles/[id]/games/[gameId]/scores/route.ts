@@ -27,6 +27,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string;
   const { scores, targetUserId } = body;
   const scoringUserId = targetUserId ?? userId;
 
+  // Authorization: only the player themselves, game creator, or circle admin can submit scores
+  if (scoringUserId !== userId) {
+    const isGameCreator = game.createdById === userId;
+    const isAdmin = auth.membership?.role === "OWNER" || auth.membership?.role === "ADMIN";
+    if (!isGameCreator && !isAdmin) {
+      return NextResponse.json({ error: "Not authorized to submit scores for this player" }, { status: 403 });
+    }
+  }
+
   if (!scores || !Array.isArray(scores) || scores.length === 0) {
     return NextResponse.json({ error: "Scores array is required" }, { status: 400 });
   }

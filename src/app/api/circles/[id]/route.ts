@@ -47,6 +47,15 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
     const isMember = userRole && userRole !== "PENDING";
 
+    // For PRIVATE circles, non-members only see basic info (no member preview)
+    if (circle.privacy === "PRIVATE" && !isMember) {
+      const { members, config, ...basicInfo } = circle;
+      return NextResponse.json({
+        ...basicInfo,
+        userRole,
+      });
+    }
+
     return NextResponse.json({
       ...circle,
       config: isMember ? circle.config : undefined,
