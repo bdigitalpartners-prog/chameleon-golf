@@ -55,7 +55,7 @@
     ]
   },
   {
-    "entity": "TPC Sawgrass (Stadium)",
+    "entity": "TPC Sawgrass (Players Stadium)",
     "course_name": "TPC Sawgrass - THE PLAYERS Stadium Course",
     "source_site": "GolfPass (formerly GolfAdvisor)",
     "reviews": [
@@ -86,7 +86,7 @@
       {
         "reviewer_name": "Torodeleste",
         "review_title": "Bucket list on perfect day",
-        "review_text": "On a scale of 0-100, this was a 98. Olympic Gold. I’m so lucky to have the chance to experience this course when it was a sunny 78 degrees with a tiny breeze. I’ll be dreaming about this for a long time. Everything from the arrival to the clubhouse to the practice facility was world class. The course was in perfect condition and the greens were rolling true. Hit the green on 17 and made par, which was the highlight of the round. A true bucket list experience.",
+        "review_text": "On a scale of 0-100, this was a 98. Olympic Gold. I\u2019m so lucky to have the chance to experience this course when it was a sunny 78 degrees with a tiny breeze. I\u2019ll be dreaming about this for a long time. Everything from the arrival to the clubhouse to the practice facility was world class. The course was in perfect condition and the greens were rolling true. Hit the green on 17 and made par, which was the highlight of the round. A true bucket list experience.",
         "rating_out_of_5": 5,
         "review_date": "03/30/2021",
         "source_url": "https://www.golfpass.com/travel-advisor/courses/15881-tpc-sawgrass-the-players-stadium-course#reviews"
@@ -94,7 +94,7 @@
       {
         "reviewer_name": "Back9Ben",
         "review_title": "Tempered Expectations Make For The Best Experience",
-        "review_text": "The Stadium Course at TPC Sawgrass is perhaps the most sought-after public access course on the East Coast. For many including myself, it represents the closest you can get to playing like the pros. I can’t overstate how much water comes into play on this course. More than any course I’ve played and seemingly on every hole. I recorded a water hazard penalty on 7 different holes. When you’re spending $200-500 on this round, most of your money is going towards the course conditions, facilities, and staff. The conditions of nearly every square inch of the course are perfect. The practice facilities are unrivaled with a superb driving range (complete with a replica 17th green). Overall, I found the staff to be extremely professional. Tempered expectations make for the best experience.",
+        "review_text": "The Stadium Course at TPC Sawgrass is perhaps the most sought-after public access course on the East Coast. For many including myself, it represents the closest you can get to playing like the pros. I can\u2019t overstate how much water comes into play on this course. More than any course I\u2019ve played and seemingly on every hole. I recorded a water hazard penalty on 7 different holes. When you\u2019re spending $200-500 on this round, most of your money is going towards the course conditions, facilities, and staff. The conditions of nearly every square inch of the course are perfect. The practice facilities are unrivaled with a superb driving range (complete with a replica 17th green). Overall, I found the staff to be extremely professional. Tempered expectations make for the best experience.",
         "rating_out_of_5": 5,
         "review_date": "08/31/2018",
         "source_url": "https://www.golfpass.com/travel-advisor/courses/15881-tpc-sawgrass-the-players-stadium-course#reviews"
@@ -125,15 +125,15 @@
       {
         "reviewer_name": "71dwniLnFfUHy9LgY0mS",
         "review_title": "Wet hard golf course",
-        "review_text": "This course is walking only. It’s very hard and you have to cross roads two times when playing here. I started playing with 3 other people. They had little patience and we separated because I made an 11 on the first hole. I played really slow. Took 7 hours to golf 18 holes. That’s too long. I don’t recommend my friends play here, they are not good golfers.",
+        "review_text": "This course is walking only. It\u2019s very hard and you have to cross roads two times when playing here. I started playing with 3 other people. They had little patience and we separated because I made an 11 on the first hole. I played really slow. Took 7 hours to golf 18 holes. That\u2019s too long. I don\u2019t recommend my friends play here, they are not good golfers.",
         "rating_out_of_5": 3,
         "review_date": "03/01/2024",
         "source_url": "https://www.golfpass.com/travel-advisor/courses/16929-black-at-bethpage-state-park-golf-course"
       },
       {
         "reviewer_name": "BrandonWebb",
-        "review_title": "The People’s Country Club",
-        "review_text": "Dubbed “The People’s Country Club,” you’ll find plumbers, day traders and tourists lining up in the wee hours of the morning to secure an elusive tee time. Bethpage’s Black course, however, is not somewhere one comes in search of their game. Tillinghast exposes any weakness one’s game possesses. The brawny par 4s always seem to be over 400 yards and into the wind. The rough here was among the most maddening I’ve ever encountered. Balls just do not want to launch from it and it seems to have a mind of its own. A round here is memorialized by scrambling for pars all day. If you make the 6-10 footers you can survive. Otherwise, it’s a parade of bogeys… or worse. Finally, the course is walking only and the land is severe in places. So by the time you reach that interminably hard closing four-hole stretch, the last climbs await. Dead legs can betray a swing and make the finish a slog. Walking off the 18th green, one is thankful to have played it. And equally grateful it’s over.",
+        "review_title": "The People\u2019s Country Club",
+        "review_text": "Dubbed \u201cThe People\u2019s Country Club,\u201d you\u2019ll find plumbers, day traders and tourists lining up in the wee hours of the morning to secure an elusive tee time. Bethpage\u2019s Black course, however, is not somewhere one comes in search of their game. Tillinghast exposes any weakness one\u2019s game possesses. The brawny par 4s always seem to be over 400 yards and into the wind. The rough here was among the most maddening I\u2019ve ever encountered. Balls just do not want to launch from it and it seems to have a mind of its own. A round here is memorialized by scrambling for pars all day. If you make the 6-10 footers you can survive. Otherwise, it\u2019s a parade of bogeys\u2026 or worse. Finally, the course is walking only and the land is severe in places. So by the time you reach that interminably hard closing four-hole stretch, the last climbs await. Dead legs can betray a swing and make the finish a slog. Walking off the 18th green, one is thankful to have played it. And equally grateful it\u2019s over.",
         "rating_out_of_5": 4,
         "review_date": "08/03/2023",
         "source_url": "https://www.golfpass.com/travel-advisor/courses/16929-black-at-bethpage-state-park-golf-course"
@@ -156,8 +156,8 @@
       },
       {
         "reviewer_name": "Back9Ben",
-        "review_title": "Most enjoyable 5+ butt-kicking I’ve ever had by a golf course",
-        "review_text": "Bethpage’s Black course is a beautiful brute of a golf course that starts out throwing haymakers and doesn’t let up until you have reached the 18th green. The course brings such a high level of lore and prestige with it that it’s paramount for a first-time player to take it all in. But it’s important to remember that this is, in the end, a municipal course, and one that hasn’t always been as well cared for as it is today. On the course, signs of this course being run by a city are also evident. The many, many bunkers on the course are littered with deep footprints. There are neglected ball marks on the greens. The place of play is bordering on Pebble Beach/Sawgrass long (5:22 for my round). Perhaps the hardest adjustment for me was a lack of a practice bunker or chipping area. This means the first few holes are all just a learning experience for how the club interacts with the extremely thick rough and heavy bunker sand. That’s about all there is to complain about this course though and much, MUCH more to praise it for. For starters, it’s far more beautiful than I expected. Some of the photos I snapped during my round belong on a wall somewhere. This is my first Tillinghast design and I am a huge fan of how he presents holes from the tee. Pure majesty. The par-3 8th is one of my favorite short holes anywhere. Each hole has a unique and thoughtful design, it was absolutely breathtaking to behold. But of course what really takes your breath away on this course is its difficulty. From deep fairway bunkers to rough that absolutely requires a humble punch out to the sheer length of many holes; this course knows how to beat you up and keep you on the ropes. A crescendo of difficulty awaits you on the back nine with only 13 and 14 offering what could be considered a respite. In the end I managed 14 more shots than I had a week prior at a normal “hard course”, with no appreciable loss in playing ability in between. Footprint-laden bunkers aside, the course conditions are quite excellent, particularly the famous rough and the beautifully hand-placed fescue. The greens roll so smooth and fast. It was a real treat to putt on them. The fairways looked and played awesome as well. The staff is absolutely first-rate. I was really impressed with their understated friendliness and attention to detail. Finally, for $165 this is a great value, if you can get a tee time. Access is an issue (not unlike the lottery for Sawgrass or the phone call for Pebble), but persistence will be rewarded. Bethpage Black isn’t a course I could enjoy every day or for $250. But it absolutely is a course that every serious golfer should test themselves on at least once. It’s an American treasure.",
+        "review_title": "Most enjoyable 5+ butt-kicking I\u2019ve ever had by a golf course",
+        "review_text": "Bethpage\u2019s Black course is a beautiful brute of a golf course that starts out throwing haymakers and doesn\u2019t let up until you have reached the 18th green. The course brings such a high level of lore and prestige with it that it\u2019s paramount for a first-time player to take it all in. But it\u2019s important to remember that this is, in the end, a municipal course, and one that hasn\u2019t always been as well cared for as it is today. On the course, signs of this course being run by a city are also evident. The many, many bunkers on the course are littered with deep footprints. There are neglected ball marks on the greens. The place of play is bordering on Pebble Beach/Sawgrass long (5:22 for my round). Perhaps the hardest adjustment for me was a lack of a practice bunker or chipping area. This means the first few holes are all just a learning experience for how the club interacts with the extremely thick rough and heavy bunker sand. That\u2019s about all there is to complain about this course though and much, MUCH more to praise it for. For starters, it\u2019s far more beautiful than I expected. Some of the photos I snapped during my round belong on a wall somewhere. This is my first Tillinghast design and I am a huge fan of how he presents holes from the tee. Pure majesty. The par-3 8th is one of my favorite short holes anywhere. Each hole has a unique and thoughtful design, it was absolutely breathtaking to behold. But of course what really takes your breath away on this course is its difficulty. From deep fairway bunkers to rough that absolutely requires a humble punch out to the sheer length of many holes; this course knows how to beat you up and keep you on the ropes. A crescendo of difficulty awaits you on the back nine with only 13 and 14 offering what could be considered a respite. In the end I managed 14 more shots than I had a week prior at a normal \u201chard course\u201d, with no appreciable loss in playing ability in between. Footprint-laden bunkers aside, the course conditions are quite excellent, particularly the famous rough and the beautifully hand-placed fescue. The greens roll so smooth and fast. It was a real treat to putt on them. The fairways looked and played awesome as well. The staff is absolutely first-rate. I was really impressed with their understated friendliness and attention to detail. Finally, for $165 this is a great value, if you can get a tee time. Access is an issue (not unlike the lottery for Sawgrass or the phone call for Pebble), but persistence will be rewarded. Bethpage Black isn\u2019t a course I could enjoy every day or for $250. But it absolutely is a course that every serious golfer should test themselves on at least once. It\u2019s an American treasure.",
         "rating_out_of_5": 5,
         "review_date": "10/24/2021",
         "source_url": "https://www.golfpass.com/travel-advisor/courses/16929-black-at-bethpage-state-park-golf-course"
@@ -172,7 +172,7 @@
       {
         "reviewer_name": "hamiltonron",
         "review_title": "Very Impressive",
-        "review_text": "We played Ocean, Cougar Point and Osprey Point, they were all in phenomenal shape. Fun courses, with great views and everyone was very friendly. Highly recommend this bucket list facility. Dinners were also outstanding. Book early as the Ocean course fills up fast! Lot’s of water, bring extra golf balls…",
+        "review_text": "We played Ocean, Cougar Point and Osprey Point, they were all in phenomenal shape. Fun courses, with great views and everyone was very friendly. Highly recommend this bucket list facility. Dinners were also outstanding. Book early as the Ocean course fills up fast! Lot\u2019s of water, bring extra golf balls\u2026",
         "rating_out_of_5": 5,
         "review_date": "09/22/2024",
         "source_url": "https://www.golfpass.com/travel-advisor/courses/15020-the-ocean-course-at-kiawah-island-golf-resort/reviews/"
@@ -195,8 +195,8 @@
       },
       {
         "reviewer_name": "CharlesEmerson",
-        "review_title": "Best Course I’ve Ever Played",
-        "review_text": "Simply put, the Ocean Course at Kiawah Island is the best course I have ever played. It is also the most beautiful and most difficult track I’ve been on. The views along the Atlantic Ocean are amazing and need to be seen by all golfers at least once in their life. A must-play and bucket-list course with incredible wildlife on the course. We lucked out and played on a cool and not too windy day. The first few holes “ease” you into the round and are more of a parkland/marsh type course. As you turn back towards the clubhouse on hole six and are by the ocean, that is when the round really gets scenic and even more difficult.",
+        "review_title": "Best Course I\u2019ve Ever Played",
+        "review_text": "Simply put, the Ocean Course at Kiawah Island is the best course I have ever played. It is also the most beautiful and most difficult track I\u2019ve been on. The views along the Atlantic Ocean are amazing and need to be seen by all golfers at least once in their life. A must-play and bucket-list course with incredible wildlife on the course. We lucked out and played on a cool and not too windy day. The first few holes \u201cease\u201d you into the round and are more of a parkland/marsh type course. As you turn back towards the clubhouse on hole six and are by the ocean, that is when the round really gets scenic and even more difficult.",
         "rating_out_of_5": 5,
         "review_date": "01/20/2021",
         "source_url": "https://www.golfpass.com/travel-advisor/courses/15020-the-ocean-course-at-kiawah-island-golf-resort/reviews/"
@@ -258,8 +258,8 @@
       },
       {
         "reviewer_name": "TimGavrichGP",
-        "review_title": "Still Streamsong’s best",
-        "review_text": "The lower the stakes, the more fun arguments tend to be. It’s hard to think of a lower-stakes debate than “Which of Streamsong’s golf courses is the best?” My latest round on the Blue confirmed its status as my favorite. Because it shares land so closely with the Red, the Blue wins out by a few hairs on the variety of its par 3s, the complexity of its par 5s and the fact that it has the best hole on the property: the sublime long par-4 11th.",
+        "review_title": "Still Streamsong\u2019s best",
+        "review_text": "The lower the stakes, the more fun arguments tend to be. It\u2019s hard to think of a lower-stakes debate than \u201cWhich of Streamsong\u2019s golf courses is the best?\u201d My latest round on the Blue confirmed its status as my favorite. Because it shares land so closely with the Red, the Blue wins out by a few hairs on the variety of its par 3s, the complexity of its par 5s and the fact that it has the best hole on the property: the sublime long par-4 11th.",
         "rating_out_of_5": 5,
         "review_date": "09/13/2023",
         "source_url": "https://www.golfpass.com/travel-advisor/courses/32311-streamsong-resort-blue-course"
@@ -283,7 +283,7 @@
     ]
   },
   {
-    "entity": "Sheep Ranch at Bandon Dunes",
+    "entity": "Bandon Dunes (Sheep Ranch)",
     "course_name": "Sheep Ranch at Bandon Dunes Golf Resort",
     "source_site": "GolfPass (formerly GolfAdvisor)",
     "reviews": [
@@ -353,7 +353,7 @@
       {
         "reviewer_name": "hornedwoodchuck",
         "review_title": "Great Views, Great Terrain, Great Course",
-        "review_text": "There’s a reason this course is in golf digests top 100 courses only in the country. The views of Lake Michigan are not the best part of the trip just an added bonus to a great course with some great holes. These greens have to be seen to be believed. Be prepared for some high numbers putting them. While I’m still not sure if the course is better than the South when you factor in the Lake Michigan views its rating is appropriate.",
+        "review_text": "There\u2019s a reason this course is in golf digests top 100 courses only in the country. The views of Lake Michigan are not the best part of the trip just an added bonus to a great course with some great holes. These greens have to be seen to be believed. Be prepared for some high numbers putting them. While I\u2019m still not sure if the course is better than the South when you factor in the Lake Michigan views its rating is appropriate.",
         "rating_out_of_5": 5,
         "review_date": "10/31/2025",
         "source_url": "[GolfPass](https://www.golfpass.com/travel-advisor/courses/7349-arcadia-bluffs-golf-course)"
@@ -369,7 +369,7 @@
       {
         "reviewer_name": "cDEZ0ElbBiJYbfZn7kRE",
         "review_title": "Spectacular views, disappointed in the layout",
-        "review_text": "What a spectacular piece of land with great views of Lake Michigan. A surprising amount of vertical changes throughout the course. Overall it’s a pretty easy driving course with generous landing areas and some pretty good speed slots if you hit it in the right spots. Your score is made, and lost, on the approach shots though. The back nine, while much more visually spectacular, was a much less enjoyable golf experience. The greens were much less accessible with a lot of uphill shots to mostly blind greens, tiny landing areas, lots of false fronts and many that just wouldn’t hold an approach shot from the distances you were coming in from. Staff was great, condition was very good as well for this late in The season. Overall I would say it is a must do for the spectacular scenery but I probably wouldnt go back and do it again.",
+        "review_text": "What a spectacular piece of land with great views of Lake Michigan. A surprising amount of vertical changes throughout the course. Overall it\u2019s a pretty easy driving course with generous landing areas and some pretty good speed slots if you hit it in the right spots. Your score is made, and lost, on the approach shots though. The back nine, while much more visually spectacular, was a much less enjoyable golf experience. The greens were much less accessible with a lot of uphill shots to mostly blind greens, tiny landing areas, lots of false fronts and many that just wouldn\u2019t hold an approach shot from the distances you were coming in from. Staff was great, condition was very good as well for this late in The season. Overall I would say it is a must do for the spectacular scenery but I probably wouldnt go back and do it again.",
         "rating_out_of_5": 4,
         "review_date": "11/04/2020",
         "source_url": "[GolfPass](https://www.golfpass.com/travel-advisor/courses/7349-arcadia-bluffs-golf-course)"
@@ -401,7 +401,7 @@
       {
         "reviewer_name": "clayjok",
         "review_title": "The Bluffs - incredibly amazing but bring your A++++ game",
-        "review_text": "8 buddies on a golf trip got beat up by The Bluffs. One of the nicest courses we’ve ever played in our 10 year golf trip history. With that said, it beat the crap out of us...twice. Especially the back 9. Also, pace of play is reallllly slow. The starter tells you the pace is 4:45 but it took us 5:20. Even with the slow pace, our group agreed we would return. Play the appropriate tees for sure. If you don’t hit it far, play the whites. Thanks Arcadia Bluffs for an awesome time!!!!",
+        "review_text": "8 buddies on a golf trip got beat up by The Bluffs. One of the nicest courses we\u2019ve ever played in our 10 year golf trip history. With that said, it beat the crap out of us...twice. Especially the back 9. Also, pace of play is reallllly slow. The starter tells you the pace is 4:45 but it took us 5:20. Even with the slow pace, our group agreed we would return. Play the appropriate tees for sure. If you don\u2019t hit it far, play the whites. Thanks Arcadia Bluffs for an awesome time!!!!",
         "rating_out_of_5": 5,
         "review_date": "08/22/2019",
         "source_url": "[GolfPass](https://www.golfpass.com/travel-advisor/courses/7349-arcadia-bluffs-golf-course)"
@@ -423,7 +423,7 @@
       },
       {
         "reviewer_name": "dragonfli13",
-        "review_title": "You won’t be disappointed",
+        "review_title": "You won\u2019t be disappointed",
         "review_text": "This was a bucket list course for my hubby and I. It lived up to all the hype. We played on a cold, cold day... I had a caddie and cart due to my pregnancy and was treated like gold. Caddie made the round way more fun. Tough course in the wind - I was hitting driver on a par three that would normally be a mid iron. Would love to return on a sunny warm day!",
         "rating_out_of_5": 5,
         "review_date": "10/06/2019",
@@ -440,7 +440,7 @@
       {
         "reviewer_name": "gHJPsIYJP4aHLWvGBx3k",
         "review_title": "If you love golf, you HAVE to go to Cabot",
-        "review_text": "Cabot Cliffs combines a playable friendly layout for golfers of all skill levels with spectacular backdrops... The public house at the Links course is also a great spot to grab a bite and enjoy the sunset! I’ll recommend Cabot to everyone who loves golf and loves traveling to new places for it.",
+        "review_text": "Cabot Cliffs combines a playable friendly layout for golfers of all skill levels with spectacular backdrops... The public house at the Links course is also a great spot to grab a bite and enjoy the sunset! I\u2019ll recommend Cabot to everyone who loves golf and loves traveling to new places for it.",
         "rating_out_of_5": 5,
         "review_date": "07/24/2019",
         "source_url": "https://www.golfpass.com/travel-advisor/courses/35100-cabot-cliffs"
@@ -455,8 +455,8 @@
       },
       {
         "reviewer_name": "RavensGolfer",
-        "review_title": "Didn’t meet high expectations",
-        "review_text": "While Cabot Cliffs is a beautiful and generally good course, it didn’t quite live up to the hype and glowing reviews coming in from all corners of the world... While the course notes above say there is no driving range, there is a range at Cliffs which serves both courses. The course starts strong. The par 4 second is a great hole. Generally a layup off the tee to a very wide fairway. But choosing where to be in the fairway is essential to set up the best angle to the pin over a large dune that I guarantee you do not want to be in. The green is quite interesting with a plateau on the back part of the green. The fifth is a great Cape par 4 with the added challenge that approach shots will tend to run long and left into trouble. The rest of the first 8 holes are all quite solid... 17 is that new craze - a drivable par 4 for everyone... It’s more about luck than skill... The course was in excellent condition, especially for how young it is... Most interestingly, in talking with the Cabot team (caddies, pros, golf staff, other staff), they were unanimous in saying Links was the better course. To paraphrase one team member, after 2 rounds on both courses, my recommendation would be come to see Cliffs, come to play Links. Finally, a review of this course would be remiss without mentioning the outstanding team at Cabot.",
+        "review_title": "Didn\u2019t meet high expectations",
+        "review_text": "While Cabot Cliffs is a beautiful and generally good course, it didn\u2019t quite live up to the hype and glowing reviews coming in from all corners of the world... While the course notes above say there is no driving range, there is a range at Cliffs which serves both courses. The course starts strong. The par 4 second is a great hole. Generally a layup off the tee to a very wide fairway. But choosing where to be in the fairway is essential to set up the best angle to the pin over a large dune that I guarantee you do not want to be in. The green is quite interesting with a plateau on the back part of the green. The fifth is a great Cape par 4 with the added challenge that approach shots will tend to run long and left into trouble. The rest of the first 8 holes are all quite solid... 17 is that new craze - a drivable par 4 for everyone... It\u2019s more about luck than skill... The course was in excellent condition, especially for how young it is... Most interestingly, in talking with the Cabot team (caddies, pros, golf staff, other staff), they were unanimous in saying Links was the better course. To paraphrase one team member, after 2 rounds on both courses, my recommendation would be come to see Cliffs, come to play Links. Finally, a review of this course would be remiss without mentioning the outstanding team at Cabot.",
         "rating_out_of_5": 4,
         "review_date": "08/29/2018",
         "source_url": "https://www.golfpass.com/travel-advisor/courses/35100-cabot-cliffs"
@@ -542,7 +542,7 @@
       {
         "reviewer_name": "BrewmasterGolf",
         "review_title": "Harbour Town Reborn: You'll Use Every Club and Love Every Minute",
-        "review_text": "Harbour Town Golf Links isn’t just a golf course—it’s a masterclass in restraint, precision, and coastal brutality, freshly sharpened by a stunning redesign that somehow made this already iconic track even more demanding and unforgettable. The updates are subtle in the best possible way—nothing flashy or artificial, just thoughtful tweaks that respect Pete Dye’s original madness while tightening the screws on anyone foolish enough to think they can muscle their way through this place. Fairways now feel narrower without actually being narrower, like the course is whispering doubts in your ear before every tee shot. This isn’t a bomb-and-gouge resort course—you’ll need to think your way around this track. Every shot demands intent. Every hole demands respect. And yes, you’ll use every single club in the bag, maybe twice, with at least three moments where you’re forced to invent a shot you’ve never practiced just to escape with bogey. It’s that kind of challenge—the kind that leaves you mentally smoked and somehow grinning about it. And somehow, it’s even more photogenic than before—which is saying something, considering the place has always looked like it was designed to be on a magazine cover. If you’re looking for a cakewalk, go elsewhere. If you’re looking for one of the best tests of golf anywhere, made even better by a world-class redesign, this is it. Harbour Town is back in peak form—and it’ll haunt you in the best way possible.",
+        "review_text": "Harbour Town Golf Links isn\u2019t just a golf course\u2014it\u2019s a masterclass in restraint, precision, and coastal brutality, freshly sharpened by a stunning redesign that somehow made this already iconic track even more demanding and unforgettable. The updates are subtle in the best possible way\u2014nothing flashy or artificial, just thoughtful tweaks that respect Pete Dye\u2019s original madness while tightening the screws on anyone foolish enough to think they can muscle their way through this place. Fairways now feel narrower without actually being narrower, like the course is whispering doubts in your ear before every tee shot. This isn\u2019t a bomb-and-gouge resort course\u2014you\u2019ll need to think your way around this track. Every shot demands intent. Every hole demands respect. And yes, you\u2019ll use every single club in the bag, maybe twice, with at least three moments where you\u2019re forced to invent a shot you\u2019ve never practiced just to escape with bogey. It\u2019s that kind of challenge\u2014the kind that leaves you mentally smoked and somehow grinning about it. And somehow, it\u2019s even more photogenic than before\u2014which is saying something, considering the place has always looked like it was designed to be on a magazine cover. If you\u2019re looking for a cakewalk, go elsewhere. If you\u2019re looking for one of the best tests of golf anywhere, made even better by a world-class redesign, this is it. Harbour Town is back in peak form\u2014and it\u2019ll haunt you in the best way possible.",
         "rating_out_of_5": 5,
         "review_date": "11/11/2025",
         "source_url": "https://www.golfpass.com/travel-advisor/courses/15967-harbour-town-golf-links-at-sea-pines-resort"
@@ -605,7 +605,7 @@
       {
         "reviewer_name": "JeffArenson",
         "review_title": "The course that opened my eyes to what golf could/should be.",
-        "review_text": "I have been to Bandon Dunes resort 12 times and counting (13 is later this year). I have played Pacific Dunes about 40 times—it is my favorite course at the resort, my favorite USA course and only sits behind Royal County Down and Cypress Point in my personal World rankings. It is simply golf perfection.",
+        "review_text": "I have been to Bandon Dunes resort 12 times and counting (13 is later this year). I have played Pacific Dunes about 40 times\u2014it is my favorite course at the resort, my favorite USA course and only sits behind Royal County Down and Cypress Point in my personal World rankings. It is simply golf perfection.",
         "rating_out_of_5": 5,
         "review_date": "Aug. 7, 2025",
         "source_url": "https://www.top100golfcourses.com/golf-course/bandon-dunes-pacific-dunes/reviews/43636#review"
@@ -708,7 +708,7 @@
       {
         "reviewer_name": "Bugg1957",
         "review_title": "2nd trip to Pinehurst",
-        "review_text": "Played #4 about five years ago and enjoyed the experience. Was not disappointed with the Gil Hanse changes. Thought the views from the ridge line were great. Caddie was spot on with recommendations. Course was in excellent shape, weather was typical for July in the Carolinas. Great layouts, excellent condition and great service, I’ll be back.",
+        "review_text": "Played #4 about five years ago and enjoyed the experience. Was not disappointed with the Gil Hanse changes. Thought the views from the ridge line were great. Caddie was spot on with recommendations. Course was in excellent shape, weather was typical for July in the Carolinas. Great layouts, excellent condition and great service, I\u2019ll be back.",
         "rating_out_of_5": 5,
         "review_date": "07/13/2020",
         "source_url": "https://www.golfpass.com/travel-advisor/courses/10170-pinehurst-resort-country-club-no-4"
@@ -716,7 +716,7 @@
       {
         "reviewer_name": "u000004090851",
         "review_title": "Course #4",
-        "review_text": "Pinehurst No.4 is an outstanding overall experience and one of the better courses I’ve ever played. The caddie made it that much more enjoyable since I’m fairly new to the game (2 1/2 yrs). He was really helpful when trying to tackle the very difficult hole #9. I’d highly recommend that everyone experience this course.",
+        "review_text": "Pinehurst No.4 is an outstanding overall experience and one of the better courses I\u2019ve ever played. The caddie made it that much more enjoyable since I\u2019m fairly new to the game (2 1/2 yrs). He was really helpful when trying to tackle the very difficult hole #9. I\u2019d highly recommend that everyone experience this course.",
         "rating_out_of_5": 5,
         "review_date": "07/15/2020",
         "source_url": "https://www.golfpass.com/travel-advisor/courses/10170-pinehurst-resort-country-club-no-4"
@@ -809,8 +809,8 @@
       },
       {
         "reviewer_name": "ZM7tHZcebs9C45cjSM1K",
-        "review_title": "It’s a hike",
-        "review_text": "Always a beautiful challenge. Prepare to burn some calories. It’s a hike.",
+        "review_title": "It\u2019s a hike",
+        "review_text": "Always a beautiful challenge. Prepare to burn some calories. It\u2019s a hike.",
         "rating_out_of_5": 5,
         "review_date": "06/17/2025",
         "source_url": "https://www.golfpass.com/travel-advisor/courses/16343-chambers-bay"
@@ -818,7 +818,7 @@
       {
         "reviewer_name": "Timlim",
         "review_title": "Family fun",
-        "review_text": "Great course, great time with the family. First time out as family for my son’s 21st birthday. He played a great round there for being his first time.",
+        "review_text": "Great course, great time with the family. First time out as family for my son\u2019s 21st birthday. He played a great round there for being his first time.",
         "rating_out_of_5": 5,
         "review_date": "09/01/2024",
         "source_url": "https://www.golfpass.com/travel-advisor/courses/16343-chambers-bay"
@@ -826,7 +826,7 @@
       {
         "reviewer_name": "WinstonBeck",
         "review_title": "Incredibly beautiful course",
-        "review_text": "Had a great opportunity to play Chamber's Bay and got a deal on GolfNow($250 after tax). The weather was perfect, the staff was polite, and the course was in incredible shape. The only two drawbacks were: mats on the range, no grass(maybe a seasonal thing), and the mats weren't great(free balls though). The other drawback was that the marshal didn't seem to care that the pace was WILDLY slow. It took 3 hours to play the front 9, and our total time for the round was over 5½ hours. We had to play 17 and 18 almost in the dark(too dark to read greens or even track your ball flight). When you pay $250 for a round of golf, especially at such a renowned course, the pace should absolutely never be that slow. Overall, I'm glad we played, and we still enjoyed our round.",
+        "review_text": "Had a great opportunity to play Chamber's Bay and got a deal on GolfNow($250 after tax). The weather was perfect, the staff was polite, and the course was in incredible shape. The only two drawbacks were: mats on the range, no grass(maybe a seasonal thing), and the mats weren't great(free balls though). The other drawback was that the marshal didn't seem to care that the pace was WILDLY slow. It took 3 hours to play the front 9, and our total time for the round was over 5\u00bd hours. We had to play 17 and 18 almost in the dark(too dark to read greens or even track your ball flight). When you pay $250 for a round of golf, especially at such a renowned course, the pace should absolutely never be that slow. Overall, I'm glad we played, and we still enjoyed our round.",
         "rating_out_of_5": 4,
         "review_date": "08/30/2024",
         "source_url": "https://www.golfpass.com/travel-advisor/courses/16343-chambers-bay"
@@ -834,7 +834,7 @@
       {
         "reviewer_name": "u694054410",
         "review_title": "Always a pleasure",
-        "review_text": "Beautiful course, it’s a tough walk when it’s warm outside. It’s gonna take 5 hours. Always a pleasure.",
+        "review_text": "Beautiful course, it\u2019s a tough walk when it\u2019s warm outside. It\u2019s gonna take 5 hours. Always a pleasure.",
         "rating_out_of_5": 5,
         "review_date": "08/14/2024",
         "source_url": "https://www.golfpass.com/travel-advisor/courses/16343-chambers-bay"
@@ -849,7 +849,7 @@
       {
         "reviewer_name": "TimGavrichGP",
         "review_title": "The original remains relevant",
-        "review_text": "When the original Sand Valley course opened in 2016, it made a strong statement about the viability of linksy – or, more accurately, heathland-style – golf in the American interior. Even as other architects have sought to outdo Coore & Crenshaw's effort here, the original course remains strong, with stunning variety on firm, fast turf. It can be quite scoreable, but never feels like it panders to golfers with abundantly easy holes. Even the massive punchbowl long par-3 17th is tricky in its own way. Even after more courses have come on line, there will be plenty of golfers who feel the S.V. O.G. remains their favorite course at the resort. It is tough to argue with them.",
+        "review_text": "When the original Sand Valley course opened in 2016, it made a strong statement about the viability of linksy \u2013 or, more accurately, heathland-style \u2013 golf in the American interior. Even as other architects have sought to outdo Coore & Crenshaw's effort here, the original course remains strong, with stunning variety on firm, fast turf. It can be quite scoreable, but never feels like it panders to golfers with abundantly easy holes. Even the massive punchbowl long par-3 17th is tricky in its own way. Even after more courses have come on line, there will be plenty of golfers who feel the S.V. O.G. remains their favorite course at the resort. It is tough to argue with them.",
         "rating_out_of_5": 5,
         "review_date": "05/20/2024",
         "source_url": "[GolfPass](https://www.golfpass.com/travel-advisor/courses/35909-sand-valley-golf-resort-sand-valley-course)"
@@ -865,7 +865,7 @@
       {
         "reviewer_name": "noahjurik",
         "review_title": "Fantastic and Sprawling Golf Course",
-        "review_text": "I don’t normally go on vacation to get my teeth kicked in by a golf course, but that’s what happened at Sand Valley (and I still had a blast). Not much can compare to that anxious feeling I got while standing on Craig’s Porch, waiting for the starter to call me over. It’s hard to take everything in while mentally preparing for what lays ahead. The course is immaculate, views are surreal, and shot requirements are unmatched. The incredible routing makes for a surprisingly easy walk, despite the massive inland dunes you traverse. It’s one of those courses that you need to feel your way around; you can throw your normal golf game out at the door (thankfully, the Sandbox prepares your short game). Each hole throws you a new problem to solve and you won’t find yourself pulling the same clubs very often. The magnitude of this golf course paired with the resort experience made for some incredible fun. Sand Valley is a pretty unforgettable golf course.",
+        "review_text": "I don\u2019t normally go on vacation to get my teeth kicked in by a golf course, but that\u2019s what happened at Sand Valley (and I still had a blast). Not much can compare to that anxious feeling I got while standing on Craig\u2019s Porch, waiting for the starter to call me over. It\u2019s hard to take everything in while mentally preparing for what lays ahead. The course is immaculate, views are surreal, and shot requirements are unmatched. The incredible routing makes for a surprisingly easy walk, despite the massive inland dunes you traverse. It\u2019s one of those courses that you need to feel your way around; you can throw your normal golf game out at the door (thankfully, the Sandbox prepares your short game). Each hole throws you a new problem to solve and you won\u2019t find yourself pulling the same clubs very often. The magnitude of this golf course paired with the resort experience made for some incredible fun. Sand Valley is a pretty unforgettable golf course.",
         "rating_out_of_5": 5,
         "review_date": "06/22/2021",
         "source_url": "[GolfPass](https://www.golfpass.com/travel-advisor/courses/35909-sand-valley-golf-resort-sand-valley-course)"
@@ -960,7 +960,7 @@
       {
         "reviewer_name": "u522911207",
         "review_title": "Great time for group",
-        "review_text": "Went for a trip with 8 of us and had a blast. Stayed on-site in cottages and the hospitality and amenities were top notch. Played kettle loop “short course” to warm up and then putting course at night after some drinks. Great time! Golf was obviously top notch and caddies were great. Highly recommend.",
+        "review_text": "Went for a trip with 8 of us and had a blast. Stayed on-site in cottages and the hospitality and amenities were top notch. Played kettle loop \u201cshort course\u201d to warm up and then putting course at night after some drinks. Great time! Golf was obviously top notch and caddies were great. Highly recommend.",
         "rating_out_of_5": 5,
         "review_date": "05/16/2023",
         "source_url": "https://www.golfpass.com/travel-advisor/courses/21026-erin-hills-golf-course"
@@ -999,7 +999,7 @@
       {
         "reviewer_name": "Tsunami",
         "review_title": "Good but lacks TV magic without stands",
-        "review_text": "TPC is a good golf course but don’t expect it to look like it does on TV without all the stands erected. Not really a traditional desert course. If you’re looking for that, try Troon North or Grayhawk. Still worth a play though.",
+        "review_text": "TPC is a good golf course but don\u2019t expect it to look like it does on TV without all the stands erected. Not really a traditional desert course. If you\u2019re looking for that, try Troon North or Grayhawk. Still worth a play though.",
         "rating_out_of_5": 3.5,
         "review_date": "September 22, 2019",
         "source_url": "https://www.top100golfcourses.com/golf-course/tpc-scottsdale-stadium/reviews/22644#review"
@@ -1029,8 +1029,8 @@
     "reviews": [
       {
         "reviewer_name": "TimGavrichGP",
-        "review_title": "Still good, but Sand Valley’s least-best course",
-        "review_text": "Few properties offer such stiff competition for golf course quality as Sand Valley. Knowing his would one day be one of many courses at the resort, and golfers would inevitably rank and compare them, Architect David McLay Kidd elected to give his course its own identity, leaning into the double-meaning of the word “Mammoth” by fashioning enormous corridors for golf that house bloated fairways and gargantuan greens. Everything seems inflated by about 20%, which has the effect of making playing the course relatively simple: the trouble, when present, is easy to avoid due to the sheer amount of short grass. At times, the extra space Kidd used comes in handy for strategic purposes, but more often than not, it amounts to a safety net for indifferent shots, which makes some holes feel like a bit of a pillow fight. The course is vert appealing-looking and can certainly pad the ego of a golfer by helping them shoot scores close to or better than their handicap, but I would personally prefer a little bit more spice.",
+        "review_title": "Still good, but Sand Valley\u2019s least-best course",
+        "review_text": "Few properties offer such stiff competition for golf course quality as Sand Valley. Knowing his would one day be one of many courses at the resort, and golfers would inevitably rank and compare them, Architect David McLay Kidd elected to give his course its own identity, leaning into the double-meaning of the word \u201cMammoth\u201d by fashioning enormous corridors for golf that house bloated fairways and gargantuan greens. Everything seems inflated by about 20%, which has the effect of making playing the course relatively simple: the trouble, when present, is easy to avoid due to the sheer amount of short grass. At times, the extra space Kidd used comes in handy for strategic purposes, but more often than not, it amounts to a safety net for indifferent shots, which makes some holes feel like a bit of a pillow fight. The course is vert appealing-looking and can certainly pad the ego of a golfer by helping them shoot scores close to or better than their handicap, but I would personally prefer a little bit more spice.",
         "rating_out_of_5": 4,
         "review_date": "08/17/2025",
         "source_url": "[GolfPass](https://www.golfpass.com/travel-advisor/courses/37524-sand-valley-golf-resort-mammoth-dunes-course)"
@@ -1038,7 +1038,7 @@
       {
         "reviewer_name": "noahjurik",
         "review_title": "Simply Amazing",
-        "review_text": "No golf course has ever made me feel like Mammoth Dunes did. I pride myself on a great sense of direction, but I was completely lost while traversing Mammoth’s incredible landforms. Some courses make you feel like you’re separated from the rest of the world, but here, you feel like you’re on your own planet. I have never been as excited to hit golf shots in my life. The variety of landscapes and shot requirements are out of this world. There’s nothing like watching a golf ball bound, ricochet, and tumble on these enormous golf holes. You have a stadium all to yourself and it’s hard not to smile. It’s a routing masterpiece. Sand Valley is a really special place and Mammoth Dunes just might be the best (and most fun) course I’ve ever played. I’m already planning my next trip.",
+        "review_text": "No golf course has ever made me feel like Mammoth Dunes did. I pride myself on a great sense of direction, but I was completely lost while traversing Mammoth\u2019s incredible landforms. Some courses make you feel like you\u2019re separated from the rest of the world, but here, you feel like you\u2019re on your own planet. I have never been as excited to hit golf shots in my life. The variety of landscapes and shot requirements are out of this world. There\u2019s nothing like watching a golf ball bound, ricochet, and tumble on these enormous golf holes. You have a stadium all to yourself and it\u2019s hard not to smile. It\u2019s a routing masterpiece. Sand Valley is a really special place and Mammoth Dunes just might be the best (and most fun) course I\u2019ve ever played. I\u2019m already planning my next trip.",
         "rating_out_of_5": 5,
         "review_date": "06/22/2021",
         "source_url": "[GolfPass](https://www.golfpass.com/travel-advisor/courses/37524-sand-valley-golf-resort-mammoth-dunes-course)"
@@ -1046,7 +1046,7 @@
       {
         "reviewer_name": "u7728989",
         "review_title": "A Mammoth you wont forget",
-        "review_text": "We were fortunate enough to stay on site for 4 days and play this course twice. It’s was enjoyable for me at a 12 handi and my brother in law who totes a 27. It was unforgettable fun, for everyone in our group of 16 golfers. The layout was great and with the wide fairways that you can’t miss....except the fairway bunkers that called to me a few times, made the pace of play just right. We never waited and never held anyone up. This is a top 10 destination for any golf group who likes to stay and play rather then drive all over to get to play a great set of courses like the two they have on site. Great caddies made golfing there a pleasure. Great pro shop also with fair pricing.",
+        "review_text": "We were fortunate enough to stay on site for 4 days and play this course twice. It\u2019s was enjoyable for me at a 12 handi and my brother in law who totes a 27. It was unforgettable fun, for everyone in our group of 16 golfers. The layout was great and with the wide fairways that you can\u2019t miss....except the fairway bunkers that called to me a few times, made the pace of play just right. We never waited and never held anyone up. This is a top 10 destination for any golf group who likes to stay and play rather then drive all over to get to play a great set of courses like the two they have on site. Great caddies made golfing there a pleasure. Great pro shop also with fair pricing.",
         "rating_out_of_5": 5,
         "review_date": "05/19/2021",
         "source_url": "[GolfPass](https://www.golfpass.com/travel-advisor/courses/37524-sand-valley-golf-resort-mammoth-dunes-course)"
@@ -1101,7 +1101,7 @@
       {
         "reviewer_name": "klmgolf80",
         "review_title": "Hype is Real",
-        "review_text": "Of the 11 course I played on a visit to South California in February 2024, Rustic Canyon was easily the best. The hype around is course is real, and well-deserved… it’s all over YouTube if you care for a course vlog. You have a decision to make on every. single. shot. How far you hit your driver doesn’t matter here… how well you place your driver, and approach, and short games shots does. And although it is an incredible challenge, I played the whole round with the same ball.\\n\\nCONDITIONS: Perfect! Greens, bunkers, tees, fairways, rough, canyon desert surrounds, trees, shrubbery, hazards… all of it is perfect. The road driving in might have been a bit bumpy!\\n\\nVALUE: Yes, it is a good value! Go play.\\n\\nLAYOUT: The course meanders thru the bottom of a canyon. It’s awesome. The holes are thoughtfully laid out. Every hole make you think and consider your options. There is a great combination of short and long holes, and you will use every club in your bag. This course is built for walking… don’t take a cart.\\n\\nFRIENDLINESS: Everyone was helpful in getting me paid up, out on the range, and off the first tee.\\n\\nPACE: Had to wait on the tee box just long enough to get a yardage and contemplate which shot to hit. No distracting delays, and we were done right around 4 hours (and that was for an 8am Saturday tee time).\\n\\nDIFFICULTY: Yes, very much! This course will eat short- and long-hitters alike. The greens here were the most demanding I played on this trip. The greens are fast, but not ridiculous. The contouring of the greens (runoffs, buried elephants, distinct sections separated by noticeable undulations) is probably the toughest I’ve encountered.",
+        "review_text": "Of the 11 course I played on a visit to South California in February 2024, Rustic Canyon was easily the best. The hype around is course is real, and well-deserved\u2026 it\u2019s all over YouTube if you care for a course vlog. You have a decision to make on every. single. shot. How far you hit your driver doesn\u2019t matter here\u2026 how well you place your driver, and approach, and short games shots does. And although it is an incredible challenge, I played the whole round with the same ball.\\n\\nCONDITIONS: Perfect! Greens, bunkers, tees, fairways, rough, canyon desert surrounds, trees, shrubbery, hazards\u2026 all of it is perfect. The road driving in might have been a bit bumpy!\\n\\nVALUE: Yes, it is a good value! Go play.\\n\\nLAYOUT: The course meanders thru the bottom of a canyon. It\u2019s awesome. The holes are thoughtfully laid out. Every hole make you think and consider your options. There is a great combination of short and long holes, and you will use every club in your bag. This course is built for walking\u2026 don\u2019t take a cart.\\n\\nFRIENDLINESS: Everyone was helpful in getting me paid up, out on the range, and off the first tee.\\n\\nPACE: Had to wait on the tee box just long enough to get a yardage and contemplate which shot to hit. No distracting delays, and we were done right around 4 hours (and that was for an 8am Saturday tee time).\\n\\nDIFFICULTY: Yes, very much! This course will eat short- and long-hitters alike. The greens here were the most demanding I played on this trip. The greens are fast, but not ridiculous. The contouring of the greens (runoffs, buried elephants, distinct sections separated by noticeable undulations) is probably the toughest I\u2019ve encountered.",
         "rating_out_of_5": 5,
         "review_date": "02/24/2024",
         "source_url": "https://www.golfpass.com/travel-advisor/courses/15539-rustic-canyon-golf-course"
@@ -1117,7 +1117,7 @@
       {
         "reviewer_name": "ga987729891",
         "review_title": "Great value - Slow play",
-        "review_text": "Rustic is a great layout. More of a links style course. Wide fairways and largely open greens. The greens and aprons are very large. The greens do not hold shots very well, so hit to the front and let it roll up.\\nThe course was recently airiated but is coming back nicely. The greens are challenging, but not as fast as they used to be. It is a fun course to play. I usually play early in the mornings and pace if play is fine. But I played yesterday afternoon and the front was a little slow at 2:20 minutes.\\nBut the back was awful. Ninety minutes to play the first four holes and it was getting slower. I called the pro shop but they didn’t seem too concerned about it. In playing there eight years I have never seen a Marshall. They really should have one. I gave up and skipped the last three holes. It would have been at least another hour to finish, three holes for nine holes is not enjoyable golf.",
+        "review_text": "Rustic is a great layout. More of a links style course. Wide fairways and largely open greens. The greens and aprons are very large. The greens do not hold shots very well, so hit to the front and let it roll up.\\nThe course was recently airiated but is coming back nicely. The greens are challenging, but not as fast as they used to be. It is a fun course to play. I usually play early in the mornings and pace if play is fine. But I played yesterday afternoon and the front was a little slow at 2:20 minutes.\\nBut the back was awful. Ninety minutes to play the first four holes and it was getting slower. I called the pro shop but they didn\u2019t seem too concerned about it. In playing there eight years I have never seen a Marshall. They really should have one. I gave up and skipped the last three holes. It would have been at least another hour to finish, three holes for nine holes is not enjoyable golf.",
         "rating_out_of_5": 4,
         "review_date": "06/19/2023",
         "source_url": "https://www.golfpass.com/travel-advisor/courses/15539-rustic-canyon-golf-course"
@@ -1125,7 +1125,7 @@
       {
         "reviewer_name": "BrandonWebb",
         "review_title": "Cult Following Minimalism",
-        "review_text": "So, Rustic Canyon has gained a bit of a cult following - partly because of Geoff Shackleford and Gil Hanse and partly because of the scarcity of good public golf in and around Los Angeles. Minimalism takes center stage here. The pro shop, and the course guide for sale in there are both spartan. No pretense, just like the course itself. The architects took what the land, or more appropriately the valley, gave them. Little dirt was moved thanks to an environmentally-sensitive site. Shack and Hanse just unearthed green sites and tee sites and connected the dots. It is a mostly flat course that offers a center line pot bunker or two. That is about as aggressive as they got. And therein lies the charm. In greater Los Angeles, where 80 percent of the nearly 13 million residents are transplants, it would be easy to cave to the temptation to cater to the masses that want to play golf on courses like they remember from far-reaching corners of America. There are no trumped up features. No out-of-place pond, or ghastly waterfall inserted mindlessly. Rustic Canyon is punctuated by width off the tee that offers varied routes to massive greens that do suggest a line of charm. Those greens offer a lot of internal movement, and at times clefts through the middle of them that can be tricky, particularly the 18th. On a course with this much width it would suggest otherwise, but RC really is a strategic course, not unlike some of the British blue bloods. I bet it is common to walk off this course after playing it for the first time and wonder how you didn’t shoot 5-10 strokes better. That is the beauty of the course: potential for a lot of benign bogeys if you aren’t careful. The bevy of short par 4s and reachable par 5s scream score ability. But they are also why 5-hour rounds are the norm here. A tip from the local I was paired with: everything moves toward the front gate, and the fence to the left of the first and second holes. And take 10 yards off any shot that plays downhill toward that gate.",
+        "review_text": "So, Rustic Canyon has gained a bit of a cult following - partly because of Geoff Shackleford and Gil Hanse and partly because of the scarcity of good public golf in and around Los Angeles. Minimalism takes center stage here. The pro shop, and the course guide for sale in there are both spartan. No pretense, just like the course itself. The architects took what the land, or more appropriately the valley, gave them. Little dirt was moved thanks to an environmentally-sensitive site. Shack and Hanse just unearthed green sites and tee sites and connected the dots. It is a mostly flat course that offers a center line pot bunker or two. That is about as aggressive as they got. And therein lies the charm. In greater Los Angeles, where 80 percent of the nearly 13 million residents are transplants, it would be easy to cave to the temptation to cater to the masses that want to play golf on courses like they remember from far-reaching corners of America. There are no trumped up features. No out-of-place pond, or ghastly waterfall inserted mindlessly. Rustic Canyon is punctuated by width off the tee that offers varied routes to massive greens that do suggest a line of charm. Those greens offer a lot of internal movement, and at times clefts through the middle of them that can be tricky, particularly the 18th. On a course with this much width it would suggest otherwise, but RC really is a strategic course, not unlike some of the British blue bloods. I bet it is common to walk off this course after playing it for the first time and wonder how you didn\u2019t shoot 5-10 strokes better. That is the beauty of the course: potential for a lot of benign bogeys if you aren\u2019t careful. The bevy of short par 4s and reachable par 5s scream score ability. But they are also why 5-hour rounds are the norm here. A tip from the local I was paired with: everything moves toward the front gate, and the fence to the left of the first and second holes. And take 10 yards off any shot that plays downhill toward that gate.",
         "rating_out_of_5": 4,
         "review_date": "06/04/2023",
         "source_url": "https://www.golfpass.com/travel-advisor/courses/15539-rustic-canyon-golf-course"
@@ -1164,7 +1164,7 @@
       {
         "reviewer_name": "awccameron06",
         "review_title": "Barnbougle (The Dunes) Review",
-        "review_text": "Barnbougle dunes course sits on the northeast coast of Tasmania a stunning Tom Doak design, laid out across the natural links land right along Bass Strait. And honestly, it feels like the course was always meant to be there. Barnbougle winds its way through hills and valleys, with dramatic elevation changes that offer spectacular views both out across the ocean, and back down into the holes from different vantage points. Even though it’s a relatively new course in the grand scheme of golf history, Barnbougle has already made a profound impact on golfers worldwide. It’s an ideal destination for a golf getaway, with accommodation available right on the property making it perfect for a full golf resort experience. If there’s one criticism, it’s that Barnbougle can be extremely penal. Miss the fairway, and you’re more than likely losing your ball. The dunes are big, the rough is harsh, and stray shots can turn what should be a fun day into a frustrating one especially if you didn’t pack enough golf balls! But if you’re hitting it well, Barnbougle is one of the most rewarding days of golf you can have. The fairways are pristine, the bunkers are deep and bold, and the greens are full of the fun, creative contours that Tom Doak is famous for designs made not just for the scratch player, but for the everyday golfer as well. Personally, I think the front nine is the stronger side. You’re walking right along the ocean, and almost every hole feels like it was made for the camera it’s truly breathtaking.",
+        "review_text": "Barnbougle dunes course sits on the northeast coast of Tasmania a stunning Tom Doak design, laid out across the natural links land right along Bass Strait. And honestly, it feels like the course was always meant to be there. Barnbougle winds its way through hills and valleys, with dramatic elevation changes that offer spectacular views both out across the ocean, and back down into the holes from different vantage points. Even though it\u2019s a relatively new course in the grand scheme of golf history, Barnbougle has already made a profound impact on golfers worldwide. It\u2019s an ideal destination for a golf getaway, with accommodation available right on the property making it perfect for a full golf resort experience. If there\u2019s one criticism, it\u2019s that Barnbougle can be extremely penal. Miss the fairway, and you\u2019re more than likely losing your ball. The dunes are big, the rough is harsh, and stray shots can turn what should be a fun day into a frustrating one especially if you didn\u2019t pack enough golf balls! But if you\u2019re hitting it well, Barnbougle is one of the most rewarding days of golf you can have. The fairways are pristine, the bunkers are deep and bold, and the greens are full of the fun, creative contours that Tom Doak is famous for designs made not just for the scratch player, but for the everyday golfer as well. Personally, I think the front nine is the stronger side. You\u2019re walking right along the ocean, and almost every hole feels like it was made for the camera it\u2019s truly breathtaking.",
         "rating_out_of_5": 4.17,
         "review_date": "December 23, 2025",
         "source_url": "[Top100GolfCourses Review - awccameron06](https://www.top100golfcourses.com/golf-course/barnbougle-dunes/reviews/44731#review)"
@@ -1172,7 +1172,7 @@
       {
         "reviewer_name": "Graeme Jenkins",
         "review_title": "Barnbougle (The Dunes) Review",
-        "review_text": "The course absolutely lived up to its reputation and ranking. Weaving its way through grassy dunes with loads of elevation changes it’s visually stunning and was in immaculate condition. Whilst I’d been told to take plenty of balls I found it quite forgiving off the tee although you need to know your carry distances on numerous holes to ensure you either carry or land short of the long stuff. If you manage that then the real challenge are the approach shots to greens with huge run off areas and the greens themselves. Whilst in superb condition I have never played greens with such slope and undulations. Most greens were massive and so regularly left with huge putts once the contours had taken even the most accurate approach shots. A 2 putt wasn’t a given on any of the holes and so if you had or bettered 36 putts then you’ll have had a day. The next hole often didn’t identify itself until after you’d finished the previous one which is the sort of layout I like best and the whole environment with the sounds of the waves crashing adjacent to some holes is just a fantastic place to play golf. The food in the Dunes restaurant was excellent and the whole set up is just spot on. A bucket list course very happily ticked off!",
+        "review_text": "The course absolutely lived up to its reputation and ranking. Weaving its way through grassy dunes with loads of elevation changes it\u2019s visually stunning and was in immaculate condition. Whilst I\u2019d been told to take plenty of balls I found it quite forgiving off the tee although you need to know your carry distances on numerous holes to ensure you either carry or land short of the long stuff. If you manage that then the real challenge are the approach shots to greens with huge run off areas and the greens themselves. Whilst in superb condition I have never played greens with such slope and undulations. Most greens were massive and so regularly left with huge putts once the contours had taken even the most accurate approach shots. A 2 putt wasn\u2019t a given on any of the holes and so if you had or bettered 36 putts then you\u2019ll have had a day. The next hole often didn\u2019t identify itself until after you\u2019d finished the previous one which is the sort of layout I like best and the whole environment with the sounds of the waves crashing adjacent to some holes is just a fantastic place to play golf. The food in the Dunes restaurant was excellent and the whole set up is just spot on. A bucket list course very happily ticked off!",
         "rating_out_of_5": 4.58,
         "review_date": "December 11, 2025",
         "source_url": "[Top100GolfCourses Review - Graeme Jenkins](https://www.top100golfcourses.com/golf-course/barnbougle-dunes/reviews/44600#review)"
@@ -1180,7 +1180,7 @@
       {
         "reviewer_name": "Tim Cowen",
         "review_title": "Barnbougle (The Dunes) Review",
-        "review_text": "Stroll down the first fairway at Barnbougle Dunes, with the firm, springy turf under your feet, feel the stiff breeze off the sea and gaze at the huge dunes and gaping, wild-fringed bunkers, and you could easily kid yourself you’re on a traditional British links. Short of having a railway line running down the landward side of the out-and-back layout they seem to have thought of everything. Okay, so there are a few differences - I’ve never seen a kangaroo hopping around in East Lothian or the Kent coast, as I did here after spending a little too long hacking around in one of those aforementioned gaping bunkers, just short of the third green. And there’s no gorse. It’s not native to Tasmania and if there’s one thing this state does diligently, it’s protect the indigenous flora and fauna (I had to hand over two apples from Melbourne after landing at Launceston airport - there’s a bio security dog there that takes his job very seriously). But what there is here is an absolutely glorious round of golf. It’s only been established 20 years or so but is already firmly lodged in the far upper reaches of most authoritative lists of the world’s best tracks. You really don’t have to play many holes before you find yourself agreeing. The terrain is perfect for golf, with big dunes running alongside a glorious stretch of beach on the north coast of Tassie. Designers Tom Doak and Mike Clayton have taken that perfect terrain and created a magical route through it. There’s a terrific variety of holes. A nice, welcoming par five to begin with - a wide fairway, rolling across the dunes, makes the first tee shot a lot less daunting than you’d normally expect at a world Top 100 course. Maybe they took as their inspiration the Old Course at St Andrews, where the first tee looks down on the widest fairway in golf. Although that one is still pretty daunting. The point about the fairways here, though, is that they are mostly pretty welcoming. However, to score well, you’ll need to pick the right line into the flag. Which means tee shot placement is paramount. And on a links course, with the sloping, undulating fairways, the fast-running turf, and the wind playing havoc (there is, apparently, always a breeze here)….well, you might pick a good line off the tee. Whether you end up there is another thing entirely. It’s then, for your approaches into the par fours and fives, that the real genius of the design reveals itself. Because these are massive, rolling greens with huge slopes and borrows, well protected by big, deep bunkers, grassy run offs, false fronts. To get close to the pin requires you to be in position A on the fairway for your approach. Which you might not be if, instead of strategising, you just stood on the tee and blasted it down the wide, inviting fairway. This is a course where you can do that, you can have a lot of fun - but if you want to score, you need to think your way round. It’s a fascinating challenge.",
+        "review_text": "Stroll down the first fairway at Barnbougle Dunes, with the firm, springy turf under your feet, feel the stiff breeze off the sea and gaze at the huge dunes and gaping, wild-fringed bunkers, and you could easily kid yourself you\u2019re on a traditional British links. Short of having a railway line running down the landward side of the out-and-back layout they seem to have thought of everything. Okay, so there are a few differences - I\u2019ve never seen a kangaroo hopping around in East Lothian or the Kent coast, as I did here after spending a little too long hacking around in one of those aforementioned gaping bunkers, just short of the third green. And there\u2019s no gorse. It\u2019s not native to Tasmania and if there\u2019s one thing this state does diligently, it\u2019s protect the indigenous flora and fauna (I had to hand over two apples from Melbourne after landing at Launceston airport - there\u2019s a bio security dog there that takes his job very seriously). But what there is here is an absolutely glorious round of golf. It\u2019s only been established 20 years or so but is already firmly lodged in the far upper reaches of most authoritative lists of the world\u2019s best tracks. You really don\u2019t have to play many holes before you find yourself agreeing. The terrain is perfect for golf, with big dunes running alongside a glorious stretch of beach on the north coast of Tassie. Designers Tom Doak and Mike Clayton have taken that perfect terrain and created a magical route through it. There\u2019s a terrific variety of holes. A nice, welcoming par five to begin with - a wide fairway, rolling across the dunes, makes the first tee shot a lot less daunting than you\u2019d normally expect at a world Top 100 course. Maybe they took as their inspiration the Old Course at St Andrews, where the first tee looks down on the widest fairway in golf. Although that one is still pretty daunting. The point about the fairways here, though, is that they are mostly pretty welcoming. However, to score well, you\u2019ll need to pick the right line into the flag. Which means tee shot placement is paramount. And on a links course, with the sloping, undulating fairways, the fast-running turf, and the wind playing havoc (there is, apparently, always a breeze here)\u2026.well, you might pick a good line off the tee. Whether you end up there is another thing entirely. It\u2019s then, for your approaches into the par fours and fives, that the real genius of the design reveals itself. Because these are massive, rolling greens with huge slopes and borrows, well protected by big, deep bunkers, grassy run offs, false fronts. To get close to the pin requires you to be in position A on the fairway for your approach. Which you might not be if, instead of strategising, you just stood on the tee and blasted it down the wide, inviting fairway. This is a course where you can do that, you can have a lot of fun - but if you want to score, you need to think your way round. It\u2019s a fascinating challenge.",
         "rating_out_of_5": 4.58,
         "review_date": "September 3, 2024",
         "source_url": "[Top100GolfCourses Review - Tim Cowen](https://www.top100golfcourses.com/golf-course/barnbougle-dunes/reviews/40659#review)"
@@ -1188,7 +1188,7 @@
       {
         "reviewer_name": "Wilko",
         "review_title": "HOME AWAY FROM HOME .",
-        "review_text": "I’ve visited Barnbougle “The Dunes” on multiple occasions now and must say it’s probably at the top of my list for fun. The course has never let me down in conditioning and provided a different aspect on each visit. My favourite holes are 5,7,8,12 and 17.",
+        "review_text": "I\u2019ve visited Barnbougle \u201cThe Dunes\u201d on multiple occasions now and must say it\u2019s probably at the top of my list for fun. The course has never let me down in conditioning and provided a different aspect on each visit. My favourite holes are 5,7,8,12 and 17.",
         "rating_out_of_5": 4.58,
         "review_date": "August 18, 2024",
         "source_url": "[Top100GolfCourses Review - Wilko](https://www.top100golfcourses.com/golf-course/barnbougle-dunes/reviews/40458#review)"
@@ -1219,7 +1219,7 @@
       {
         "reviewer_name": "Tyquig6",
         "review_title": "Fun Course",
-        "review_text": "The 9th will make or break how you think of this course. If you like the 9th green you will like the course if you don’t then you won’t like the course. All 3 layouts are amazing.",
+        "review_text": "The 9th will make or break how you think of this course. If you like the 9th green you will like the course if you don\u2019t then you won\u2019t like the course. All 3 layouts are amazing.",
         "rating_out_of_5": 5,
         "review_date": "01/13/2024",
         "source_url": "https://www.golfpass.com/travel-advisor/courses/37570-streamsong-resort-black-course"
@@ -1227,7 +1227,7 @@
       {
         "reviewer_name": "TimGavrichGP",
         "review_title": "Benign conditions reveal a dependence on firmness, wind",
-        "review_text": "Having played the Black in both peak-winter and deep-summer conditions over the last several years, I can say that the course is at its best when it's firm and fast. It’s an enjoyable play no matter what, but anyone who enjoys the course at its crispy peak will likely leave feeling a little unfulfilled when it’s softer and slower.",
+        "review_text": "Having played the Black in both peak-winter and deep-summer conditions over the last several years, I can say that the course is at its best when it's firm and fast. It\u2019s an enjoyable play no matter what, but anyone who enjoys the course at its crispy peak will likely leave feeling a little unfulfilled when it\u2019s softer and slower.",
         "rating_out_of_5": 4,
         "review_date": "09/15/2023",
         "source_url": "https://www.golfpass.com/travel-advisor/courses/37570-streamsong-resort-black-course"
@@ -1235,7 +1235,7 @@
       {
         "reviewer_name": "johnny4875",
         "review_title": "Amazing",
-        "review_text": "This course was absolutely amazing. Conditions were mint. The greens were as large as you will ever see. Lots of different levels etc. a lot of people think the course is too over the top but I don’t agree with that at all. It’s definitely not traditional but that’s what makes it fun. I would highly recommend other than the price lol. U pay for the experience obviously .Nigel was our caddie and he was amazing and knew every break on those greens. .I highly recommend!",
+        "review_text": "This course was absolutely amazing. Conditions were mint. The greens were as large as you will ever see. Lots of different levels etc. a lot of people think the course is too over the top but I don\u2019t agree with that at all. It\u2019s definitely not traditional but that\u2019s what makes it fun. I would highly recommend other than the price lol. U pay for the experience obviously .Nigel was our caddie and he was amazing and knew every break on those greens. .I highly recommend!",
         "rating_out_of_5": 5,
         "review_date": "07/27/2023",
         "source_url": "https://www.golfpass.com/travel-advisor/courses/37570-streamsong-resort-black-course"
@@ -1243,7 +1243,7 @@
       {
         "reviewer_name": "QuantumGolfx",
         "review_title": "Delightfully Quirky",
-        "review_text": "Get ready for some serious putting on this quirky and supremely fun golf course. It’s the newest course at Streamsong and it will have you wishing you would have hit at least a couple shots differently after seeing where they end up. Players who are purists might not like the design and gigantic greens. What you will get at Streamsong Black is a big golf course spread across vast sand dunes, huge waste areas, and a few blind shots. Of the three course at Streamsong I rate Black as the funnest. There are some weird holes and crazy greens, but I love it! Gil Hanse did a great job of using this land to put his stamp on it.",
+        "review_text": "Get ready for some serious putting on this quirky and supremely fun golf course. It\u2019s the newest course at Streamsong and it will have you wishing you would have hit at least a couple shots differently after seeing where they end up. Players who are purists might not like the design and gigantic greens. What you will get at Streamsong Black is a big golf course spread across vast sand dunes, huge waste areas, and a few blind shots. Of the three course at Streamsong I rate Black as the funnest. There are some weird holes and crazy greens, but I love it! Gil Hanse did a great job of using this land to put his stamp on it.",
         "rating_out_of_5": 5,
         "review_date": "01/24/2021",
         "source_url": "https://www.golfpass.com/travel-advisor/courses/37570-streamsong-resort-black-course"
@@ -1274,7 +1274,7 @@
       {
         "reviewer_name": "atk111",
         "review_title": "An Alister Mackenzie gem",
-        "review_text": "Wow, what of course. They say that this was McKenzie’s favorite course and he designed Augusta and Cypress point. He even lived there on the sixth hole and it was cool to see his understated home. This would rank in the top three public courses I’ve ever played.",
+        "review_text": "Wow, what of course. They say that this was McKenzie\u2019s favorite course and he designed Augusta and Cypress point. He even lived there on the sixth hole and it was cool to see his understated home. This would rank in the top three public courses I\u2019ve ever played.",
         "rating_out_of_5": 5,
         "review_date": "02/09/2026",
         "source_url": "[GolfPass](https://www.golfpass.com/travel-advisor/courses/15566-pasatiempo-golf-club)"
@@ -1306,7 +1306,7 @@
       {
         "reviewer_name": "Lbergen",
         "review_title": "Worth it",
-        "review_text": "If you are wondering if this course is worth it, stop. It is. They could charge way more. They don’t need no -member play. We are all lucky to play it. Just pay up, say thank you, and ENJOY.",
+        "review_text": "If you are wondering if this course is worth it, stop. It is. They could charge way more. They don\u2019t need no -member play. We are all lucky to play it. Just pay up, say thank you, and ENJOY.",
         "rating_out_of_5": 5,
         "review_date": "09/08/2025",
         "source_url": "[GolfPass](https://www.golfpass.com/travel-advisor/courses/15566-pasatiempo-golf-club)"
