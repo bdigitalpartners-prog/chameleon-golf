@@ -39,6 +39,30 @@ export async function POST(
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
+    // Check RSVP deadline
+    if (event.rsvpDeadline && new Date() > new Date(event.rsvpDeadline)) {
+      return NextResponse.json({ error: "RSVP deadline has passed" }, { status: 400 });
+    }
+
+    // Check maxAttendees for GOING RSVPs
+    if (status === "GOING" && event.maxAttendees) {
+      const existingRsvp = await prisma.eventRSVP.findUnique({
+        where: { eventId_userId: { eventId, userId } },
+      });
+      // Only enforce if user is not already GOING (allow staying GOING)
+      if (!existingRsvp || existingRsvp.status !== "GOING") {
+        const goingCount = await prisma.eventRSVP.count({
+          where: { eventId, status: "GOING" },
+        });
+        if (goingCount >= event.maxAttendees) {
+          return NextResponse.json(
+            { error: "Event is at capacity" },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
     const rsvp = await prisma.eventRSVP.upsert({
       where: {
         eventId_userId: {

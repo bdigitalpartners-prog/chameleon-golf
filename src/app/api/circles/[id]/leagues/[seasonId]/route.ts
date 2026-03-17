@@ -19,7 +19,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string; 
     include: {
       standings: {
         include: { user: { select: { id: true, name: true, image: true } } },
-        orderBy: [{ points: "desc" }, { wins: "desc" }],
+        orderBy: [{ totalPoints: "desc" }, { wins: "desc" }],
       },
     },
   });

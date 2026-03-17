@@ -34,34 +34,50 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     const { eqPoints, difficultyMult } = calculateEqPoints(score, par, matchScore, diffIndex);
 
-    const round = await prisma.leagueRound.create({
-      data: {
-        seasonId,
-        userId,
-        courseId,
-        score,
-        eqPoints,
-        matchScore,
-        difficultyMult: difficultyMult,
-        playDate: new Date(playDate),
-      },
-    });
-
-    // Update standings
-    const standing = await prisma.leagueStanding.findUnique({
-      where: { seasonId_userId: { seasonId, userId } },
-    });
-
-    if (standing) {
-      await prisma.leagueStanding.update({
-        where: { id: standing.id },
+    const round = await prisma.$transaction(async (tx) => {
+      const newRound = await tx.leagueRound.create({
         data: {
-          totalPoints: { increment: eqPoints },
-          roundsPlayed: { increment: 1 },
-          avgEqPoints: (Number(standing.totalPoints) + eqPoints) / (standing.roundsPlayed + 1),
+          seasonId,
+          userId,
+          courseId,
+          score,
+          eqPoints,
+          matchScore,
+          difficultyMult: difficultyMult,
+          playDate: new Date(playDate),
         },
       });
-    }
+
+      // Upsert standings — handles new members who joined after season start
+      const existing = await tx.leagueStanding.findUnique({
+        where: { seasonId_userId: { seasonId, userId } },
+      });
+
+      if (existing) {
+        const newTotal = Number(existing.totalPoints) + eqPoints;
+        const newRoundsPlayed = existing.roundsPlayed + 1;
+        await tx.leagueStanding.update({
+          where: { id: existing.id },
+          data: {
+            totalPoints: newTotal,
+            roundsPlayed: newRoundsPlayed,
+            avgEqPoints: newTotal / newRoundsPlayed,
+          },
+        });
+      } else {
+        await tx.leagueStanding.create({
+          data: {
+            seasonId,
+            userId,
+            totalPoints: eqPoints,
+            roundsPlayed: 1,
+            avgEqPoints: eqPoints,
+          },
+        });
+      }
+
+      return newRound;
+    });
 
     return NextResponse.json({ round, eqPoints }, { status: 201 });
   } catch (error: any) {
