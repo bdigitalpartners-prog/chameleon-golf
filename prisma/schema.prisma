@@ -142,6 +142,9 @@ model Course {
   courseArchitects   CourseArchitect[]
   externalContent   ContentCourseLink[]
   books             BookCourseLink[]
+  renovations       CourseRenovation[]
+  designDna         CourseDesignDNA?
+  templateHolesRel  TemplateHole[]
 
   @@map("courses")
 }
@@ -689,6 +692,7 @@ model Architect {
   books               BookArchitectLink[]
   courseArchitects     CourseArchitect[]
   courses             Course[]
+  renovations         CourseRenovation[]
 
   @@map("architects")
 }
@@ -887,4 +891,60 @@ model FoundingAdvisoryFeedback {
   submittedAt           DateTime @default(now()) @map("submitted_at")
 
   @@map("founding_advisory_feedback")
+}
+
+model CourseRenovation {
+  id             Int       @id @default(autoincrement())
+  courseId        Int       @map("course_id")
+  year           Int?
+  architectId    Int?      @map("architect_id")
+  type           String    @db.VarChar(50)
+  description    String?
+  scope          String?
+  budgetEstimate String?   @map("budget_estimate") @db.VarChar(100)
+  source         String?   @db.VarChar(200)
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  course         Course    @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  architect      Architect? @relation(fields: [architectId], references: [id])
+
+  @@map("course_renovations")
+}
+
+model CourseDesignDNA {
+  id                 Int      @id @default(autoincrement())
+  courseId            Int      @unique @map("course_id")
+  designStyle        String?  @map("design_style") @db.VarChar(50)
+  bunkeringStyle     String?  @map("bunkering_style") @db.VarChar(50)
+  greenComplexity    Int?     @map("green_complexity")
+  greenSpeed         String?  @map("green_speed") @db.VarChar(100)
+  fairwayWidth       String?  @map("fairway_width") @db.VarChar(30)
+  elevationChange    String?  @map("elevation_change") @db.VarChar(30)
+  waterFeatures      String?  @map("water_features") @db.VarChar(30)
+  treeDensity        String?  @map("tree_density") @db.VarChar(30)
+  windExposure       String?  @map("wind_exposure") @db.VarChar(30)
+  walkability        String?  @db.VarChar(30)
+  constructionMethod String?  @map("construction_method") @db.VarChar(100)
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @default(now()) @map("updated_at")
+
+  course             Course   @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+
+  @@map("course_design_dna")
+}
+
+model TemplateHole {
+  id                  Int      @id @default(autoincrement())
+  courseId             Int      @map("course_id")
+  holeNumber          Int      @map("hole_number")
+  templateName        String   @map("template_name") @db.VarChar(100)
+  description         String?
+  originalInspiration String?  @map("original_inspiration")
+  educationalNote     String?  @map("educational_note")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  course              Course   @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+
+  @@unique([courseId, holeNumber])
+  @@map("template_holes")
 }

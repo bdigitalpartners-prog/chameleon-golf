@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArchitectContentSections } from "./ArchitectContentSections";
 import { ArchitectPortfolio } from "./ArchitectPortfolio";
+import { ArchitectDesignSignature } from "./ArchitectDesignSignature";
 
 export const dynamic = "force-dynamic";
 
@@ -201,6 +202,33 @@ export default async function ArchitectDetailPage({ params }: Props) {
     console.error("Error fetching related architects:", e);
   }
 
+  // Fetch design DNA for architect's courses
+  let designDnaList: any[] = [];
+  let architectRenovations: any[] = [];
+  try {
+    const courseIds = courses.map((c) => c.courseId);
+    if (courseIds.length > 0) {
+      const [dnaResults, renResults] = await Promise.all([
+        prisma.courseDesignDNA.findMany({
+          where: { courseId: { in: courseIds } },
+        }),
+        prisma.courseRenovation.findMany({
+          where: { architectId: architect.id },
+          include: {
+            course: {
+              select: { courseId: true, courseName: true },
+            },
+          },
+          orderBy: { year: "asc" },
+        }),
+      ]);
+      designDnaList = dnaResults;
+      architectRenovations = renResults;
+    }
+  } catch (e) {
+    console.error("Error fetching design DNA for architect:", e);
+  }
+
   // Group by role
   const coursesByRole: Record<string, typeof courseArchitectLinks> = {};
   for (const link of courseArchitectLinks) {
@@ -228,6 +256,8 @@ export default async function ArchitectDetailPage({ params }: Props) {
   const serializedCourses = toSerializable(courses) as any[];
   const serializedLinks = toSerializable(courseArchitectLinks) as any[];
   const serializedRelated = toSerializable(relatedArchitects) as any[];
+  const serializedDnaList = toSerializable(designDnaList) as any[];
+  const serializedRenovations = toSerializable(architectRenovations) as any[];
 
   return (
     <div
@@ -356,6 +386,12 @@ export default async function ArchitectDetailPage({ params }: Props) {
             </p>
           </section>
         )}
+
+        {/* Design Signature (client component with design DNA) */}
+        <ArchitectDesignSignature
+          dnaList={serializedDnaList}
+          renovations={serializedRenovations}
+        />
 
         <div className="grid gap-6 md:grid-cols-2 mb-6">
           {/* Signature Courses */}

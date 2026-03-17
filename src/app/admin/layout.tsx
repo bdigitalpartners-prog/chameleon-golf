@@ -40,6 +40,7 @@ const NAV_ITEMS = [
   { label: "POIs", href: "/admin/pois", icon: Navigation },
   { label: "Images", href: "/admin/images", icon: ImageIcon },
   { label: "Enrichment", href: "/admin/enrichment", icon: Database },
+  { label: "Architecture", href: "/admin/architecture", icon: Layers },
   { label: "Intelligence", href: "/admin/intelligence", icon: Lightbulb },
   { label: "Rankings", href: "/admin/rankings", icon: Trophy },
   { label: "Scores", href: "/admin/scores", icon: Calculator },

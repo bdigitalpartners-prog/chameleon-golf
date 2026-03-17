@@ -15,6 +15,9 @@ import { CoursePlaceholder } from "./CoursePlaceholder";
 import { CircleRatingsSection } from "./CircleRatingsSection";
 import { PoweredByBadge } from "@/components/brand/PoweredByBadge";
 import { CourseContentSections } from "./CourseContentSections";
+import { RenovationTimeline } from "./RenovationTimeline";
+import { DesignDNACard } from "./DesignDNACard";
+import { TemplateHolesSection } from "./TemplateHolesSection";
 
 /* ─── Safe Text Helper ─── */
 
@@ -348,7 +351,7 @@ function HoleCard({ title, holeData, accent }: { title: string; holeData: any; a
 
 /* ─── TABS ─── */
 
-const TABS = ["Overview", "Insider Tips", "Travel & Stay", "Reviews"] as const;
+const TABS = ["Overview", "The Course", "Insider Tips", "Travel & Stay", "Reviews"] as const;
 type Tab = (typeof TABS)[number];
 
 /* ════════════════════════════════════════════════════
@@ -1203,6 +1206,129 @@ export function CourseDetailClient({ course }: { course: any }) {
             </div>
           </div>
         )}
+
+        {/* ────── THE COURSE TAB ────── */}
+        {activeTab === "The Course" && (() => {
+          const designDna = course.designDna;
+          const renovations = course.renovations || [];
+          const templateHoles = course.templateHolesRel || [];
+          const hasArchitectureData = designDna || renovations.length > 0 || templateHoles.length > 0;
+
+          return (
+            <div className="max-w-3xl space-y-8">
+              {!hasArchitectureData && (
+                <EmptyState
+                  icon={<Brain className="h-6 w-6" />}
+                  title="Architecture Intelligence Coming Soon"
+                  description="Detailed design DNA, renovation history, and template hole analysis for this course are being researched."
+                />
+              )}
+
+              {/* Design DNA */}
+              {designDna && (
+                <section style={cardStyle}>
+                  <h3 className="mb-4 text-lg font-semibold flex items-center gap-2" style={sectionTitle}>
+                    <span className="flex items-center justify-center h-7 w-7 rounded-lg text-sm"
+                      style={{ backgroundColor: "var(--cg-accent-bg)", border: "1px solid var(--cg-accent-muted)" }}>
+                      🧬
+                    </span>
+                    Design DNA
+                  </h3>
+                  <p className="text-xs mb-4" style={mutedText}>
+                    The architectural characteristics that define this course&apos;s identity.
+                  </p>
+                  <DesignDNACard dna={designDna} />
+                </section>
+              )}
+
+              {/* Renovation Timeline */}
+              {renovations.length > 0 && (
+                <section style={cardStyle}>
+                  <h3 className="mb-4 text-lg font-semibold flex items-center gap-2" style={sectionTitle}>
+                    <span className="flex items-center justify-center h-7 w-7 rounded-lg text-sm"
+                      style={{ backgroundColor: "rgba(234,179,8,0.1)", border: "1px solid rgba(234,179,8,0.2)" }}>
+                      📜
+                    </span>
+                    Renovation History
+                  </h3>
+                  <p className="text-xs mb-5" style={mutedText}>
+                    How this course has evolved through architectural changes over the years.
+                  </p>
+                  <RenovationTimeline renovations={renovations} />
+                </section>
+              )}
+
+              {/* Template Holes */}
+              {templateHoles.length > 0 && (
+                <section style={cardStyle}>
+                  <h3 className="mb-4 text-lg font-semibold flex items-center gap-2" style={sectionTitle}>
+                    <span className="flex items-center justify-center h-7 w-7 rounded-lg text-sm"
+                      style={{ backgroundColor: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.2)" }}>
+                      🏛️
+                    </span>
+                    Template Holes
+                    <span
+                      className="ml-auto rounded-full px-2 py-0.5 text-[10px] font-medium"
+                      style={{ backgroundColor: "rgba(168,85,247,0.15)", color: "#c084fc", border: "1px solid rgba(168,85,247,0.3)" }}
+                    >
+                      {templateHoles.length} identified
+                    </span>
+                  </h3>
+                  <TemplateHolesSection holes={templateHoles} />
+                </section>
+              )}
+
+              {/* Architect Connection */}
+              {course.architect && (
+                <section style={cardStyle}>
+                  <h3 className="mb-4 text-lg font-semibold flex items-center gap-2" style={sectionTitle}>
+                    <span className="flex items-center justify-center h-7 w-7 rounded-lg text-sm"
+                      style={{ backgroundColor: "var(--cg-accent-bg)", border: "1px solid var(--cg-accent-muted)" }}>
+                      ✏️
+                    </span>
+                    The Architect
+                  </h3>
+                  <div className="flex items-start gap-4">
+                    {(course.architect.portraitUrl || course.architect.imageUrl) && (
+                      <img
+                        src={course.architect.portraitUrl || course.architect.imageUrl}
+                        alt={course.architect.name}
+                        className="h-16 w-16 rounded-lg object-cover flex-shrink-0"
+                        style={{ border: "1px solid var(--cg-border)" }}
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <Link
+                        href={`/architects/${course.architect.slug}`}
+                        className="text-base font-semibold transition-colors hover:underline"
+                        style={{ color: "var(--cg-accent)" }}
+                      >
+                        {course.architect.name}
+                      </Link>
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs" style={mutedText}>
+                        {course.architect.nationality && <span>{course.architect.nationality}</span>}
+                        {course.architect.era && <span>{course.architect.era} Era</span>}
+                        {course.architect.firmName && <span>{course.architect.firmName}</span>}
+                      </div>
+                      {course.architect.designPhilosophy && (
+                        <p className="text-sm mt-2 leading-relaxed line-clamp-3" style={secondaryText}>
+                          {course.architect.designPhilosophy}
+                        </p>
+                      )}
+                      <Link
+                        href={`/architects/${course.architect.slug}`}
+                        className="inline-flex items-center gap-1 mt-2 text-xs font-medium transition-colors hover:underline"
+                        style={{ color: "var(--cg-accent)" }}
+                      >
+                        View Full Profile <ChevronRight className="h-3 w-3" />
+                      </Link>
+                    </div>
+                  </div>
+                </section>
+              )}
+            </div>
+          );
+        })()}
 
         {/* ────── INSIDER TIPS TAB ────── */}
         {activeTab === "Insider Tips" && (

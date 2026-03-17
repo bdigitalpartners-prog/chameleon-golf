@@ -89,6 +89,16 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
             firmName: true,
           },
         },
+        renovations: {
+          include: {
+            architect: { select: { id: true, name: true, slug: true } },
+          },
+          orderBy: { year: "asc" },
+        },
+        designDna: true,
+        templateHolesRel: {
+          orderBy: { holeNumber: "asc" },
+        },
       },
     });
   } catch (err) {
