@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { X, BarChart3, Trophy } from "lucide-react";
 import { useCompare } from "@/contexts/CompareContext";
 import { formatCurrency } from "@/lib/utils";
@@ -282,6 +283,7 @@ function CompareModal({ onClose }: { onClose: () => void }) {
 export function CompareDrawer() {
   const { courses, removeCourse, clearAll } = useCompare();
   const [modalOpen, setModalOpen] = useState(false);
+  const router = useRouter();
 
   if (courses.length === 0) return null;
 
@@ -357,7 +359,10 @@ export function CompareDrawer() {
                 Clear All
               </button>
               <button
-                onClick={() => setModalOpen(true)}
+                onClick={() => {
+                  const ids = courses.map((c) => c.courseId).join(",");
+                  router.push(`/compare?courses=${ids}`);
+                }}
                 className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-bold transition-opacity hover:opacity-90"
                 style={{
                   backgroundColor: "var(--cg-accent)",

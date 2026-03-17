@@ -148,6 +148,7 @@ export function Navbar() {
             {[
               { href: "/rankings", label: "Rankings" },
               { href: "/explore", label: "Explore" },
+              { href: "/compare", label: "Compare" },
               { href: "/map", label: "Map" },
               { href: "/architects", label: "Architects" },
               { href: "/fairway", label: "The Fairway" },
@@ -227,6 +228,7 @@ export function Navbar() {
               {[
                 { href: "/rankings", label: "Rankings" },
                 { href: "/explore", label: "Explore" },
+                { href: "/compare", label: "Compare" },
                 { href: "/map", label: "Map" },
                 { href: "/architects", label: "Architects" },
                 { href: "/fairway", label: "The Fairway" },
