@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import ContourBackground from "@/components/background/ContourBackground";
 import {
   ArrowRight,
   SlidersHorizontal,
@@ -254,28 +255,10 @@ export default function LandingPage() {
     <div style={{ backgroundColor: "var(--cg-bg-primary)" }}>
       {/* ─── HERO ─── */}
       <section className="relative overflow-hidden">
-        {/* Background gradient effects */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: `
-              radial-gradient(ellipse 80% 50% at 50% -20%, var(--cg-accent-glow), transparent),
-              radial-gradient(ellipse 60% 40% at 80% 80%, var(--cg-accent-bg), transparent),
-              var(--cg-bg-primary)
-            `,
-          }}
-        />
-        {/* Subtle grid */}
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: `linear-gradient(var(--cg-text-primary) 1px, transparent 1px),
-              linear-gradient(90deg, var(--cg-text-primary) 1px, transparent 1px)`,
-            backgroundSize: "60px 60px",
-          }}
-        />
+        {/* Procedural contour line background */}
+        <ContourBackground />
 
-        <div className="relative mx-auto max-w-7xl px-4 pt-20 pb-24 sm:pt-28 sm:pb-32">
+        <div className="relative mx-auto max-w-7xl px-4 pt-20 pb-24 sm:pt-28 sm:pb-32" style={{ zIndex: 4 }}>
           <div className="max-w-3xl">
             {/* Tag */}
             <div

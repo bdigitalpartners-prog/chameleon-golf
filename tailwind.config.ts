@@ -4,6 +4,12 @@ const config: Config = {
   content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
+      keyframes: {
+        glowFadeIn: {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+      },
       colors: {
         brand: {
           50: "#f0fdf4",
