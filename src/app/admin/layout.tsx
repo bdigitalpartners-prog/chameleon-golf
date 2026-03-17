@@ -25,6 +25,7 @@ import {
   BadgeCheck,
   PenTool,
   Navigation,
+  ClipboardList,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -42,6 +43,7 @@ const NAV_ITEMS = [
   { label: "Concierge", href: "/admin/concierge", icon: MessageCircle },
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { label: "Tokens", href: "/admin/tokens", icon: Coins },
+  { label: "Feedback", href: "/admin/feedback", icon: ClipboardList },
   { label: "Founders", href: "/admin/founders", icon: Crown },
   { label: "Tiers", href: "/admin/tiers", icon: Layers },
   { label: "System", href: "/admin/system", icon: Settings },

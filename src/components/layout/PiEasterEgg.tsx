@@ -104,7 +104,7 @@ export function PiEasterEgg() {
 
             {/* Header */}
             <h2 className="text-xl font-bold mb-4" style={{ color: "var(--cg-text-primary, #f5f5f5)" }}>
-              <span style={{ color: GREEN }}>π</span>
+              <span style={{ color: GREEN, fontSize: "24px", fontWeight: 700 }}>π</span>
               <span style={{ color: "var(--cg-text-muted, #666666)", fontWeight: 300 }}> | </span>
               You Found It.
             </h2>
