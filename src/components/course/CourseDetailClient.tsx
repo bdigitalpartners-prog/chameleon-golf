@@ -8,7 +8,7 @@ import {
   Clock, Sun, CloudRain, Wind, Leaf, SlidersHorizontal,
   Building2, Map, Mail, ExternalLink, DollarSign,
   Home, Camera, Image, MessageSquare, Brain, Briefcase, Truck, Pencil,
-  Award, ArrowRight,
+  Award, ArrowRight, Calculator, Car, Shield,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { CoursePlaceholder } from "./CoursePlaceholder";
@@ -412,6 +412,26 @@ export function CourseDetailClient({ course }: { course: any }) {
   const nearbyAttractions = course.nearbyAttractions || [];
   const nearbyRvParks = course.nearbyRvParks || [];
   const nearbyCourses = course.nearbyCourses || [];
+  const nearbyMetroDistances = course.nearbyMetroDistances || [];
+  const airports = course.airports || [];
+  const fboAirports = airports.filter((a: any) => a.airport?.hasFbo);
+
+  /* ── Trip Cost Estimator state ── */
+  const [tripDays, setTripDays] = useState(2);
+  const [tripGolfers, setTripGolfers] = useState(2);
+  const greenFeeLow = course.greenFeeLow ? parseFloat(course.greenFeeLow) : 100;
+  const greenFeeHigh = course.greenFeeHigh ? parseFloat(course.greenFeeHigh) : 200;
+  const avgGreenFee = (greenFeeLow + greenFeeHigh) / 2;
+  const avgLodgingCost = nearbyLodging.length > 0
+    ? nearbyLodging.reduce((sum: number, l: any) => sum + (l.avgPricePerNight || 150), 0) / nearbyLodging.length
+    : 150;
+  const estimatedMealsCost = 75; // per person per day
+  const tripEstimate = {
+    greenFees: avgGreenFee * tripDays * tripGolfers,
+    lodging: avgLodgingCost * tripDays,
+    meals: estimatedMealsCost * tripDays * tripGolfers,
+    get total() { return this.greenFees + this.lodging + this.meals; },
+  };
 
   /* ─────────── RENDER ─────────── */
 
@@ -1177,17 +1197,22 @@ export function CourseDetailClient({ course }: { course: any }) {
               )}
 
               {/* Nearby Airports */}
-              {course.airports?.length > 0 && (
+              {airports.length > 0 && (
                 <section style={cardStyle}>
                   <h3 className="font-display text-base font-semibold mb-4 flex items-center gap-2" style={sectionTitle}>
                     <Plane className="h-4 w-4" style={{ color: "#60a5fa" }} /> Nearby Airports
                   </h3>
                   <div className="space-y-3">
-                    {course.airports.slice(0, 5).map((a: any) => (
+                    {airports.slice(0, 5).map((a: any) => (
                       <div key={a.id} className="flex items-center justify-between text-sm" style={{ borderBottom: "1px solid var(--cg-border)", paddingBottom: "0.5rem" }}>
                         <div>
-                          <div className="font-medium" style={primaryText}>
+                          <div className="font-medium flex items-center gap-2" style={primaryText}>
                             {a.airport.iataCode ? `${a.airport.iataCode} — ` : ""}{a.airport.airportName}
+                            {a.airport.hasFbo && (
+                              <span className="text-[9px] rounded-full px-1.5 py-0.5 font-medium" style={{
+                                backgroundColor: "rgba(0,230,118,0.15)", color: "#00E676", border: "1px solid rgba(0,230,118,0.3)",
+                              }}>FBO</span>
+                            )}
                           </div>
                           <div className="text-xs" style={mutedText}>{a.airport.airportType}</div>
                         </div>
@@ -1349,10 +1374,13 @@ export function CourseDetailClient({ course }: { course: any }) {
         {activeTab === "Travel & Stay" && (() => {
           const poiSubTabs = [
             { key: "overview", label: "Overview", icon: <Plane className="h-4 w-4" /> },
+            { key: "airports", label: "Airports & FBOs", icon: <Plane className="h-4 w-4" />, count: airports.length },
             { key: "dining", label: "Dining", icon: <Utensils className="h-4 w-4" />, count: nearbyDining.length },
             { key: "lodging", label: "Lodging", icon: <Bed className="h-4 w-4" />, count: nearbyLodging.length },
             { key: "attractions", label: "Attractions", icon: <Compass className="h-4 w-4" />, count: nearbyAttractions.length },
             { key: "rv", label: "RV Parks", icon: <Truck className="h-4 w-4" />, count: nearbyRvParks.length },
+            { key: "metros", label: "Metro Distances", icon: <Car className="h-4 w-4" />, count: nearbyMetroDistances.length },
+            { key: "estimator", label: "Trip Estimator", icon: <Calculator className="h-4 w-4" /> },
           ];
           return (
           <div className="space-y-6">
@@ -1404,17 +1432,27 @@ export function CourseDetailClient({ course }: { course: any }) {
                 {/* Left column */}
                 <div className="space-y-8">
                   {/* Getting There */}
-                  {course.airports?.length > 0 && (
+                  {airports.length > 0 && (
                     <section style={cardStyle}>
-                      <SectionHeading icon={<Plane className="h-5 w-5" style={{ color: "#60a5fa" }} />}>
-                        Getting There
-                      </SectionHeading>
+                      <div className="flex items-center justify-between mb-4">
+                        <SectionHeading icon={<Plane className="h-5 w-5" style={{ color: "#60a5fa" }} />}>
+                          Getting There
+                        </SectionHeading>
+                        <button onClick={() => setTravelSubTab("airports")} className="text-xs flex items-center gap-1 hover:opacity-80" style={{ color: "var(--cg-accent)" }}>
+                          View all <ChevronRight className="h-3 w-3" />
+                        </button>
+                      </div>
                       <div className="space-y-3">
-                        {course.airports.slice(0, 8).map((a: any) => (
+                        {airports.slice(0, 4).map((a: any) => (
                           <div key={a.id} className="flex items-center justify-between rounded-lg px-4 py-3" style={{ backgroundColor: "var(--cg-bg-secondary)" }}>
                             <div>
-                              <div className="font-medium text-sm" style={primaryText}>
+                              <div className="font-medium text-sm flex items-center gap-2" style={primaryText}>
                                 {a.airport.iataCode ? `${a.airport.iataCode} — ` : ""}{a.airport.airportName}
+                                {a.airport.hasFbo && (
+                                  <span className="text-[10px] rounded-full px-2 py-0.5 font-medium" style={{
+                                    backgroundColor: "rgba(0,230,118,0.15)", color: "#00E676", border: "1px solid rgba(0,230,118,0.3)",
+                                  }}>FBO</span>
+                                )}
                               </div>
                               <div className="text-xs" style={mutedText}>{a.airport.airportType}</div>
                             </div>
@@ -1423,6 +1461,79 @@ export function CourseDetailClient({ course }: { course: any }) {
                                 {parseFloat(a.distanceMiles).toFixed(0)} mi
                               </div>
                               {a.driveTimeMinutes && <div className="text-xs" style={mutedText}>{a.driveTimeMinutes} min</div>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {/* FBO Finder — Prominent for private jet users */}
+                  {fboAirports.length > 0 && (
+                    <section className="rounded-xl p-5" style={{
+                      backgroundColor: "rgba(0,230,118,0.05)",
+                      border: "1px solid rgba(0,230,118,0.2)",
+                    }}>
+                      <div className="flex items-center gap-2 mb-4">
+                        <Shield className="h-5 w-5" style={{ color: "#00E676" }} />
+                        <h3 className="text-base font-semibold" style={{ color: "#00E676" }}>Private Aviation — FBO Finder</h3>
+                      </div>
+                      <p className="text-xs mb-4" style={mutedText}>
+                        Fixed-base operators (FBOs) near this course for private aircraft
+                      </p>
+                      <div className="space-y-3">
+                        {fboAirports.slice(0, 3).map((a: any) => (
+                          <div key={a.id} className="rounded-lg p-4" style={{ backgroundColor: "var(--cg-bg-card)", border: "1px solid var(--cg-border)" }}>
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <div>
+                                <div className="font-medium text-sm" style={primaryText}>
+                                  {a.airport.iataCode ? `${a.airport.iataCode} — ` : ""}{a.airport.airportName}
+                                </div>
+                                {a.airport.fboNames && (
+                                  <div className="text-xs mt-1" style={{ color: "#00E676" }}>
+                                    FBO: {a.airport.fboNames}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-right shrink-0">
+                                <div className="font-medium text-sm" style={secondaryText}>{parseFloat(a.distanceMiles).toFixed(0)} mi</div>
+                                {a.driveTimeMinutes && <div className="text-xs" style={mutedText}>{a.driveTimeMinutes} min drive</div>}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3 flex-wrap text-xs" style={mutedText}>
+                              {a.airport.longestRunwayFt && (
+                                <span>Runway: {a.airport.longestRunwayFt.toLocaleString()} ft</span>
+                              )}
+                              {a.airport.hasCharterService && <span>Charter available</span>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {/* Metro Distances preview */}
+                  {nearbyMetroDistances.length > 0 && (
+                    <section style={cardStyle}>
+                      <div className="flex items-center justify-between mb-4">
+                        <SectionHeading icon={<Car className="h-5 w-5" style={{ color: "#a78bfa" }} />}>
+                          Drive From Major Cities
+                        </SectionHeading>
+                        <button onClick={() => setTravelSubTab("metros")} className="text-xs flex items-center gap-1 hover:opacity-80" style={{ color: "var(--cg-accent)" }}>
+                          View all <ChevronRight className="h-3 w-3" />
+                        </button>
+                      </div>
+                      <div className="space-y-2">
+                        {nearbyMetroDistances.slice(0, 4).map((m: any) => (
+                          <div key={m.id} className="flex items-center justify-between rounded-lg px-4 py-2.5" style={{ backgroundColor: "var(--cg-bg-secondary)" }}>
+                            <div className="font-medium text-sm" style={primaryText}>{m.metroName}</div>
+                            <div className="flex items-center gap-3 text-sm">
+                              {m.distanceMiles && <span style={mutedText}>{parseFloat(m.distanceMiles).toFixed(0)} mi</span>}
+                              {m.driveTimeMinutes && (
+                                <span className="font-medium" style={secondaryText}>
+                                  {Math.floor(m.driveTimeMinutes / 60)}h {m.driveTimeMinutes % 60}m
+                                </span>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -1818,6 +1929,244 @@ export function CourseDetailClient({ course }: { course: any }) {
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* ── Airports & FBOs sub-tab ── */}
+            {travelSubTab === "airports" && (
+              <div className="space-y-6">
+                {airports.length === 0 ? (
+                  <section style={cardStyle}>
+                    <EmptyState icon={<Plane className="h-8 w-8" />} title="No airport data yet" description="Airport proximity data is being gathered for this course" />
+                  </section>
+                ) : (
+                  <>
+                    {/* FBO Finder — prominent section */}
+                    {fboAirports.length > 0 && (
+                      <section className="rounded-xl p-6" style={{
+                        backgroundColor: "rgba(0,230,118,0.05)",
+                        border: "1px solid rgba(0,230,118,0.2)",
+                      }}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <Shield className="h-5 w-5" style={{ color: "#00E676" }} />
+                          <h3 className="text-base font-semibold" style={{ color: "#00E676" }}>Private Aviation — FBO Finder</h3>
+                        </div>
+                        <p className="text-xs mb-5" style={mutedText}>
+                          Fixed-base operators near this course for private and charter aircraft
+                        </p>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          {fboAirports.map((a: any) => (
+                            <div key={a.id} className="rounded-xl p-5" style={{ backgroundColor: "var(--cg-bg-card)", border: "1px solid var(--cg-border)" }}>
+                              <div className="flex items-start justify-between gap-2 mb-3">
+                                <div>
+                                  <div className="font-medium text-sm flex items-center gap-2" style={primaryText}>
+                                    {a.airport.iataCode ? `${a.airport.iataCode} — ` : ""}{a.airport.airportName}
+                                  </div>
+                                  <span className="text-[10px] rounded-full px-2 py-0.5 mt-1 inline-block font-medium" style={{
+                                    backgroundColor: "rgba(0,230,118,0.15)", color: "#00E676", border: "1px solid rgba(0,230,118,0.3)",
+                                  }}>FBO Available</span>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <div className="font-medium text-sm" style={secondaryText}>{parseFloat(a.distanceMiles).toFixed(0)} mi</div>
+                                  {a.driveTimeMinutes && <div className="text-xs" style={mutedText}>{a.driveTimeMinutes} min drive</div>}
+                                </div>
+                              </div>
+                              <div className="space-y-1.5 text-xs">
+                                {a.airport.fboNames && (
+                                  <div style={secondaryText}>
+                                    <span className="font-medium" style={primaryText}>FBO:</span> {a.airport.fboNames}
+                                  </div>
+                                )}
+                                {a.airport.longestRunwayFt && (
+                                  <div style={mutedText}>
+                                    <span className="font-medium" style={secondaryText}>Runway:</span> {a.airport.longestRunwayFt.toLocaleString()} ft
+                                  </div>
+                                )}
+                                {a.airport.hasCharterService && (
+                                  <div className="flex items-center gap-1" style={{ color: "#00E676" }}>
+                                    <Plane className="h-3 w-3" /> Charter service available
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+
+                    {/* All Airports */}
+                    <section style={cardStyle}>
+                      <SectionHeading icon={<Plane className="h-5 w-5" style={{ color: "#60a5fa" }} />}>
+                        All Nearby Airports
+                      </SectionHeading>
+                      <div className="space-y-3">
+                        {airports.map((a: any) => (
+                          <div key={a.id} className="flex items-center justify-between rounded-lg px-4 py-3" style={{ backgroundColor: "var(--cg-bg-secondary)" }}>
+                            <div>
+                              <div className="font-medium text-sm flex items-center gap-2" style={primaryText}>
+                                {a.airport.iataCode ? `${a.airport.iataCode} — ` : ""}{a.airport.airportName}
+                                {a.airport.hasFbo && (
+                                  <span className="text-[10px] rounded-full px-2 py-0.5 font-medium" style={{
+                                    backgroundColor: "rgba(0,230,118,0.15)", color: "#00E676", border: "1px solid rgba(0,230,118,0.3)",
+                                  }}>FBO</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 text-xs" style={mutedText}>
+                                <span>{a.airport.airportType}</span>
+                                {a.airport.fboNames && <span>• {a.airport.fboNames}</span>}
+                                {a.airport.longestRunwayFt && <span>• {a.airport.longestRunwayFt.toLocaleString()} ft runway</span>}
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <div className="font-medium text-sm" style={secondaryText}>
+                                {parseFloat(a.distanceMiles).toFixed(0)} mi
+                              </div>
+                              {a.driveTimeMinutes && <div className="text-xs" style={mutedText}>{a.driveTimeMinutes} min</div>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* ── Metro Distances sub-tab ── */}
+            {travelSubTab === "metros" && (
+              <div>
+                {nearbyMetroDistances.length === 0 ? (
+                  <section style={cardStyle}>
+                    <EmptyState icon={<Car className="h-8 w-8" />} title="No metro distance data yet" description="Drive times from major cities are being calculated for this course" />
+                  </section>
+                ) : (
+                  <section style={cardStyle}>
+                    <SectionHeading icon={<Car className="h-5 w-5" style={{ color: "#a78bfa" }} />}>
+                      Drive From Major Cities
+                    </SectionHeading>
+                    <div className="space-y-3">
+                      {nearbyMetroDistances.map((m: any) => (
+                        <div key={m.id} className="flex items-center justify-between rounded-lg px-4 py-3" style={{ backgroundColor: "var(--cg-bg-secondary)" }}>
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center justify-center h-10 w-10 rounded-lg" style={{ backgroundColor: "var(--cg-bg-tertiary)" }}>
+                              <MapPin className="h-4 w-4" style={{ color: "#a78bfa" }} />
+                            </div>
+                            <div className="font-medium text-sm" style={primaryText}>{m.metroName}</div>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm">
+                            {m.distanceMiles && (
+                              <span style={mutedText}>{parseFloat(m.distanceMiles).toFixed(0)} miles</span>
+                            )}
+                            {m.driveTimeMinutes && (
+                              <span className="font-medium px-2 py-1 rounded-md" style={{
+                                backgroundColor: "var(--cg-bg-tertiary)", color: "var(--cg-text-primary)",
+                              }}>
+                                {Math.floor(m.driveTimeMinutes / 60)}h {m.driveTimeMinutes % 60}m
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                )}
+              </div>
+            )}
+
+            {/* ── Trip Cost Estimator sub-tab ── */}
+            {travelSubTab === "estimator" && (
+              <div className="max-w-lg">
+                <section style={cardStyle}>
+                  <SectionHeading icon={<Calculator className="h-5 w-5" style={{ color: "#00E676" }} />}>
+                    Trip Cost Estimator
+                  </SectionHeading>
+                  <p className="text-xs mb-5" style={mutedText}>
+                    Rough estimate based on average green fees, lodging, and meal costs for the area.
+                  </p>
+
+                  {/* Inputs */}
+                  <div className="space-y-4 mb-6">
+                    <div>
+                      <label className="text-xs font-medium block mb-1.5" style={secondaryText}>Number of Rounds</label>
+                      <div className="flex items-center gap-2">
+                        {[1, 2, 3, 4, 5].map((d) => (
+                          <button
+                            key={d}
+                            onClick={() => setTripDays(d)}
+                            className="h-9 w-9 rounded-lg text-sm font-medium transition-all"
+                            style={{
+                              backgroundColor: tripDays === d ? "var(--cg-accent)" : "var(--cg-bg-secondary)",
+                              color: tripDays === d ? "white" : "var(--cg-text-muted)",
+                              border: tripDays === d ? "none" : "1px solid var(--cg-border)",
+                            }}
+                          >
+                            {d}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium block mb-1.5" style={secondaryText}>Number of Golfers</label>
+                      <div className="flex items-center gap-2">
+                        {[1, 2, 3, 4].map((g) => (
+                          <button
+                            key={g}
+                            onClick={() => setTripGolfers(g)}
+                            className="h-9 w-9 rounded-lg text-sm font-medium transition-all"
+                            style={{
+                              backgroundColor: tripGolfers === g ? "var(--cg-accent)" : "var(--cg-bg-secondary)",
+                              color: tripGolfers === g ? "white" : "var(--cg-text-muted)",
+                              border: tripGolfers === g ? "none" : "1px solid var(--cg-border)",
+                            }}
+                          >
+                            {g}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cost Breakdown */}
+                  <div className="rounded-xl p-4" style={{ backgroundColor: "var(--cg-bg-secondary)", border: "1px solid var(--cg-border)" }}>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <Flag className="h-4 w-4" style={{ color: "#4ade80" }} />
+                          <span style={secondaryText}>Green Fees</span>
+                          <span className="text-xs" style={mutedText}>({tripDays} round{tripDays > 1 ? "s" : ""} × {tripGolfers} golfer{tripGolfers > 1 ? "s" : ""})</span>
+                        </div>
+                        <span className="font-medium" style={primaryText}>${tripEstimate.greenFees.toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <Bed className="h-4 w-4" style={{ color: "#c084fc" }} />
+                          <span style={secondaryText}>Lodging</span>
+                          <span className="text-xs" style={mutedText}>({tripDays} night{tripDays > 1 ? "s" : ""})</span>
+                        </div>
+                        <span className="font-medium" style={primaryText}>${tripEstimate.lodging.toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <Utensils className="h-4 w-4" style={{ color: "#f59e0b" }} />
+                          <span style={secondaryText}>Meals</span>
+                          <span className="text-xs" style={mutedText}>({tripDays} day{tripDays > 1 ? "s" : ""} × {tripGolfers} golfer{tripGolfers > 1 ? "s" : ""})</span>
+                        </div>
+                        <span className="font-medium" style={primaryText}>${tripEstimate.meals.toLocaleString()}</span>
+                      </div>
+                    </div>
+                    <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--cg-border)" }}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold" style={primaryText}>Estimated Total</span>
+                        <span className="text-xl font-bold" style={{ color: "var(--cg-accent)" }}>
+                          ${tripEstimate.total.toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="text-[10px] mt-2" style={mutedText}>
+                        *Estimates only. Actual costs may vary based on season, availability, and selections.
+                      </p>
+                    </div>
+                  </div>
+                </section>
               </div>
             )}
           </div>

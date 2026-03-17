@@ -29,6 +29,7 @@ import {
   FileText,
   BookOpen,
   ImageIcon,
+  Plane,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -38,6 +39,7 @@ const NAV_ITEMS = [
   { label: "Content", href: "/admin/content", icon: FileText },
   { label: "Books", href: "/admin/books", icon: BookOpen },
   { label: "POIs", href: "/admin/pois", icon: Navigation },
+  { label: "Travel & Stay", href: "/admin/travel-enrichment", icon: Plane },
   { label: "Images", href: "/admin/images", icon: ImageIcon },
   { label: "Enrichment", href: "/admin/enrichment", icon: Database },
   { label: "Intelligence", href: "/admin/intelligence", icon: Lightbulb },

@@ -128,6 +128,7 @@ model Course {
   nearbyCourses     CourseNearbyCourses[] @relation("SourceCourse")
   nearbyFrom        CourseNearbyCourses[] @relation("NearbyCourse")
   nearbyRvParks     CourseNearbyRvParks[]
+  nearbyMetroDistances CourseNearbyMetroDistance[]
   intelligenceNotes CourseIntelligenceNotes[]
 
   // Social Links
@@ -562,6 +563,7 @@ model CourseNearbyLodging {
   bookingUrl      String?  @map("booking_url") @db.VarChar(500)
   isOnSite        Boolean  @default(false) @map("is_on_site")
   isPartner       Boolean  @default(false) @map("is_partner")
+  isGolfPackage   Boolean  @default(false) @map("is_golf_package")
   sortOrder       Int      @default(0) @map("sort_order")
   createdAt       DateTime @default(now()) @map("created_at")
 
@@ -867,6 +869,20 @@ model WaitlistSignup {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("waitlist_signups")
+}
+
+model CourseNearbyMetroDistance {
+  id               Int      @id @default(autoincrement())
+  courseId          Int      @map("course_id")
+  metroName        String   @map("metro_name") @db.VarChar(255)
+  distanceMiles    Decimal? @map("distance_miles") @db.Decimal(6, 1)
+  driveTimeMinutes Int?     @map("drive_time_minutes")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  course           Course   @relation(fields: [courseId], references: [courseId])
+
+  @@unique([courseId, metroName])
+  @@map("course_nearby_metro_distances")
 }
 
 model FoundingAdvisoryFeedback {
