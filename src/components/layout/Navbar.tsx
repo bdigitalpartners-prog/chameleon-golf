@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useSession, signIn, signOut } from "next-auth/react";
-import { Search, Menu, X, User, ChevronDown } from "lucide-react";
+import { Search, Menu, X, User, ChevronDown, Heart } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { SearchOverlay } from "@/components/layout/SearchOverlay";
 import { ThemeSettings } from "@/components/layout/ThemeSettings";
 import { NotificationBell } from "@/components/layout/NotificationBell";
+import { useBucketList } from "@/contexts/BucketListContext";
 
 function UserDropdown({ session }: { session: any }) {
   const [open, setOpen] = useState(false);
@@ -111,6 +112,28 @@ function UserDropdown({ session }: { session: any }) {
   );
 }
 
+function BucketListNavIcon() {
+  const { count } = useBucketList();
+  return (
+    <Link
+      href="/bucket-list"
+      className="relative rounded-lg p-2 transition-colors"
+      style={{ color: "var(--cg-text-secondary)" }}
+      title="Bucket List"
+    >
+      <Heart className="h-5 w-5" />
+      {count > 0 && (
+        <span
+          className="absolute -top-0.5 -right-0.5 flex items-center justify-center h-4 min-w-[16px] rounded-full text-[10px] font-bold px-1"
+          style={{ backgroundColor: "var(--cg-accent)", color: "var(--cg-text-inverse)" }}
+        >
+          {count > 99 ? "99+" : count}
+        </span>
+      )}
+    </Link>
+  );
+}
+
 export function Navbar() {
   const { data: session } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -148,12 +171,10 @@ export function Navbar() {
             {[
               { href: "/rankings", label: "Rankings" },
               { href: "/explore", label: "Explore" },
-              { href: "/compare", label: "Compare" },
               { href: "/map", label: "Map" },
               { href: "/architects", label: "Architects" },
-              { href: "/fairway", label: "The Fairway" },
               { href: "/performance", label: "Performance" },
-              { href: "/shop", label: "Pro Shop" },
+              { href: "/bucket-list", label: "Bucket List" },
               { href: "/about", label: "How It Works" },
               ...(session
                 ? [
@@ -182,6 +203,8 @@ export function Navbar() {
             <ThemeSettings />
 
             {session && <NotificationBell />}
+
+            <BucketListNavIcon />
 
             <button
               onClick={() => setSearchOpen(true)}
@@ -228,12 +251,10 @@ export function Navbar() {
               {[
                 { href: "/rankings", label: "Rankings" },
                 { href: "/explore", label: "Explore" },
-                { href: "/compare", label: "Compare" },
                 { href: "/map", label: "Map" },
                 { href: "/architects", label: "Architects" },
-                { href: "/fairway", label: "The Fairway" },
                 { href: "/performance", label: "Performance" },
-                { href: "/shop", label: "Pro Shop" },
+                { href: "/bucket-list", label: "Bucket List" },
                 { href: "/about", label: "How It Works" },
                 ...(session
                   ? [
