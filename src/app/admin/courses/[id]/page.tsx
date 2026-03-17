@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Save, Loader2 } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Plus, Trash2, X, Star, Pencil, ImageIcon } from "lucide-react";
 
 function getAdminKey() {
   if (typeof window === "undefined") return "";
@@ -563,32 +563,7 @@ export default function CourseEditorPage() {
         )}
 
         {activeTab === "Media" && (
-          <div>
-            <h3 className="text-sm font-medium text-white mb-3">Course Media ({course.media?.length || 0})</h3>
-            {course.media?.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {course.media.map((m: any) => (
-                  <div key={m.mediaId} className="rounded-lg border border-[#222] overflow-hidden bg-[#0d0d0d]">
-                    {m.mediaType === "image" || m.url?.match(/\.(jpg|jpeg|png|gif|webp)/i) ? (
-                      <img src={m.url} alt={m.caption || "Course media"} className="w-full h-40 object-cover" />
-                    ) : (
-                      <div className="w-full h-40 flex items-center justify-center text-gray-600 text-sm">
-                        {m.mediaType || "Media"}: {m.url?.slice(0, 40)}...
-                      </div>
-                    )}
-                    <div className="p-3">
-                      <p className="text-xs text-gray-400">{m.caption || "No caption"}</p>
-                      <p className="text-xs text-gray-600 mt-1">
-                        {m.mediaType} &middot; {m.isPrimary ? "Primary" : `Order: ${m.sortOrder}`}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-600 text-sm">No media uploaded</p>
-            )}
-          </div>
+          <MediaTab courseId={courseId} adminKey={getAdminKey()} initialMedia={course.media || []} onMediaChange={fetchCourse} />
         )}
 
         {activeTab === "Tee Boxes" && (
@@ -651,6 +626,386 @@ export default function CourseEditorPage() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────── Media Tab Component ─────────────────────────── */
+
+function MediaTab({
+  courseId,
+  adminKey,
+  initialMedia,
+  onMediaChange,
+}: {
+  courseId: string;
+  adminKey: string;
+  initialMedia: any[];
+  onMediaChange: () => void;
+}) {
+  const [media, setMedia] = useState<any[]>(initialMedia);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addUrl, setAddUrl] = useState("");
+  const [addCaption, setAddCaption] = useState("");
+  const [addCredit, setAddCredit] = useState("");
+  const [addIsPrimary, setAddIsPrimary] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editCaption, setEditCaption] = useState("");
+  const [editCredit, setEditCredit] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+  const [mediaMessage, setMediaMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  useEffect(() => {
+    setMedia(initialMedia);
+  }, [initialMedia]);
+
+  const showMsg = (type: "success" | "error", text: string) => {
+    setMediaMessage({ type, text });
+    setTimeout(() => setMediaMessage(null), 3000);
+  };
+
+  const handleAdd = async () => {
+    if (!addUrl.trim()) return;
+    setAdding(true);
+    try {
+      const res = await fetch(`/api/admin/courses/${courseId}/media`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
+        body: JSON.stringify({
+          url: addUrl.trim(),
+          caption: addCaption.trim() || null,
+          credit: addCredit.trim() || null,
+          mediaType: "image",
+          isPrimary: addIsPrimary,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to add");
+      }
+      setShowAddForm(false);
+      setAddUrl("");
+      setAddCaption("");
+      setAddCredit("");
+      setAddIsPrimary(false);
+      setPreviewError(false);
+      showMsg("success", "Photo added successfully");
+      onMediaChange();
+    } catch (err: any) {
+      showMsg("error", err.message);
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (deleteId === null) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/courses/${courseId}/media/${deleteId}`, {
+        method: "DELETE",
+        headers: { "x-admin-key": adminKey },
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to delete");
+      }
+      setDeleteId(null);
+      showMsg("success", "Photo deleted");
+      onMediaChange();
+    } catch (err: any) {
+      showMsg("error", err.message);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleTogglePrimary = async (mediaId: number, current: boolean) => {
+    try {
+      const res = await fetch(`/api/admin/courses/${courseId}/media/${mediaId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
+        body: JSON.stringify({ isPrimary: !current }),
+      });
+      if (!res.ok) throw new Error("Failed to update");
+      onMediaChange();
+    } catch (err: any) {
+      showMsg("error", err.message);
+    }
+  };
+
+  const startEdit = (m: any) => {
+    setEditingId(m.mediaId);
+    setEditCaption(m.caption || "");
+    setEditCredit(m.credit || "");
+  };
+
+  const handleEditSave = async () => {
+    if (editingId === null) return;
+    setEditSaving(true);
+    try {
+      const res = await fetch(`/api/admin/courses/${courseId}/media/${editingId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
+        body: JSON.stringify({ caption: editCaption, credit: editCredit }),
+      });
+      if (!res.ok) throw new Error("Failed to update");
+      setEditingId(null);
+      showMsg("success", "Caption updated");
+      onMediaChange();
+    } catch (err: any) {
+      showMsg("error", err.message);
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const inputClass =
+    "w-full px-3 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-white text-sm focus:outline-none focus:border-[#22c55e]";
+  const labelClass = "block text-xs text-gray-400 mb-1";
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-medium text-white">Course Media ({media.length})</h3>
+        <button
+          onClick={() => setShowAddForm(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#22c55e] text-black text-sm font-medium hover:bg-[#16a34a] transition-colors"
+        >
+          <Plus size={16} />
+          Add Photo
+        </button>
+      </div>
+
+      {/* Message */}
+      {mediaMessage && (
+        <div className={`p-3 rounded-lg text-sm mb-4 ${
+          mediaMessage.type === "success"
+            ? "bg-green-900/30 border border-green-800 text-green-400"
+            : "bg-red-900/30 border border-red-800 text-red-400"
+        }`}>
+          {mediaMessage.text}
+        </div>
+      )}
+
+      {/* Add Photo Form */}
+      {showAddForm && (
+        <div className="mb-6 p-4 rounded-xl bg-[#0d0d0d] border border-[#333]">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-sm font-medium text-white">Add Photo by URL</h4>
+            <button onClick={() => { setShowAddForm(false); setAddUrl(""); setAddCaption(""); setAddCredit(""); setPreviewError(false); }} className="text-gray-500 hover:text-white">
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <label className={labelClass}>Image URL *</label>
+              <input
+                type="url"
+                value={addUrl}
+                onChange={(e) => { setAddUrl(e.target.value); setPreviewError(false); }}
+                placeholder="https://example.com/photo.jpg"
+                className={inputClass}
+              />
+            </div>
+
+            {/* Preview */}
+            {addUrl.trim() && (
+              <div>
+                <label className={labelClass}>Preview</label>
+                <div className="rounded-lg border border-[#333] overflow-hidden bg-[#1a1a1a] max-w-sm">
+                  {previewError ? (
+                    <div className="w-full h-40 flex flex-col items-center justify-center text-gray-500 text-sm gap-2">
+                      <ImageIcon size={24} />
+                      <span>Could not load preview</span>
+                    </div>
+                  ) : (
+                    <img
+                      src={addUrl.trim()}
+                      alt="Preview"
+                      className="w-full h-40 object-cover"
+                      onError={() => setPreviewError(true)}
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className={labelClass}>Caption</label>
+                <input type="text" value={addCaption} onChange={(e) => setAddCaption(e.target.value)} placeholder="e.g., Hole 18 at sunset" className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass}>Credit</label>
+                <input type="text" value={addCredit} onChange={(e) => setAddCredit(e.target.value)} placeholder="e.g., Photographer name" className={inputClass} />
+              </div>
+            </div>
+
+            <label className="flex items-center gap-2 text-sm text-gray-300">
+              <input type="checkbox" checked={addIsPrimary} onChange={(e) => setAddIsPrimary(e.target.checked)} className="accent-[#22c55e]" />
+              Set as primary photo
+            </label>
+
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={handleAdd}
+                disabled={adding || !addUrl.trim()}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#22c55e] text-black text-sm font-medium hover:bg-[#16a34a] disabled:opacity-50 transition-colors"
+              >
+                {adding ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                {adding ? "Adding..." : "Add Photo"}
+              </button>
+              <button
+                onClick={() => { setShowAddForm(false); setAddUrl(""); setAddCaption(""); setAddCredit(""); setPreviewError(false); }}
+                className="px-4 py-2 rounded-lg border border-[#333] text-gray-400 text-sm hover:text-white hover:border-[#555] transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {deleteId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="bg-[#111] border border-[#333] rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
+            <h4 className="text-white font-medium mb-2">Delete Photo</h4>
+            <p className="text-gray-400 text-sm mb-4">Are you sure you want to delete this photo? This action cannot be undone.</p>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setDeleteId(null)}
+                disabled={deleting}
+                className="px-4 py-2 rounded-lg border border-[#333] text-gray-400 text-sm hover:text-white hover:border-[#555] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
+              >
+                {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                {deleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Media Grid */}
+      {media.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {media.map((m: any) => (
+            <div key={m.mediaId} className="group rounded-lg border border-[#222] overflow-hidden bg-[#0d0d0d] relative">
+              {/* Image */}
+              <div className="relative">
+                {m.mediaType === "image" || m.url?.match(/\.(jpg|jpeg|png|gif|webp)/i) ? (
+                  <img src={m.url} alt={m.caption || "Course media"} className="w-full h-40 object-cover" />
+                ) : (
+                  <div className="w-full h-40 flex items-center justify-center text-gray-600 text-sm">
+                    <ImageIcon size={24} className="mr-2" />
+                    {m.mediaType || "Media"}
+                  </div>
+                )}
+
+                {/* Overlay actions */}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-start justify-end p-2 gap-1 opacity-0 group-hover:opacity-100">
+                  <button
+                    onClick={() => handleTogglePrimary(m.mediaId, m.isPrimary)}
+                    title={m.isPrimary ? "Remove primary" : "Set as primary"}
+                    className={`p-1.5 rounded-lg transition-colors ${m.isPrimary ? "bg-yellow-500 text-black" : "bg-black/60 text-white hover:bg-black/80"}`}
+                  >
+                    <Star size={14} fill={m.isPrimary ? "currentColor" : "none"} />
+                  </button>
+                  <button
+                    onClick={() => startEdit(m)}
+                    title="Edit caption"
+                    className="p-1.5 rounded-lg bg-black/60 text-white hover:bg-black/80 transition-colors"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    onClick={() => setDeleteId(m.mediaId)}
+                    title="Delete photo"
+                    className="p-1.5 rounded-lg bg-black/60 text-red-400 hover:bg-red-600 hover:text-white transition-colors"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+
+                {/* Primary badge */}
+                {m.isPrimary && (
+                  <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-yellow-500 text-black text-xs font-medium flex items-center gap-1">
+                    <Star size={10} fill="currentColor" />
+                    Primary
+                  </div>
+                )}
+              </div>
+
+              {/* Info / Edit */}
+              <div className="p-3">
+                {editingId === m.mediaId ? (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={editCaption}
+                      onChange={(e) => setEditCaption(e.target.value)}
+                      placeholder="Caption"
+                      className={inputClass}
+                      autoFocus
+                    />
+                    <input
+                      type="text"
+                      value={editCredit}
+                      onChange={(e) => setEditCredit(e.target.value)}
+                      placeholder="Credit"
+                      className={inputClass}
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleEditSave}
+                        disabled={editSaving}
+                        className="flex items-center gap-1 px-3 py-1 rounded bg-[#22c55e] text-black text-xs font-medium hover:bg-[#16a34a] disabled:opacity-50"
+                      >
+                        {editSaving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setEditingId(null)}
+                        className="px-3 py-1 rounded border border-[#333] text-gray-400 text-xs hover:text-white"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-xs text-gray-400">{m.caption || "No caption"}</p>
+                    {m.credit && <p className="text-xs text-gray-600 mt-0.5">Credit: {m.credit}</p>}
+                    <p className="text-xs text-gray-600 mt-1">
+                      {m.mediaType} &middot; Order: {m.sortOrder}
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12">
+          <ImageIcon size={32} className="mx-auto text-gray-600 mb-3" />
+          <p className="text-gray-500 text-sm">No media uploaded</p>
+          <p className="text-gray-600 text-xs mt-1">Click "Add Photo" to get started</p>
+        </div>
+      )}
     </div>
   );
 }
