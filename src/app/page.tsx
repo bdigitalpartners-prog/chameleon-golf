@@ -4,7 +4,6 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import ContourBackground from "@/components/background/ContourBackground";
 import {
@@ -236,18 +235,10 @@ function WaitlistCTA() {
 
 export default function LandingPage() {
   const { data: session, status } = useSession();
-  const router = useRouter();
   const [activeSource, setActiveSource] = useState(0);
 
-  // Skip landing for logged-in users
-  useEffect(() => {
-    if (status === "authenticated") {
-      router.replace("/explore");
-    }
-  }, [status, router]);
-
   // Show nothing while checking auth (prevents flash)
-  if (status === "loading" || status === "authenticated") {
+  if (status === "loading") {
     return null;
   }
 
