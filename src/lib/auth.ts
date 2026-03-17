@@ -33,7 +33,15 @@ export const authOptions: NextAuthOptions = {
       });
     },
   },
-  debug: process.env.NODE_ENV === "development",
+  debug: true,
+  logger: {
+    error(code, metadata) {
+      console.error("[NextAuth Error]", code, JSON.stringify(metadata, null, 2));
+    },
+    warn(code) {
+      console.warn("[NextAuth Warn]", code);
+    },
+  },
   pages: {
     signIn: "/auth/signin",
   },
