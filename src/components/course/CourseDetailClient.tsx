@@ -8,7 +8,7 @@ import {
   Clock, Sun, CloudRain, Wind, Leaf, SlidersHorizontal,
   Building2, Map, Mail, ExternalLink, DollarSign,
   Home, Camera, Image, MessageSquare, Brain, Briefcase, Truck, Pencil,
-  Award, ArrowRight,
+  Award, ArrowRight, GitCompareArrows,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { CoursePlaceholder } from "./CoursePlaceholder";
@@ -595,6 +595,22 @@ export function CourseDetailClient({ course }: { course: any }) {
           </div>
         </div>
       )}
+
+      {/* ══════ COMPARE BUTTON ══════ */}
+      <div className="mx-auto max-w-7xl px-4 mt-4">
+        <Link
+          href={`/compare?courses=${course.courseId}`}
+          className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80"
+          style={{
+            backgroundColor: "var(--cg-bg-tertiary)",
+            border: "1px solid var(--cg-border)",
+            color: "var(--cg-text-secondary)",
+          }}
+        >
+          <GitCompareArrows className="h-4 w-4" style={{ color: "var(--cg-accent)" }} />
+          Compare this Course
+        </Link>
+      </div>
 
       {/* ══════ TAB BAR ══════ */}
       <div className="sticky top-0 z-30 mt-4" style={{ backgroundColor: "var(--cg-bg-primary)", borderBottom: "1px solid var(--cg-border)" }}>
