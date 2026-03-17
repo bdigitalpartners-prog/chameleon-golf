@@ -8,6 +8,7 @@ import {
   Clock, Sun, CloudRain, Wind, Leaf, SlidersHorizontal,
   Building2, Map, Mail, ExternalLink, DollarSign,
   Home, Camera, Image, MessageSquare, Brain, Briefcase, Truck, Pencil,
+  Award, ArrowRight,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { CoursePlaceholder } from "./CoursePlaceholder";
@@ -519,8 +520,84 @@ export function CourseDetailClient({ course }: { course: any }) {
         </div>
       </div>
 
+      {/* ══════ ARCHITECT CARD — HERO AREA ══════ */}
+      {(course.architect || safeText(course.originalArchitect)) && (
+        <div className="mx-auto max-w-7xl px-4 -mt-6 relative z-10">
+          <div
+            className="rounded-xl p-4 flex items-center gap-4 backdrop-blur-sm"
+            style={{
+              backgroundColor: "rgba(26,26,26,0.95)",
+              border: "1px solid var(--cg-border)",
+            }}
+          >
+            {/* Architect avatar */}
+            {course.architect?.portraitUrl || course.architect?.imageUrl ? (
+              <img
+                src={course.architect.portraitUrl || course.architect.imageUrl}
+                alt={course.architect?.name || course.originalArchitect}
+                className="h-14 w-14 rounded-lg object-cover flex-shrink-0"
+                style={{ border: "1px solid var(--cg-border)" }}
+              />
+            ) : (
+              <div
+                className="h-14 w-14 rounded-lg flex items-center justify-center flex-shrink-0 text-lg font-bold"
+                style={{ backgroundColor: "var(--cg-bg-tertiary)", color: "var(--cg-accent)" }}
+              >
+                <Pencil className="h-6 w-6" />
+              </div>
+            )}
+
+            {/* Architect info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs uppercase tracking-wider font-medium" style={{ color: "var(--cg-text-muted)" }}>
+                  Designed by
+                </span>
+                {course.architect?.era && (
+                  <span
+                    className="text-[10px] rounded-full px-2 py-0.5 font-medium"
+                    style={{ backgroundColor: "rgba(46,204,113,0.15)", color: "#2ECC71", border: "1px solid rgba(46,204,113,0.3)" }}
+                  >
+                    {course.architect.era}
+                  </span>
+                )}
+              </div>
+              {course.architect?.slug ? (
+                <Link
+                  href={`/architects/${course.architect.slug}`}
+                  className="font-semibold text-base transition-colors hover:underline mt-0.5 block truncate"
+                  style={{ color: "#2ECC71" }}
+                >
+                  {course.architect?.name || course.originalArchitect}
+                </Link>
+              ) : (
+                <div className="font-semibold text-base mt-0.5 truncate" style={{ color: "var(--cg-text-primary)" }}>
+                  {course.originalArchitect}
+                </div>
+              )}
+              {course.architect?.totalCoursesDesigned && (
+                <span className="text-xs" style={{ color: "var(--cg-text-muted)" }}>
+                  {course.architect.totalCoursesDesigned} courses designed
+                </span>
+              )}
+            </div>
+
+            {/* Arrow link */}
+            {course.architect?.slug && (
+              <Link
+                href={`/architects/${course.architect.slug}`}
+                className="flex items-center justify-center h-10 w-10 rounded-lg shrink-0 transition-colors hover:opacity-80"
+                style={{ backgroundColor: "rgba(46,204,113,0.15)", color: "#2ECC71" }}
+              >
+                <ArrowRight className="h-5 w-5" />
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ══════ TAB BAR ══════ */}
-      <div className="sticky top-0 z-30" style={{ backgroundColor: "var(--cg-bg-primary)", borderBottom: "1px solid var(--cg-border)" }}>
+      <div className="sticky top-0 z-30 mt-4" style={{ backgroundColor: "var(--cg-bg-primary)", borderBottom: "1px solid var(--cg-border)" }}>
         <div className="mx-auto max-w-7xl px-4">
           <nav className="flex gap-1 overflow-x-auto scrollbar-hide -mb-px">
             {TABS.map((tab) => (
@@ -699,24 +776,61 @@ export function CourseDetailClient({ course }: { course: any }) {
                 <SectionHeading icon={<Trophy className="h-5 w-5" style={{ color: "#f59e0b" }} />}>
                   Rankings
                 </SectionHeading>
-                {course.rankings?.length > 0 ? (
-                  <div className="space-y-2">
-                    {course.rankings.map((r: any) => (
-                      <div key={r.entryId} className="flex items-center justify-between rounded-lg px-4 py-3" style={{ backgroundColor: "var(--cg-bg-secondary)" }}>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-bold text-base" style={{ color: "var(--cg-accent)" }}>#{r.rankPosition}</span>
-                          <span className="text-sm" style={primaryText}>{r.list?.listName || "Unknown List"}</span>
-                          {r.list?.prestigeTier && (
-                            <span className="rounded px-1.5 py-0.5 text-xs capitalize" style={tierBadgeStyle(r.list.prestigeTier)}>
-                              {r.list.prestigeTier}
+                {course.rankings?.length > 0 ? (() => {
+                  const tierOrder = ["flagship", "major", "specialty", "regional"];
+                  const sorted = [...course.rankings].sort((a: any, b: any) => {
+                    const tA = tierOrder.indexOf(a.list?.prestigeTier || "regional");
+                    const tB = tierOrder.indexOf(b.list?.prestigeTier || "regional");
+                    if (tA !== tB) return tA - tB;
+                    return (a.rankPosition ?? 999) - (b.rankPosition ?? 999);
+                  });
+                  return (
+                    <div className="space-y-2">
+                      {sorted.map((r: any) => (
+                        <Link
+                          key={r.entryId}
+                          href={`/rankings/${r.list?.listId || ""}`}
+                          className="flex items-center justify-between rounded-lg px-4 py-3 transition-colors hover:opacity-90 block"
+                          style={{ backgroundColor: "var(--cg-bg-secondary)" }}
+                        >
+                          <div className="flex items-center gap-3 flex-wrap min-w-0">
+                            <span
+                              className="font-bold text-lg tabular-nums flex items-center justify-center h-9 w-9 rounded-lg shrink-0"
+                              style={{
+                                backgroundColor: "rgba(46,204,113,0.15)",
+                                color: "#2ECC71",
+                              }}
+                            >
+                              {r.rankPosition != null ? `#${r.rankPosition}` : "—"}
                             </span>
-                          )}
-                        </div>
-                        <span className="text-sm shrink-0" style={mutedText}>{r.list?.source?.sourceName || ""}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-sm font-medium truncate" style={primaryText}>{r.list?.listName || "Unknown List"}</span>
+                                {r.list?.prestigeTier && (
+                                  <span className="rounded px-1.5 py-0.5 text-[10px] capitalize font-medium" style={tierBadgeStyle(r.list.prestigeTier)}>
+                                    {r.list.prestigeTier}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-xs" style={mutedText}>{r.list?.source?.sourceName || ""}</span>
+                                {r.list?.yearPublished && (
+                                  <span className="text-xs" style={mutedText}>· {r.list.yearPublished}</span>
+                                )}
+                                {r.rankChange != null && r.rankChange !== 0 && (
+                                  <span className="text-[10px] font-medium" style={{ color: r.rankChange > 0 ? "#2ECC71" : "#ef4444" }}>
+                                    {r.rankChange > 0 ? `▲${r.rankChange}` : `▼${Math.abs(r.rankChange)}`}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <ChevronRight className="h-4 w-4 shrink-0" style={mutedText} />
+                        </Link>
+                      ))}
+                    </div>
+                  );
+                })() : (
                   <EmptyState
                     icon={<Trophy className="h-10 w-10" />}
                     title="Not yet ranked"
@@ -819,41 +933,142 @@ export function CourseDetailClient({ course }: { course: any }) {
               {/* About the Architect */}
               {safeText(course.originalArchitect) && (
                 <section style={cardStyle}>
-                  <SectionHeading icon={<Pencil className="h-5 w-5" style={{ color: "var(--cg-accent)" }} />}>
+                  <SectionHeading icon={<Pencil className="h-5 w-5" style={{ color: "#2ECC71" }} />}>
                     About the Architect
                   </SectionHeading>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-start gap-4">
                     {course.architect?.portraitUrl || course.architect?.imageUrl ? (
                       <img
                         src={course.architect.portraitUrl || course.architect.imageUrl}
-                        alt={course.originalArchitect}
-                        className="h-16 w-16 rounded-lg object-cover flex-shrink-0"
+                        alt={course.architect?.name || course.originalArchitect}
+                        className="h-20 w-20 rounded-xl object-cover flex-shrink-0"
                         style={{ border: "1px solid var(--cg-border)" }}
                       />
                     ) : (
                       <div
-                        className="h-16 w-16 rounded-lg flex items-center justify-center flex-shrink-0 text-lg font-bold"
-                        style={{ backgroundColor: "var(--cg-bg-tertiary)", color: "var(--cg-accent)" }}
+                        className="h-20 w-20 rounded-xl flex items-center justify-center flex-shrink-0 text-xl font-bold"
+                        style={{ backgroundColor: "var(--cg-bg-tertiary)", color: "#2ECC71" }}
                       >
-                        {course.originalArchitect.split(" ").map((w: string) => w[0]).join("").slice(0, 2)}
+                        {(course.architect?.name || course.originalArchitect || "").split(" ").map((w: string) => w[0]).join("").slice(0, 2)}
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <Link
-                        href={`/architects/${course.architect?.slug || course.originalArchitect.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`}
-                        className="font-semibold text-sm transition-colors hover:underline"
-                        style={{ color: "var(--cg-text-primary)" }}
-                      >
-                        {course.originalArchitect}
-                      </Link>
-                      {course.architect?.era && (
-                        <p className="text-xs mt-0.5" style={mutedText}>{course.architect.era} Era</p>
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        {course.architect?.slug ? (
+                          <Link
+                            href={`/architects/${course.architect.slug}`}
+                            className="font-semibold text-base transition-colors hover:underline"
+                            style={{ color: "#2ECC71" }}
+                          >
+                            {course.architect?.name || course.originalArchitect}
+                          </Link>
+                        ) : (
+                          <span className="font-semibold text-base" style={{ color: "var(--cg-text-primary)" }}>
+                            {course.originalArchitect}
+                          </span>
+                        )}
+                        {course.architect?.era && (
+                          <span
+                            className="text-[10px] rounded-full px-2 py-0.5 font-medium"
+                            style={{ backgroundColor: "rgba(46,204,113,0.15)", color: "#2ECC71", border: "1px solid rgba(46,204,113,0.3)" }}
+                          >
+                            {course.architect.era}
+                          </span>
+                        )}
+                      </div>
+                      {course.architect?.nationality && (
+                        <p className="text-xs mb-1" style={mutedText}>
+                          {course.architect.nationality}
+                          {course.architect.bornYear ? ` · ${course.architect.bornYear}${course.architect.diedYear ? `–${course.architect.diedYear}` : "–present"}` : ""}
+                        </p>
                       )}
                       {course.architect?.bio && (
-                        <p className="text-xs mt-1 line-clamp-2" style={secondaryText}>{course.architect.bio}</p>
+                        <p className="text-sm leading-relaxed line-clamp-3" style={secondaryText}>{course.architect.bio}</p>
+                      )}
+                      {course.architect?.designPhilosophy && (
+                        <p className="text-xs mt-2 italic line-clamp-2" style={mutedText}>
+                          &ldquo;{course.architect.designPhilosophy}&rdquo;
+                        </p>
+                      )}
+                      {course.architect?.slug && (
+                        <Link
+                          href={`/architects/${course.architect.slug}`}
+                          className="inline-flex items-center gap-1 text-xs font-medium mt-2 transition-colors hover:opacity-80"
+                          style={{ color: "#2ECC71" }}
+                        >
+                          View full profile <ArrowRight className="h-3 w-3" />
+                        </Link>
                       )}
                     </div>
                   </div>
+                </section>
+              )}
+
+              {/* More by This Architect */}
+              {course.architectCourses?.length > 0 && course.architect && (
+                <section style={cardStyle}>
+                  <SectionHeading icon={<Award className="h-5 w-5" style={{ color: "#2ECC71" }} />}>
+                    More by {course.architect.name || course.originalArchitect}
+                  </SectionHeading>
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {course.architectCourses.map((ac: any) => {
+                      const thumb = ac.media?.[0]?.url;
+                      const csScore = ac.chameleonScores?.chameleonScore;
+                      const scoreVal = csScore ? parseFloat(csScore) : null;
+                      return (
+                        <Link
+                          key={ac.courseId}
+                          href={`/course/${ac.courseId}`}
+                          className="group rounded-xl overflow-hidden transition-all hover:opacity-90"
+                          style={{ backgroundColor: "var(--cg-bg-secondary)", border: "1px solid var(--cg-border)" }}
+                        >
+                          {thumb ? (
+                            <div className="aspect-[16/10] overflow-hidden" style={{ backgroundColor: "var(--cg-bg-tertiary)" }}>
+                              <img src={thumb} alt={ac.courseName} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                            </div>
+                          ) : (
+                            <div className="aspect-[16/10] flex items-center justify-center" style={{ backgroundColor: "var(--cg-bg-tertiary)" }}>
+                              <Flag className="h-8 w-8" style={{ color: "var(--cg-text-muted)" }} />
+                            </div>
+                          )}
+                          <div className="p-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <div className="font-medium text-sm truncate" style={{ color: "var(--cg-text-primary)" }}>{ac.courseName}</div>
+                                {(ac.city || ac.state) && (
+                                  <div className="text-xs mt-0.5 truncate" style={mutedText}>
+                                    {[ac.city, ac.state].filter(Boolean).join(", ")}
+                                  </div>
+                                )}
+                              </div>
+                              {scoreVal != null && (
+                                <span
+                                  className="text-xs font-bold rounded-full px-2 py-0.5 shrink-0"
+                                  style={{
+                                    backgroundColor: scoreVal >= 80 ? "rgba(46,204,113,0.2)" : scoreVal >= 50 ? "rgba(234,179,8,0.2)" : "var(--cg-bg-tertiary)",
+                                    color: scoreVal >= 80 ? "#2ECC71" : scoreVal >= 50 ? "#fbbf24" : "var(--cg-text-muted)",
+                                  }}
+                                >
+                                  {Math.round(scoreVal)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                  {course.architect?.slug && (
+                    <div className="mt-4 text-center">
+                      <Link
+                        href={`/architects/${course.architect.slug}`}
+                        className="inline-flex items-center gap-1.5 text-xs font-medium transition-colors hover:opacity-80"
+                        style={{ color: "#2ECC71" }}
+                      >
+                        View all courses by {course.architect.name || course.originalArchitect} <ArrowRight className="h-3.5 w-3.5" />
+                      </Link>
+                    </div>
+                  )}
                 </section>
               )}
 
