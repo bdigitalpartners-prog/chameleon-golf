@@ -834,6 +834,22 @@ model BookCourseLink {
   @@map("book_course_links")
 }
 
+model ConciergeUsage {
+  id            Int      @id @default(autoincrement())
+  sessionId     String?  @map("session_id") @db.VarChar(100)
+  userIp        String?  @map("user_ip") @db.VarChar(45)
+  inputTokens   Int      @default(0) @map("input_tokens")
+  outputTokens  Int      @default(0) @map("output_tokens")
+  estimatedCost Decimal  @default(0) @map("estimated_cost") @db.Decimal(12, 8)
+  requestFee    Decimal  @default(0) @map("request_fee") @db.Decimal(12, 8)
+  totalCost     Decimal  @default(0) @map("total_cost") @db.Decimal(12, 8)
+  model         String   @default("sonar-pro") @db.VarChar(50)
+  messagePreview String? @map("message_preview") @db.VarChar(500)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("concierge_usage")
+}
+
 model PerformanceArticle {
   id            String   @id @default(cuid())
   slug          String   @unique

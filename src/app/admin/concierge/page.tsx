@@ -102,8 +102,16 @@ export default function ConciergeDashboard() {
     setLoading(true);
     fetchAdmin(`/api/concierge/usage?period=${period}`)
       .then((r) => r.json())
-      .then(setUsageData)
-      .catch(console.error)
+      .then((data) => {
+        if (data && !data.error && typeof data.totalQueries === "number") {
+          setUsageData(data);
+        } else {
+          setUsageData({ totalQueries: 0, totalCost: 0, avgCostPerQuery: 0, dailyBreakdown: [] });
+        }
+      })
+      .catch(() => {
+        setUsageData({ totalQueries: 0, totalCost: 0, avgCostPerQuery: 0, dailyBreakdown: [] });
+      })
       .finally(() => setLoading(false));
   }, [period]);
 
@@ -196,7 +204,7 @@ export default function ConciergeDashboard() {
         month: "short",
         day: "numeric",
       }),
-      cost: Number(d.cost.toFixed(4)),
+      cost: Number((d.cost ?? 0).toFixed(4)),
       queries: d.queries,
     })) || [];
 
@@ -282,9 +290,9 @@ export default function ConciergeDashboard() {
                       {new Date(row.date + "T00:00:00").toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
                     </td>
                     <td className="px-5 py-3 text-right text-gray-400">{row.queries}</td>
-                    <td className="px-5 py-3 text-right font-mono text-green-500">${row.cost.toFixed(4)}</td>
+                    <td className="px-5 py-3 text-right font-mono text-green-500">${(row.cost ?? 0).toFixed(4)}</td>
                     <td className="px-5 py-3 text-right font-mono text-gray-500">
-                      ${row.queries > 0 ? (row.cost / row.queries).toFixed(6) : "0.000000"}
+                      ${row.queries > 0 ? ((row.cost ?? 0) / row.queries).toFixed(6) : "0.000000"}
                     </td>
                   </tr>
                 ))}
@@ -423,7 +431,7 @@ export default function ConciergeDashboard() {
                   <td className="px-4 py-3 text-right text-xs text-gray-500">
                     {c.inputTokens}/{c.outputTokens}
                   </td>
-                  <td className="px-4 py-3 text-right font-mono text-green-500">${c.cost.toFixed(4)}</td>
+                  <td className="px-4 py-3 text-right font-mono text-green-500">${(c.cost ?? 0).toFixed(4)}</td>
                 </tr>
               ))}
               {conversations.length === 0 && (
