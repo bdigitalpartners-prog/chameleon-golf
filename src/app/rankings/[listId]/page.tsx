@@ -2,9 +2,9 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Trophy,
@@ -15,8 +15,12 @@ import {
   ChevronDown,
   Minus,
   Image as ImageIcon,
+  MapIcon,
+  List,
 } from "lucide-react";
 import { CoursePlaceholder } from "@/components/course/CoursePlaceholder";
+import CourseMap from "@/components/map";
+import type { CourseMapItem } from "@/components/map";
 
 interface ListCourse {
   entryId: number;
@@ -30,18 +34,14 @@ interface ListCourse {
   city: string | null;
   state: string | null;
   country: string | null;
+  latitude: string | null;
+  longitude: string | null;
   courseStyle: string | null;
   accessType: string | null;
   originalArchitect: string | null;
   yearOpened: number | null;
   greenFeeLow: string | null;
   primaryImageUrl: string | null;
-  architect: {
-    id: number;
-    name: string;
-    slug: string;
-    era: string | null;
-  } | null;
 }
 
 interface ListData {
@@ -70,10 +70,12 @@ const SOURCE_COLORS: Record<string, string> = {
 
 export default function ListDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const listId = params.listId as string;
   const [data, setData] = useState<ListData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "map">("list");
 
   useEffect(() => {
     fetch(`/api/rankings/${listId}`)
@@ -133,27 +135,23 @@ export default function ListDetailPage() {
   const sourceColor =
     SOURCE_COLORS[data.source.sourceName] ?? "var(--cg-accent)";
 
-  // Architect leaderboard — count how many courses each architect has on this list
-  const architectCounts: Record<
-    string,
-    { name: string; slug: string; era: string | null; count: number }
-  > = {};
-  for (const c of data.courses) {
-    const key = c.architect?.slug ?? c.originalArchitect;
-    if (!key) continue;
-    if (!architectCounts[key]) {
-      architectCounts[key] = {
-        name: c.architect?.name ?? c.originalArchitect ?? "",
-        slug: c.architect?.slug ?? "",
-        era: c.architect?.era ?? null,
-        count: 0,
-      };
-    }
-    architectCounts[key].count++;
-  }
-  const architectLeaderboard = Object.values(architectCounts)
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 10);
+  const mapCourses = useMemo<CourseMapItem[]>(() => {
+    if (!data?.courses) return [];
+    return data.courses
+      .filter((c) => c.latitude && c.longitude)
+      .map((c) => ({
+        courseId: c.courseId,
+        courseName: c.courseName,
+        facilityName: c.facilityName,
+        latitude: parseFloat(c.latitude!),
+        longitude: parseFloat(c.longitude!),
+        city: c.city,
+        state: c.state,
+        accessType: c.accessType,
+        originalArchitect: c.originalArchitect,
+        greenFeeHigh: c.greenFeeLow ? parseFloat(c.greenFeeLow) : null,
+      }));
+  }, [data?.courses]);
 
   return (
     <div
@@ -250,93 +248,68 @@ export default function ListDetailPage() {
           </div>
         </div>
 
-        {/* Architect Leaderboard */}
-        {architectLeaderboard.length > 0 && (
+        {/* View Toggle */}
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-sm" style={{ color: "var(--cg-text-muted)" }}>
+            {mapCourses.length > 0 && viewMode === "map"
+              ? `Showing ${mapCourses.length} of ${data.totalCourses} courses on map`
+              : `${data.totalCourses} ranked courses`}
+          </span>
           <div
-            className="rounded-2xl p-6 mb-8"
-            style={{
-              backgroundColor: "var(--cg-bg-card)",
-              border: "1px solid var(--cg-border)",
-            }}
+            className="inline-flex rounded-lg overflow-hidden"
+            style={{ border: "1px solid var(--cg-border)" }}
           >
-            <h2
-              className="text-lg font-semibold mb-4"
-              style={{ color: "var(--cg-text-primary)" }}
+            <button
+              onClick={() => setViewMode("list")}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors"
+              style={{
+                backgroundColor: viewMode === "list" ? "var(--cg-accent-bg)" : "transparent",
+                color: viewMode === "list" ? "var(--cg-accent)" : "var(--cg-text-muted)",
+              }}
             >
-              Architect Leaderboard
-              <span
-                className="ml-2 text-sm font-normal"
+              <List className="h-3.5 w-3.5" /> List
+            </button>
+            <button
+              onClick={() => setViewMode("map")}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors"
+              style={{
+                backgroundColor: viewMode === "map" ? "var(--cg-accent-bg)" : "transparent",
+                color: viewMode === "map" ? "var(--cg-accent)" : "var(--cg-text-muted)",
+                borderLeft: "1px solid var(--cg-border)",
+              }}
+            >
+              <MapIcon className="h-3.5 w-3.5" /> Map
+            </button>
+          </div>
+        </div>
+
+        {/* Map View */}
+        {viewMode === "map" && (
+          <div
+            className="rounded-xl overflow-hidden mb-8"
+            style={{ border: "1px solid var(--cg-border)" }}
+          >
+            {mapCourses.length > 0 ? (
+              <CourseMap
+                courses={mapCourses}
+                height="500px"
+                clusterMarkers={true}
+                colorBy="accessType"
+                onCourseSelect={(course) => router.push(`/course/${course.courseId}`)}
+              />
+            ) : (
+              <div
+                className="flex items-center justify-center py-20"
                 style={{ color: "var(--cg-text-muted)" }}
               >
-                Most courses on this list
-              </span>
-            </h2>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-              {architectLeaderboard.map((a, idx) => {
-                const inner = (
-                  <div
-                    className={`rounded-lg p-3 flex items-center gap-3 transition-all ${
-                      a.slug ? "hover:ring-1 hover:ring-emerald-500 cursor-pointer" : ""
-                    }`}
-                    style={{
-                      backgroundColor: "var(--cg-bg-secondary)",
-                      border: "1px solid var(--cg-border)",
-                    }}
-                  >
-                    <span
-                      className="text-lg font-bold tabular-nums w-7 text-center shrink-0"
-                      style={{
-                        color:
-                          idx === 0
-                            ? "#FFD700"
-                            : idx === 1
-                            ? "#C0C0C0"
-                            : idx === 2
-                            ? "#CD7F32"
-                            : "var(--cg-text-muted)",
-                      }}
-                    >
-                      {idx + 1}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div
-                        className="text-sm font-medium truncate"
-                        style={{ color: "var(--cg-text-primary)" }}
-                      >
-                        {a.name}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="text-xs font-medium"
-                          style={{ color: "var(--cg-accent)" }}
-                        >
-                          {a.count} course{a.count !== 1 ? "s" : ""}
-                        </span>
-                        {a.era && (
-                          <span
-                            className="text-xs"
-                            style={{ color: "var(--cg-text-muted)" }}
-                          >
-                            {a.era}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-                return a.slug ? (
-                  <Link key={a.slug} href={`/architects/${a.slug}`}>
-                    {inner}
-                  </Link>
-                ) : (
-                  <div key={a.name}>{inner}</div>
-                );
-              })}
-            </div>
+                No courses with location data in this ranking list.
+              </div>
+            )}
           </div>
         )}
 
         {/* Course list */}
+        {viewMode === "list" && (
         <div
           className="rounded-xl overflow-hidden"
           style={{
@@ -348,7 +321,7 @@ export default function ListDetailPage() {
           <div
             className="hidden sm:grid items-center gap-3 px-4 py-3 text-xs font-semibold uppercase tracking-wider"
             style={{
-              gridTemplateColumns: "3.5rem 3rem 1fr 9rem 8rem 5rem 5rem",
+              gridTemplateColumns: "3.5rem 3rem 1fr 10rem 7rem 5rem",
               backgroundColor: "var(--cg-bg-tertiary)",
               color: "var(--cg-text-muted)",
               borderBottom: "1px solid var(--cg-border)",
@@ -357,7 +330,6 @@ export default function ListDetailPage() {
             <span>Rank</span>
             <span></span>
             <span>Course</span>
-            <span>Architect</span>
             <span>Location</span>
             <span>Style</span>
             <span>Fee</span>
@@ -386,7 +358,7 @@ export default function ListDetailPage() {
               <div
                 className="hidden sm:grid items-center gap-3 px-4 py-3"
                 style={{
-                  gridTemplateColumns: "3.5rem 3rem 1fr 9rem 8rem 5rem 5rem",
+                  gridTemplateColumns: "3.5rem 3rem 1fr 10rem 7rem 5rem",
                 }}
               >
                 {/* Rank */}
@@ -437,7 +409,7 @@ export default function ListDetailPage() {
                   )}
                 </div>
 
-                {/* Name */}
+                {/* Name + architect */}
                 <div className="min-w-0">
                   <div
                     className="text-sm font-semibold truncate group-hover:underline"
@@ -445,34 +417,14 @@ export default function ListDetailPage() {
                   >
                     {course.courseName}
                   </div>
-                  {course.yearOpened && (
+                  {course.originalArchitect && (
                     <div
                       className="text-xs truncate"
                       style={{ color: "var(--cg-text-muted)" }}
                     >
-                      Est. {course.yearOpened}
+                      {course.originalArchitect}
+                      {course.yearOpened ? ` · ${course.yearOpened}` : ""}
                     </div>
-                  )}
-                </div>
-
-                {/* Architect */}
-                <div className="text-xs truncate" style={{ color: "var(--cg-text-secondary)" }}>
-                  {course.architect ? (
-                    <span
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        window.location.href = `/architects/${course.architect!.slug}`;
-                      }}
-                      className="hover:underline cursor-pointer"
-                      style={{ color: "var(--cg-accent)" }}
-                    >
-                      {course.architect.name}
-                    </span>
-                  ) : (
-                    <span style={{ color: "var(--cg-text-muted)" }}>
-                      {course.originalArchitect ?? "—"}
-                    </span>
                   )}
                 </div>
 
@@ -561,6 +513,7 @@ export default function ListDetailPage() {
             </div>
           )}
         </div>
+        )}
       </div>
     </div>
   );

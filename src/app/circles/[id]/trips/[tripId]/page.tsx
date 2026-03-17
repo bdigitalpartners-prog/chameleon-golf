@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import {
@@ -13,7 +13,10 @@ import {
   Calendar,
   Trash2,
   Plus,
+  Map as MapIcon,
 } from "lucide-react";
+import { CourseDetailMap } from "@/components/map";
+import type { POIMarker } from "@/components/map";
 
 interface TripCourse {
   id: string;
@@ -133,6 +136,31 @@ export default function TripDetailPage() {
     CANCELLED: "#ef4444",
   };
 
+  // Trip map markers
+  const tripMapMarkers = useMemo<POIMarker[]>(() => {
+    if (!trip?.courses) return [];
+    return trip.courses
+      .filter((tc) => tc.course.latitude && tc.course.longitude)
+      .sort((a, b) => a.playOrder - b.playOrder)
+      .map((tc, i) => ({
+        id: `trip-course-${tc.courseId}`,
+        name: tc.course.courseName,
+        type: "course" as const,
+        latitude: tc.course.latitude!,
+        longitude: tc.course.longitude!,
+        subtitle: `Stop ${i + 1} · ${[tc.course.city, tc.course.state].filter(Boolean).join(", ")}`,
+        url: `/course/${tc.courseId}`,
+        isPrimary: i === 0,
+      }));
+  }, [trip?.courses]);
+
+  const tripMapCenter = useMemo<[number, number]>(() => {
+    if (tripMapMarkers.length === 0) return [39.8283, -98.5795];
+    const avgLat = tripMapMarkers.reduce((s, m) => s + m.latitude, 0) / tripMapMarkers.length;
+    const avgLng = tripMapMarkers.reduce((s, m) => s + m.longitude, 0) / tripMapMarkers.length;
+    return [avgLat, avgLng];
+  }, [tripMapMarkers]);
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       {/* Header */}
@@ -172,6 +200,32 @@ export default function TripDetailPage() {
           </p>
         )}
       </div>
+
+      {/* Trip Map */}
+      {tripMapMarkers.length > 0 && (
+        <div
+          className="mb-6 rounded-xl overflow-hidden"
+          style={{ border: "1px solid var(--cg-border)" }}
+        >
+          <div className="px-4 pt-4 pb-2 flex items-center gap-2">
+            <MapIcon className="h-4 w-4" style={{ color: "var(--cg-accent)" }} />
+            <span className="text-sm font-semibold" style={{ color: "var(--cg-text-primary)" }}>
+              Trip Route
+            </span>
+            <span className="text-xs" style={{ color: "var(--cg-text-muted)" }}>
+              {tripMapMarkers.length} {tripMapMarkers.length === 1 ? "stop" : "stops"}
+            </span>
+          </div>
+          <CourseDetailMap
+            markers={tripMapMarkers}
+            center={tripMapCenter}
+            zoom={7}
+            height="300px"
+            showLegend={false}
+            showRoute={true}
+          />
+        </div>
+      )}
 
       {/* Courses */}
       <div className="mb-6">

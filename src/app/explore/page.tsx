@@ -2,11 +2,14 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { CourseCard } from "@/components/course/CourseCard";
 import { CourseListRow } from "@/components/course/CourseListRow";
 import { CourseListHeader } from "@/components/course/CourseListHeader";
 import { ViewToggle, ViewMode } from "@/components/course/ViewToggle";
+import CourseMap from "@/components/map";
+import type { CourseMapItem } from "@/components/map";
 import { PageSizeToggle, PageSize } from "@/components/course/PageSizeToggle";
 import { FilterSidebar } from "@/components/filters/FilterSidebar";
 import { WeightSliders } from "@/components/filters/WeightSliders";
@@ -101,6 +104,32 @@ export default function ExplorePage() {
   }, []);
 
   const showWeightedScore = activeWeights !== null;
+  const router = useRouter();
+
+  // Map-ready course data
+  const mapCourses = useMemo<CourseMapItem[]>(() => {
+    if (!data?.items) return [];
+    return data.items
+      .filter((c: any) => c.latitude && c.longitude)
+      .map((c: any) => ({
+        courseId: c.courseId,
+        courseName: c.courseName,
+        facilityName: c.facilityName || null,
+        latitude: parseFloat(c.latitude),
+        longitude: parseFloat(c.longitude),
+        city: c.city || null,
+        state: c.state || null,
+        courseType: c.courseType || null,
+        accessType: c.accessType || null,
+        priceTier: c.priceTier || null,
+        greenFeeHigh: c.greenFeeHigh ? parseFloat(c.greenFeeHigh) : null,
+        numListsAppeared: c.numListsAppeared || null,
+        originalArchitect: c.originalArchitect || null,
+        par: c.par || null,
+        numHoles: c.numHoles || null,
+        overallScore: c.overallScore || c.chameleonScore || null,
+      }));
+  }, [data?.items]);
 
   return (
     <div
@@ -137,7 +166,7 @@ export default function ExplorePage() {
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             <PageSizeToggle size={pageSize} onChange={handlePageSizeChange} />
-            <ViewToggle mode={viewMode} onChange={handleViewChange} />
+            <ViewToggle mode={viewMode} onChange={handleViewChange} showMap />
           </div>
         </div>
 
@@ -205,7 +234,34 @@ export default function ExplorePage() {
                   </div>
                 )}
 
-                {data.items.length === 0 && (
+                {/* Map View */}
+                {viewMode === "map" && (
+                  <div
+                    className="rounded-xl overflow-hidden"
+                    style={{
+                      border: "1px solid var(--cg-border)",
+                    }}
+                  >
+                    {mapCourses.length > 0 ? (
+                      <CourseMap
+                        courses={mapCourses}
+                        height="calc(100vh - 220px)"
+                        clusterMarkers={true}
+                        colorBy="accessType"
+                        onCourseSelect={(course) => router.push(`/course/${course.courseId}`)}
+                      />
+                    ) : (
+                      <div
+                        className="flex items-center justify-center py-20"
+                        style={{ color: "var(--cg-text-muted)" }}
+                      >
+                        No courses with location data match your filters.
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {data.items.length === 0 && viewMode !== "map" && (
                   <div
                     className="py-20 text-center"
                     style={{ color: "var(--cg-text-muted)" }}
