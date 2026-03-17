@@ -633,7 +633,7 @@ model CourseIntelligenceNotes {
 model Architect {
   id                  Int      @id @default(autoincrement())
   name                String   @db.VarChar(255)
-  slug                String?  @db.VarChar(255)
+  slug                String   @unique @db.VarChar(255)
   bornYear            Int?     @map("born_year")
   diedYear            Int?     @map("died_year")
   nationality         String?  @db.VarChar(100)
