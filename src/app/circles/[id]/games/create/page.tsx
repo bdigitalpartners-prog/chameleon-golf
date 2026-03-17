@@ -99,7 +99,7 @@ export default function GameCreatePage() {
           format,
           name: name || undefined,
           courseId: courseId_form || undefined,
-          scheduledDate: scheduledDate ? new Date(scheduledDate).toISOString() : undefined,
+          startDate: scheduledDate ? new Date(scheduledDate).toISOString() : undefined,
           holesPlayed,
           config: { handicapEnabled },
         }),

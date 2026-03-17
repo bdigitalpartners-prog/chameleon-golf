@@ -21,7 +21,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const limit = Math.min(50, Number(searchParams.get("limit") ?? 20));
 
   const where: any = { circleId };
-  if (status) where.status = status;
+  if (status) {
+    const statuses = status.split(",");
+    where.status = statuses.length > 1 ? { in: statuses } : statuses[0];
+  }
 
   const [games, total] = await Promise.all([
     prisma.game.findMany({

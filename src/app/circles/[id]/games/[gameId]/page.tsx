@@ -15,7 +15,6 @@ interface GameDetail {
   name: string | null;
   format: string;
   status: string;
-  scheduledDate: string | null;
   startDate: string | null;
   endDate: string | null;
   holesPlayed: number;
@@ -59,7 +58,8 @@ const FORMAT_LABELS: Record<string, string> = {
 };
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  PENDING: { bg: "rgba(234, 179, 8, 0.15)", text: "rgb(234, 179, 8)", label: "Upcoming" },
+  SETUP: { bg: "rgba(234, 179, 8, 0.15)", text: "rgb(234, 179, 8)", label: "Setup" },
+  OPEN: { bg: "rgba(234, 179, 8, 0.15)", text: "rgb(234, 179, 8)", label: "Upcoming" },
   IN_PROGRESS: { bg: "rgba(34, 197, 94, 0.15)", text: "rgb(34, 197, 94)", label: "Live" },
   COMPLETED: { bg: "rgba(107, 114, 128, 0.15)", text: "rgb(107, 114, 128)", label: "Completed" },
   CANCELLED: { bg: "rgba(239, 68, 68, 0.15)", text: "rgb(239, 68, 68)", label: "Cancelled" },
@@ -167,7 +167,7 @@ export default function GameDetailPage() {
     );
   }
 
-  const status = STATUS_STYLES[game.status] ?? STATUS_STYLES.PENDING;
+  const status = STATUS_STYLES[game.status] ?? STATUS_STYLES.OPEN;
   const confirmedPlayers = game.players.filter((p) => p.status === "CONFIRMED");
 
   return (
@@ -219,7 +219,7 @@ export default function GameDetailPage() {
             </span>
             <span className="flex items-center gap-1.5">
               <Clock className="h-4 w-4" />
-              {formatDate(game.scheduledDate ?? game.startDate)}
+              {formatDate(game.startDate)}
             </span>
             <span>{game.holesPlayed} holes</span>
           </div>
@@ -227,7 +227,7 @@ export default function GameDetailPage() {
 
         {/* Action buttons */}
         <div className="flex gap-3 mb-6">
-          {game.status === "PENDING" && !isPlayer && (
+          {(game.status === "SETUP" || game.status === "OPEN") && !isPlayer && (
             <button
               onClick={handleJoin}
               disabled={joining}
@@ -238,7 +238,7 @@ export default function GameDetailPage() {
               Join Game
             </button>
           )}
-          {(game.status === "PENDING" || game.status === "IN_PROGRESS") && isConfirmed && (
+          {(game.status === "OPEN" || game.status === "IN_PROGRESS") && isConfirmed && (
             <a
               href={`/circles/${circleId}/games/${gameId}/scoring`}
               className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium"

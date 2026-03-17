@@ -8,7 +8,6 @@ interface GameData {
   name: string | null;
   format: string;
   status: string;
-  scheduledDate: string | null;
   startDate: string | null;
   endDate: string | null;
   courseId: number | null;
@@ -28,7 +27,8 @@ const FORMAT_LABELS: Record<string, string> = {
 };
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
-  PENDING: { bg: "rgba(234, 179, 8, 0.15)", text: "rgb(234, 179, 8)", label: "Upcoming" },
+  SETUP: { bg: "rgba(234, 179, 8, 0.15)", text: "rgb(234, 179, 8)", label: "Setup" },
+  OPEN: { bg: "rgba(234, 179, 8, 0.15)", text: "rgb(234, 179, 8)", label: "Upcoming" },
   IN_PROGRESS: { bg: "rgba(34, 197, 94, 0.15)", text: "rgb(34, 197, 94)", label: "Live" },
   COMPLETED: { bg: "rgba(107, 114, 128, 0.15)", text: "rgb(107, 114, 128)", label: "Completed" },
   CANCELLED: { bg: "rgba(239, 68, 68, 0.15)", text: "rgb(239, 68, 68)", label: "Cancelled" },
@@ -53,7 +53,7 @@ export function CircleGamesTab({ circleId, isAdmin }: { circleId: string; isAdmi
     setLoading(true);
     try {
       const statusParam =
-        filter === "active" ? "IN_PROGRESS" : filter === "upcoming" ? "PENDING" : "COMPLETED";
+        filter === "active" ? "IN_PROGRESS" : filter === "upcoming" ? "SETUP,OPEN" : "COMPLETED";
       const res = await fetch(
         `/api/circles/${circleId}/games?status=${statusParam}&page=${page}&limit=10`
       );
@@ -132,7 +132,7 @@ export function CircleGamesTab({ circleId, isAdmin }: { circleId: string; isAdmi
       ) : (
         <div className="space-y-3">
           {games.map((game) => {
-            const status = STATUS_STYLES[game.status] ?? STATUS_STYLES.PENDING;
+            const status = STATUS_STYLES[game.status] ?? STATUS_STYLES.OPEN;
             return (
               <a
                 key={game.id}
@@ -178,10 +178,10 @@ export function CircleGamesTab({ circleId, isAdmin }: { circleId: string; isAdmi
                         <Users className="h-3.5 w-3.5" />
                         {game._count?.players ?? 0} players
                       </span>
-                      {(game.scheduledDate || game.startDate) && (
+                      {game.startDate && (
                         <span className="flex items-center gap-1">
                           <Clock className="h-3.5 w-3.5" />
-                          {formatDate(game.scheduledDate ?? game.startDate)}
+                          {formatDate(game.startDate)}
                         </span>
                       )}
                     </div>

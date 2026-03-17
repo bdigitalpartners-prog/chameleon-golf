@@ -34,8 +34,21 @@ export async function POST(req: NextRequest, { params }: { params: { id: string;
     return NextResponse.json({ error: "Game is already completed" }, { status: 400 });
   }
 
+  // Get hole pars if course has hole data (needed for Stableford scoring)
+  let holePars: number[] | undefined;
+  if (game.courseId) {
+    const holes = await prisma.hole.findMany({
+      where: { courseId: game.courseId },
+      orderBy: { holeNumber: "asc" },
+      select: { par: true },
+    });
+    if (holes.length > 0) {
+      holePars = holes.map((h) => h.par);
+    }
+  }
+
   // Calculate final results
-  const leaderboard = calculateLeaderboard(game, game.scores, game.players);
+  const leaderboard = calculateLeaderboard(game, game.scores, game.players, holePars);
 
   // Update player positions
   for (const entry of leaderboard) {
