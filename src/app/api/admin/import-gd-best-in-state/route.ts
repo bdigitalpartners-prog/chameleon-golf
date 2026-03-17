@@ -121,12 +121,8 @@ interface GDState {
 /* ------------------------------------------------------------------ */
 
 export async function POST(request: NextRequest) {
-  // Temporary import token for one-time bulk import
-  const importToken = request.headers.get("x-import-token");
-  if (importToken !== "gd-best-in-state-2026-temp") {
-    const authErr = await checkAdminAuth(request);
-    if (authErr) return authErr;
-  }
+  const authErr = await checkAdminAuth(request);
+  if (authErr) return authErr;
 
   try {
     const data: GDState[] = await request.json();
