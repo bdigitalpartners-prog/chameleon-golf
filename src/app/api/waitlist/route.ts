@@ -44,7 +44,7 @@ async function createHubSpotContact(email: string): Promise<void> {
           email,
           lifecyclestage: "subscriber",
           hs_lead_status: "NEW",
-          notes_last_contacted: "golfEQUALIZER Early Access Signup",
+          company: "golfEQUALIZER Early Access",
         },
       }),
     });
