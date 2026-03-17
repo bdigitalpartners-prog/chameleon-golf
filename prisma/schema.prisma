@@ -43,12 +43,6 @@ model Course {
   isEnriched           Boolean  @default(false) @map("is_enriched")
   description          String?
 
-  // Logo
-  logoUrl             String?   @map("logo_url") @db.VarChar(500)
-  logoLocalPath       String?   @map("logo_local_path") @db.VarChar(500)
-  logoSource          String?   @map("logo_source") @db.VarChar(200)
-  logoBackgroundColor String?   @map("logo_background_color") @db.VarChar(20)
-
   // Access & Policies
   email               String?
   tagline             String?
@@ -77,9 +71,6 @@ model Course {
   whatToExpect         String?   @map("what_to_expect")
   bestTimeToPlay      String?   @map("best_time_to_play")
   paceOfPlayNotes     String?   @map("pace_of_play_notes")
-
-  // Round & Pace
-  averageRoundTime    String?   @map("average_round_time") @db.VarChar(50)
 
   // Conditions
   fairwayGrass        String?   @map("fairway_grass")
@@ -130,37 +121,11 @@ model Course {
   nearbyDining      CourseNearbyDining[]
   nearbyLodging     CourseNearbyLodging[]
   nearbyAttractions CourseNearbyAttractions[]
-  nearbyRvParks     CourseNearbyRvPark[]
   wishlists         CourseWishlist[]
   nearbyCourses     CourseNearbyCourses[] @relation("SourceCourse")
   nearbyFrom        CourseNearbyCourses[] @relation("NearbyCourse")
-
-  // Sprint 3
-  posts             Post[]
-
-  // Sprint 4
-  circleCourseRatings CircleCourseRating[]
-  circleCourseAggregates CircleCourseAggregate[]
-  circleWishlists     Wishlist[]          @relation("CircleWishlists")
-  courseCheckIns       CourseCheckIn[]
-
-  // Sprint 5
-  conditionReports    ConditionReport[]
-  circleEvents        CircleEvent[]
-
-  // Course Intelligence
-  intelligenceNotes   CourseIntelligenceNote[]
-
-  // Sprint 6
-  games               Game[]
-
-  // Sprint 7
-  circleConsensus     CircleConsensus[]
-  tripCourses         TripCourse[]
-  tripVotes           TripVote[]
-
-  // Sprint 8
-  courseRecommendations CourseRecommendation[]
+  nearbyRvParks     CourseNearbyRvParks[]
+  intelligenceNotes CourseIntelligenceNotes[]
 
   @@map("courses")
 }
@@ -329,69 +294,12 @@ model User {
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @default(now()) @map("updated_at")
 
-  accounts          Account[]
-  sessions          Session[]
-  ratings           UserCourseRating[]
-  scores            PostedScore[]
-  weightProfiles    UserWeightProfile[]
-  wishlists         CourseWishlist[]
-  profile           UserProfile?
-  connectionsSent   Connection[]       @relation("ConnectionsSent")
-  connectionsReceived Connection[]     @relation("ConnectionsReceived")
-  notifications     Notification[]
-  notificationPrefs NotificationPref[]
-  circles           Circle[]
-  memberships       CircleMembership[]
-  invitesSent       CircleInvite[]     @relation("InvitesSent")
-  invitesReceived   CircleInvite[]     @relation("InvitesReceived")
-
-  // Sprint 3
-  posts             Post[]
-  fistBumps         FistBump[]
-  comments          Comment[]
-  feedItems         FeedItem[]
-  feedActions       FeedItem[]         @relation("FeedActor")
-  mentionedIn       Mention[]
-
-  // Sprint 4
-  circleCourseRatings CircleCourseRating[]
-  circleWishlists     Wishlist[]
-  courseCheckIns       CourseCheckIn[]
-
-  // Sprint 5
-  clubVerifications   ClubVerification[]
-  conditionReports    ConditionReport[]
-  circleEventsCreated CircleEvent[]
-  eventRSVPs          EventRSVP[]
-  threadsCreated      DiscussionThread[] @relation("ThreadsCreated")
-  threadReplies       ThreadReply[]      @relation("ThreadReplies")
-
-  // Sprint 6
-  gamesCreated        Game[]
-  gamePlayers         GamePlayer[]
-  gameScores          GameScore[]
-  h2hAsUser1          HeadToHead[]       @relation("H2HUser1")
-  h2hAsUser2          HeadToHead[]       @relation("H2HUser2")
-  leagueStandings     LeagueStanding[]
-
-  // Sprint 7
-  circleScoreWeights  CircleScoreWeight[]
-  tripsCreated        TripPlan[]
-  tripVotes           TripVote[]
-
-  // Sprint 8
-  courseRecommendations CourseRecommendation[]
-  onboardingProgress   OnboardingProgress?
-  contentReports       ContentReport[]
-
-  // EQ Tokens & Founders
-  tokenTransactions     EQTokenTransaction[]
-  foundersMembership    FoundersMembership?
-  foundersInvitesSent   FoundersInvite[]     @relation("FoundersInvitesSent")
-  foundersInvitesUsed   FoundersInvite[]     @relation("FoundersInvitesUsed")
-
-  // GHIN Verification
-  ghinVerificationsReviewed GhinVerification[] @relation("GhinReviewedBy")
+  accounts        Account[]
+  sessions        Session[]
+  ratings         UserCourseRating[]
+  scores          PostedScore[]
+  weightProfiles  UserWeightProfile[]
+  wishlists       CourseWishlist[]
 
   @@map("users")
 }
@@ -643,39 +551,15 @@ model CourseNearbyAttractions {
   category     String?  @db.VarChar(100)
   description  String?
   distanceMiles Decimal? @map("distance_miles") @db.Decimal(6, 1)
-  rating       Decimal? @db.Decimal(3, 1)
   websiteUrl   String?  @map("website_url") @db.VarChar(500)
+  createdAt    DateTime @default(now()) @map("created_at")
+  rating       Decimal? @db.Decimal(3, 1)
   googleMapsUrl String? @map("google_maps_url") @db.VarChar(500)
   sortOrder    Int      @default(0) @map("sort_order")
-  createdAt    DateTime @default(now()) @map("created_at")
 
   course       Course   @relation(fields: [courseId], references: [courseId])
 
   @@map("course_nearby_attractions")
-}
-
-model CourseNearbyRvPark {
-  id              Int      @id @default(autoincrement())
-  courseId         Int      @map("course_id")
-  name            String   @db.VarChar(255)
-  description     String?
-  distanceMiles   Decimal? @map("distance_miles") @db.Decimal(6, 1)
-  driveTimeMinutes Int?    @map("drive_time_minutes")
-  rating          Decimal? @db.Decimal(3, 1)
-  priceLevel      String?  @map("price_level") @db.VarChar(10)
-  numSites        Int?     @map("num_sites")
-  hookups         String?  @db.VarChar(100)
-  amenities       String?
-  address         String?
-  phone           String?  @db.VarChar(50)
-  websiteUrl      String?  @map("website_url") @db.VarChar(500)
-  googleMapsUrl   String?  @map("google_maps_url") @db.VarChar(500)
-  sortOrder       Int      @default(0) @map("sort_order")
-  createdAt       DateTime @default(now()) @map("created_at")
-
-  course          Course   @relation(fields: [courseId], references: [courseId])
-
-  @@map("course_nearby_rv_parks")
 }
 
 model CourseWishlist {
@@ -706,1135 +590,83 @@ model CourseNearbyCourses {
   @@map("course_nearby_courses")
 }
 
-model ConciergeUsage {
+model CourseNearbyRvParks {
   id              Int      @id @default(autoincrement())
-  sessionId       String   @map("session_id") @db.VarChar(100)
-  userIp          String?  @map("user_ip") @db.VarChar(45)
-  inputTokens     Int      @map("input_tokens")
-  outputTokens    Int      @map("output_tokens")
-  estimatedCost   Decimal  @map("estimated_cost") @db.Decimal(10, 6)
-  requestFee      Decimal  @default(0.006) @map("request_fee") @db.Decimal(10, 6)
-  totalCost       Decimal  @map("total_cost") @db.Decimal(10, 6)
-  model           String   @default("sonar-pro") @db.VarChar(50)
-  messagePreview  String?  @map("message_preview") @db.VarChar(200)
+  courseId        Int      @map("course_id")
+  name            String   @db.VarChar(255)
+  description     String?
+  distanceMiles   Decimal? @map("distance_miles") @db.Decimal(6, 1)
+  driveTimeMinutes Int?    @map("drive_time_minutes")
+  rating          Decimal? @db.Decimal(3, 1)
+  priceLevel      String?  @map("price_level") @db.VarChar(10)
+  numSites        Int?     @map("num_sites")
+  hookups         String?  @db.VarChar(100)
+  amenities       String?
+  address         String?
+  phone           String?  @db.VarChar(50)
+  websiteUrl      String?  @map("website_url") @db.VarChar(500)
+  googleMapsUrl   String?  @map("google_maps_url") @db.VarChar(500)
+  sortOrder       Int      @default(0) @map("sort_order")
   createdAt       DateTime @default(now()) @map("created_at")
 
-  @@map("concierge_usage")
-}
-
-// ============================================================
-// Social Circles — Sprint 2
-// ============================================================
-
-enum CircleType {
-  CREW
-  GAME
-  NETWORK
-  CLUB
-  LEAGUE
-}
-
-enum CirclePrivacy {
-  PUBLIC
-  PRIVATE
-  SECRET
-}
-
-enum MemberRole {
-  OWNER
-  ADMIN
-  MEMBER
-  PENDING
-  GUEST
-}
-
-enum InviteStatus {
-  PENDING
-  ACCEPTED
-  DECLINED
-  EXPIRED
-}
-
-model Circle {
-  id                  String        @id @default(cuid())
-  name                String
-  slug                String        @unique
-  description         String?       @db.Text
-  type                CircleType
-  privacy             CirclePrivacy @default(PUBLIC)
-  avatarUrl           String?
-  coverUrl            String?
-  memberCount         Int           @default(0)
-  maxMembers          Int?
-  verificationMethod  String?
-  verificationDomain  String?
-  config              Json?
-  createdById         String
-  createdBy           User          @relation(fields: [createdById], references: [id])
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
-
-  members             CircleMembership[]
-  invites             CircleInvite[]
-
-  // Sprint 3
-  posts               Post[]
-  feedItems           FeedItem[]
-
-  // Sprint 4
-  circleCourseRatings CircleCourseRating[]
-  circleCourseAggregates CircleCourseAggregate[]
-  circleWishlists     Wishlist[]
-  circleCheckIns      CourseCheckIn[]
-
-  // Sprint 5
-  clubVerifications   ClubVerification[]
-  conditionReports    ConditionReport[]
-  circleEvents        CircleEvent[]
-  discussionThreads   DiscussionThread[]
-
-  // Sprint 6
-  games               Game[]
-  headToHeads         HeadToHead[]
-  leagueSeasons       LeagueSeason[]
-
-  // Sprint 7
-  circleScoreWeights  CircleScoreWeight[]
-  circleConsensus     CircleConsensus[]
-  tripPlans           TripPlan[]
-
-  // Sprint 8
-  courseRecommendations CourseRecommendation[]
-
-  @@index([type])
-  @@index([privacy])
-  @@index([slug])
-  @@index([createdById])
-}
-
-model CircleMembership {
-  id              String     @id @default(cuid())
-  circleId        String
-  circle          Circle     @relation(fields: [circleId], references: [id], onDelete: Cascade)
-  userId          String
-  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role            MemberRole @default(MEMBER)
-  joinedAt        DateTime   @default(now())
-  verifiedAt      DateTime?
-  membershipTier  String?
-
-  @@unique([circleId, userId])
-  @@index([circleId])
-  @@index([userId])
-  @@index([role])
-}
-
-model CircleInvite {
-  id              String       @id @default(cuid())
-  circleId        String
-  circle          Circle       @relation(fields: [circleId], references: [id], onDelete: Cascade)
-  inviterId       String
-  inviter         User         @relation("InvitesSent", fields: [inviterId], references: [id])
-  inviteeId       String?
-  invitee         User?        @relation("InvitesReceived", fields: [inviteeId], references: [id])
-  inviteeEmail    String?
-  inviteCode      String?      @unique
-  status          InviteStatus @default(PENDING)
-  expiresAt       DateTime?
-  createdAt       DateTime     @default(now())
-
-  @@index([circleId])
-  @@index([inviteeId])
-  @@index([inviteCode])
-  @@index([inviteeEmail])
-}
-
-// ============================================================
-// Social Circles — Sprint 1
-// ============================================================
-
-enum ConnectionStatus {
-  PENDING
-  ACCEPTED
-  BLOCKED
-}
-
-enum NotificationLevel {
-  ALL
-  MENTIONS
-  HIGHLIGHTS
-  MUTED
-}
-
-model UserProfile {
-  id                String   @id @default(cuid())
-  userId            String   @unique
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bio               String?  @db.Text
-  handicap          Float?
-  homeClub          String?
-  avatarUrl         String?
-  coverUrl          String?
-  location          String?
-  isAvailableToPlay Boolean  @default(false)
-  handicapIndex       Float?
-  handicapVerified    Boolean  @default(false)
-  ghinNumber          String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  tags              UserTag[]
-  ghinVerifications GhinVerification[]
-
-  @@index([userId])
-}
-
-model Connection {
-  id          String           @id @default(cuid())
-  senderId    String
-  sender      User             @relation("ConnectionsSent", fields: [senderId], references: [id], onDelete: Cascade)
-  receiverId  String
-  receiver    User             @relation("ConnectionsReceived", fields: [receiverId], references: [id], onDelete: Cascade)
-  status      ConnectionStatus @default(PENDING)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-
-  @@unique([senderId, receiverId])
-  @@index([senderId])
-  @@index([receiverId])
-  @@index([status])
-}
-
-model Tag {
-  id         String   @id @default(cuid())
-  name       String   @unique
-  slug       String   @unique
-  category   String?
-  usageCount Int      @default(0)
-  createdAt  DateTime @default(now())
-
-  users      UserTag[]
-
-  @@index([slug])
-  @@index([category])
-}
-
-model UserTag {
-  id        String      @id @default(cuid())
-  userId    String
-  profile   UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  tagId     String
-  tag       Tag         @relation(fields: [tagId], references: [id], onDelete: Cascade)
-  createdAt DateTime    @default(now())
-
-  @@unique([userId, tagId])
-  @@index([userId])
-  @@index([tagId])
-}
-
-model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type      String
-  title     String
-  body      String?  @db.Text
-  actionUrl String?
-  read      Boolean  @default(false)
-  metadata  Json?
-  createdAt DateTime @default(now())
-
-  @@index([userId, read])
-  @@index([userId, createdAt])
-}
-
-model NotificationPref {
-  id          String            @id @default(cuid())
-  userId      String
-  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  circleId    String?
-  level       NotificationLevel @default(ALL)
-  emailDigest Boolean           @default(true)
-  pushEnabled Boolean           @default(true)
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-
-  @@unique([userId, circleId])
-  @@index([userId])
-}
-
-// ============================================================
-// Feed & Engagement — Sprint 3
-// ============================================================
-
-enum PostType {
-  TEXT
-  PHOTO
-  ROUND_RECAP
-  REVIEW
-  COURSE_RATING
-  CHECK_IN
-  WISHLIST_ADD
-}
-
-model Post {
-  id            String     @id @default(cuid())
-  authorId      String
-  author        User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  circleId      String
-  circle        Circle     @relation(fields: [circleId], references: [id], onDelete: Cascade)
-  content       String?    @db.Text
-  type          PostType   @default(TEXT)
-  mediaUrls     String[]
-  courseId       Int?
-  course        Course?    @relation(fields: [courseId], references: [courseId])
-  isPinned      Boolean    @default(false)
-  fistBumpCount Int        @default(0)
-  commentCount  Int        @default(0)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-
-  fistBumps     FistBump[]
-  comments      Comment[]
-  mentions      Mention[]
-  feedItems     FeedItem[]
-
-  @@index([circleId, createdAt(sort: Desc)])
-  @@index([authorId])
-  @@index([courseId])
-}
-
-model FistBump {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  postId        String
-  post          Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  createdAt     DateTime @default(now())
-
-  @@unique([userId, postId])
-  @@index([postId])
-  @@index([userId])
-}
-
-model Comment {
-  id            String    @id @default(cuid())
-  authorId      String
-  author        User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  postId        String
-  post          Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
-  content       String    @db.Text
-  parentId      String?
-  parent        Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
-  replies       Comment[] @relation("CommentReplies")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  mentions      Mention[]
-
-  @@index([postId, createdAt])
-  @@index([authorId])
-  @@index([parentId])
-}
-
-model FeedItem {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type          String
-  actorId       String
-  actor         User     @relation("FeedActor", fields: [actorId], references: [id])
-  circleId      String?
-  circle        Circle?  @relation(fields: [circleId], references: [id], onDelete: Cascade)
-  postId        String?
-  post          Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
-  courseId       Int?
-  metadata      Json?
-  createdAt     DateTime @default(now())
-
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([userId, circleId, createdAt(sort: Desc)])
-  @@index([actorId])
-}
-
-model Mention {
-  id               String   @id @default(cuid())
-  mentionedUserId  String
-  mentionedUser    User     @relation(fields: [mentionedUserId], references: [id], onDelete: Cascade)
-  postId           String?
-  post             Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
-  commentId        String?
-  comment          Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  createdAt        DateTime @default(now())
-
-  @@index([mentionedUserId])
-  @@index([postId])
-  @@index([commentId])
-}
-
-// ============================================================
-// Course Intelligence Notes
-// ============================================================
-
-enum IntelligenceNoteCategory {
-  BEST_TIME_TO_VISIT
-  INSIDER_TIP
-  SIMILAR_COURSES
-  COURSE_STRATEGY
-  WHAT_TO_EXPECT
-  ACCESS_GUIDE
-}
-
-model CourseIntelligenceNote {
-  id          Int                       @id @default(autoincrement())
-  courseId    Int                       @map("course_id")
-  category   IntelligenceNoteCategory
-  title      String                    @db.VarChar(255)
-  content    String                    @db.Text
-  icon       String?                   @db.VarChar(50)
-  generatedAt DateTime                 @default(now()) @map("generated_at")
-  source     String                    @default("COURSEfactor.ai") @db.VarChar(100)
-  isVisible  Boolean                   @default(true) @map("is_visible")
-
-  course     Course                    @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
-
-  @@unique([courseId, category])
-  @@index([courseId])
-  @@map("course_intelligence_notes")
-}
-
-// ============================================================
-// Course Integration — Sprint 4
-// ============================================================
-
-model CircleCourseRating {
-  id            String   @id @default(cuid())
-  circleId      String
-  circle        Circle   @relation(fields: [circleId], references: [id], onDelete: Cascade)
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courseId       Int
-  course        Course   @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
-  overallScore  Float
-  dimensions    Json?
-  reviewText    String?  @db.Text
-  playDate      DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  @@unique([circleId, userId, courseId])
-  @@index([circleId, courseId])
-  @@index([userId])
-  @@index([courseId])
-}
-
-model CircleCourseAggregate {
-  id              String   @id @default(cuid())
-  circleId        String
-  circle          Circle   @relation(fields: [circleId], references: [id], onDelete: Cascade)
-  courseId         Int
-  course          Course   @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
-  avgScore        Float
-  ratingCount     Int      @default(0)
-  dimensionAvgs   Json?
-  rank            Int?
-  lastUpdated     DateTime @default(now())
-
-  @@unique([circleId, courseId])
-  @@index([circleId, avgScore(sort: Desc)])
-  @@index([courseId])
-}
-
-model Wishlist {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courseId     Int
-  course      Course   @relation("CircleWishlists", fields: [courseId], references: [courseId], onDelete: Cascade)
-  circleId    String?
-  circle      Circle?  @relation(fields: [circleId], references: [id], onDelete: Cascade)
-  notes       String?  @db.Text
-  priority    Int      @default(0)
-  createdAt   DateTime @default(now())
-
-  @@unique([userId, courseId, circleId])
-  @@index([userId])
-  @@index([circleId])
-  @@index([courseId])
-}
-
-model CourseCheckIn {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courseId     Int
-  course      Course   @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
-  circleId    String?
-  circle      Circle?  @relation(fields: [circleId], references: [id])
-  playDate    DateTime @default(now())
-  score       Int?
-  photos      String[]
-  notes       String?  @db.Text
-  createdAt   DateTime @default(now())
-
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([courseId])
-  @@index([circleId])
-}
-
-// ============================================================
-// Club Circles & Verification — Sprint 5
-// ============================================================
-
-enum VerificationMethod {
-  DOCUMENT
-  VOUCHING
-  DOMAIN
-  ADMIN_MANUAL
-}
-
-enum VerificationStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
-model ClubVerification {
-  id              String             @id @default(cuid())
-  circleId        String
-  circle          Circle             @relation(fields: [circleId], references: [id], onDelete: Cascade)
-  userId          String
-  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  method          VerificationMethod
-  status          VerificationStatus @default(PENDING)
-  evidenceUrl     String?
-  vouchedBy       String[]
-  domainEmail     String?
-  reviewedBy      String?
-  reviewNotes     String?
-  verifiedAt      DateTime?
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
-
-  @@unique([circleId, userId])
-  @@index([circleId, status])
-  @@index([userId])
-}
-
-model ConditionReport {
-  id               String   @id @default(cuid())
-  circleId         String
-  circle           Circle   @relation(fields: [circleId], references: [id], onDelete: Cascade)
-  courseId          Int
-  course           Course   @relation(fields: [courseId], references: [courseId])
-  userId           String
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  greensSpeed      Int?
-  fairwayFirmness  Int?
-  roughHeight      Int?
-  bunkerCondition  Int?
-  overallCondition Int?
-  weatherImpact    String?
-  notes            String?  @db.Text
-  photos           String[]
-  reportDate       DateTime @default(now())
-  createdAt        DateTime @default(now())
-
-  @@index([circleId, reportDate(sort: Desc)])
-  @@index([courseId])
-  @@index([userId])
-}
-
-enum EventType {
-  TEE_TIME
-  TOURNAMENT
-  SOCIAL
-  MEMBER_GUEST
-  COURSE_OUTING
-}
-
-model CircleEvent {
-  id              String    @id @default(cuid())
-  circleId        String
-  circle          Circle    @relation(fields: [circleId], references: [id], onDelete: Cascade)
-  createdById     String
-  createdBy       User      @relation(fields: [createdById], references: [id])
-  title           String
-  description     String?   @db.Text
-  courseId         Int?
-  course          Course?   @relation(fields: [courseId], references: [courseId])
-  eventType       EventType @default(TEE_TIME)
-  startDate       DateTime
-  endDate         DateTime?
-  rsvpDeadline    DateTime?
-  maxAttendees    Int?
-  location        String?
-  coverUrl        String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  rsvps           EventRSVP[]
-
-  @@index([circleId, startDate])
-  @@index([courseId])
-}
-
-enum RSVPStatus {
-  GOING
-  MAYBE
-  DECLINED
-}
-
-model EventRSVP {
-  id          String      @id @default(cuid())
-  eventId     String
-  event       CircleEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  userId      String
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  status      RSVPStatus  @default(GOING)
-  guestCount  Int         @default(0)
-  notes       String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-
-  @@unique([eventId, userId])
-  @@index([eventId])
-  @@index([userId])
-}
-
-enum ThreadCategory {
-  CONDITIONS
-  EVENTS
-  DINING
-  PRO_SHOP
-  GENERAL
-  TIPS
-}
-
-model DiscussionThread {
-  id          String         @id @default(cuid())
-  circleId    String
-  circle      Circle         @relation(fields: [circleId], references: [id], onDelete: Cascade)
-  authorId    String
-  author      User           @relation("ThreadsCreated", fields: [authorId], references: [id])
-  title       String
-  category    ThreadCategory @default(GENERAL)
-  isPinned    Boolean        @default(false)
-  isLocked    Boolean        @default(false)
-  replyCount  Int            @default(0)
-  lastReplyAt DateTime?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-
-  replies     ThreadReply[]
-
-  @@index([circleId, isPinned, lastReplyAt(sort: Desc)])
-  @@index([circleId, category])
-}
-
-model ThreadReply {
-  id          String           @id @default(cuid())
-  threadId    String
-  thread      DiscussionThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  authorId    String
-  author      User             @relation("ThreadReplies", fields: [authorId], references: [id])
-  content     String           @db.Text
-  mediaUrls   String[]
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-
-  @@index([threadId, createdAt])
-  @@index([authorId])
-}
-
-// ─── Sprint 6: Games & Competitions ────────────────────────────────
-
-enum GameFormat {
-  SKINS
-  NASSAU
-  WOLF
-  MATCH_PLAY
-  BEST_BALL
-  SCRAMBLE
-  STABLEFORD
-  SHAMBLE
-  STROKE_PLAY
-}
-
-enum GameStatus {
-  SETUP
-  OPEN
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
-}
-
-enum PlayerStatus {
-  CONFIRMED
-  TENTATIVE
-  WITHDRAWN
-}
-
-model Game {
-  id            String     @id @default(cuid())
-  circleId      String
-  circle        Circle     @relation(fields: [circleId], references: [id], onDelete: Cascade)
-  createdById   String
-  createdBy     User       @relation(fields: [createdById], references: [id])
-  format        GameFormat
-  courseId       Int?
-  course        Course?    @relation(fields: [courseId], references: [courseId])
-  name          String?
-  startDate     DateTime?
-  endDate       DateTime?
-  status        GameStatus @default(SETUP)
-  config        Json?
-  holesPlayed   Int        @default(18)
-  results       Json?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-
-  players       GamePlayer[]
-  scores        GameScore[]
-  sideGames     SideGame[]
-
-  @@index([circleId, status])
-  @@index([courseId])
-  @@index([createdById])
-}
-
-model GamePlayer {
-  id            String       @id @default(cuid())
-  gameId        String
-  game          Game         @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  userId        String
-  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  team          String?
-  handicap      Float?
-  startingHole  Int          @default(1)
-  status        PlayerStatus @default(CONFIRMED)
-  position      Int?
-
-  @@unique([gameId, userId])
-  @@index([gameId])
-  @@index([userId])
-}
-
-model GameScore {
-  id            String   @id @default(cuid())
-  gameId        String
-  game          Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  holeNumber    Int
-  strokes       Int
-  putts         Int?
-  penalties     Int?
-  fairwayHit    Boolean?
-  greenInReg    Boolean?
-  createdAt     DateTime @default(now())
-
-  @@unique([gameId, userId, holeNumber])
-  @@index([gameId, userId])
-  @@index([gameId, holeNumber])
-}
-
-model SideGame {
-  id          String   @id @default(cuid())
-  gameId      String
-  game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  name        String
-  type        String
-  stakes      String?
-  holeNumber  Int?
-  results     Json?
-  createdAt   DateTime @default(now())
-
-  @@index([gameId])
-}
-
-model HeadToHead {
-  id            String   @id @default(cuid())
-  userId1       String
-  user1         User     @relation("H2HUser1", fields: [userId1], references: [id], onDelete: Cascade)
-  userId2       String
-  user2         User     @relation("H2HUser2", fields: [userId2], references: [id], onDelete: Cascade)
-  circleId      String
-  circle        Circle   @relation(fields: [circleId], references: [id], onDelete: Cascade)
-  wins1         Int      @default(0)
-  wins2         Int      @default(0)
-  ties          Int      @default(0)
-  lastPlayed    DateTime?
-  courseBreakdown Json?
-
-  @@unique([userId1, userId2, circleId])
-  @@index([circleId])
-  @@index([userId1])
-  @@index([userId2])
-}
-
-model LeagueSeason {
-  id            String   @id @default(cuid())
-  circleId      String
-  circle        Circle   @relation(fields: [circleId], references: [id], onDelete: Cascade)
-  name          String
-  startDate     DateTime
-  endDate       DateTime
-  status        GameStatus @default(SETUP)
-  pointSystem   Json?
-  divisions     Json?
-  playoffConfig Json?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  standings     LeagueStanding[]
-
-  @@index([circleId, status])
-}
-
-model LeagueStanding {
-  id          String       @id @default(cuid())
-  seasonId    String
-  season      LeagueSeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
-  userId      String
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  division    String?
-  points      Float        @default(0)
-  wins        Int          @default(0)
-  losses      Int          @default(0)
-  ties        Int          @default(0)
-  gamesPlayed Int          @default(0)
-  rank        Int?
-  updatedAt   DateTime     @updatedAt
-
-  @@unique([seasonId, userId])
-  @@index([seasonId, rank])
-  @@index([userId])
-}
-
-// ─── Sprint 7: Chameleon Score Integration ─────────────────────────
-
-model CircleScoreWeight {
-  id          String  @id @default(cuid())
-  userId      String
-  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  circleId    String
-  circle      Circle  @relation(fields: [circleId], references: [id], onDelete: Cascade)
-  weight      Float   @default(0.5)
-  enabled     Boolean @default(true)
-  updatedAt   DateTime @updatedAt
-
-  @@unique([userId, circleId])
-  @@index([userId])
-}
-
-model CircleConsensus {
-  id              String   @id @default(cuid())
-  circleId        String
-  circle          Circle   @relation(fields: [circleId], references: [id], onDelete: Cascade)
-  courseId         Int
   course          Course   @relation(fields: [courseId], references: [courseId])
-  consensusScore  Float
-  agreementLevel  Float
-  comparedToNational Float?
-  outlierUserIds  String[]
-  lastUpdated     DateTime @default(now())
 
-  @@unique([circleId, courseId])
-  @@index([circleId])
-  @@index([courseId])
+  @@map("course_nearby_rv_parks")
 }
 
-model TripPlan {
-  id          String   @id @default(cuid())
-  creatorId   String
-  creator     User     @relation(fields: [creatorId], references: [id])
-  circleId    String
-  circle      Circle   @relation(fields: [circleId], references: [id], onDelete: Cascade)
-  title       String
-  destination String?
-  startDate   DateTime?
-  endDate     DateTime?
-  status      String   @default("PLANNING")
-  notes       String?  @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model CourseIntelligenceNotes {
+  id          Int      @id @default(autoincrement())
+  courseId    Int      @map("course_id")
+  category    String   @db.VarChar(50)
+  title       String   @db.VarChar(255)
+  content     String
+  icon        String?  @db.VarChar(50)
+  generatedAt DateTime @default(now()) @map("generated_at")
+  source      String?  @db.VarChar(100)
+  isVisible   Boolean  @default(true) @map("is_visible")
 
-  courses     TripCourse[]
-  votes       TripVote[]
-
-  @@index([circleId])
-  @@index([creatorId])
-}
-
-model TripCourse {
-  id          String   @id @default(cuid())
-  tripId      String
-  trip        TripPlan @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  courseId     Int
   course      Course   @relation(fields: [courseId], references: [courseId])
-  playDate    DateTime?
-  teeTime     String?
-  playOrder   Int      @default(0)
-  confirmed   Boolean  @default(false)
-  notes       String?
 
-  @@unique([tripId, courseId])
-  @@index([tripId])
-}
-
-model TripVote {
-  id          String   @id @default(cuid())
-  tripId      String
-  trip        TripPlan @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courseId     Int
-  course      Course   @relation(fields: [courseId], references: [courseId])
-  vote        Int
-  comment     String?
-  createdAt   DateTime @default(now())
-
-  @@unique([tripId, userId, courseId])
-  @@index([tripId])
-  @@index([userId])
-}
-
-// ============================================================
-// Discovery & Launch — Sprint 8
-// ============================================================
-
-model CourseRecommendation {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courseId       Int
-  course        Course   @relation(fields: [courseId], references: [courseId])
-  score         Float
-  reason        String
-  sourceCircleId String?
-  sourceCircle  Circle?  @relation(fields: [sourceCircleId], references: [id])
-  dismissed     Boolean  @default(false)
-  createdAt     DateTime @default(now())
-
-  @@unique([userId, courseId])
-  @@index([userId, dismissed, score(sort: Desc)])
-}
-
-model OnboardingProgress {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  profileComplete Boolean  @default(false)
-  tagsSelected    Boolean  @default(false)
-  friendsAdded    Boolean  @default(false)
-  circleJoined    Boolean  @default(false)
-  coursesRated    Boolean  @default(false)
-  completedAt     DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-}
-
-model ContentReport {
-  id          String   @id @default(cuid())
-  reporterId  String
-  reporter    User     @relation(fields: [reporterId], references: [id])
-  contentType String
-  contentId   String
-  reason      String
-  details     String?  @db.Text
-  status      String   @default("PENDING")
-  reviewedBy  String?
-  reviewedAt  DateTime?
-  createdAt   DateTime @default(now())
-
-  @@index([status])
-  @@index([contentType, contentId])
-  @@index([reporterId])
-}
-
-model PerformanceArticle {
-  id           String    @id @default(cuid())
-  slug         String    @unique
-  title        String    @db.VarChar(255)
-  subtitle     String?   @db.VarChar(500)
-  category     String    @db.VarChar(50) // swing-lab, fitness, mental-game, equipment-intel, stats-center
-  subcategory  String    @db.VarChar(50)
-  difficulty   String?   @db.VarChar(20) // beginner, intermediate, advanced
-  estimatedTime String?  @map("estimated_time") @db.VarChar(30)
-  heroImage    String?   @map("hero_image") @db.VarChar(500)
-  content      String    @db.Text
-  tags         String[]  @default([])
-  videoUrl     String?   @map("video_url") @db.VarChar(500)
-  publishedAt  DateTime  @default(now()) @map("published_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-  featured     Boolean   @default(false)
-  sortOrder    Int       @default(0) @map("sort_order")
-
-  @@index([category])
-  @@index([category, subcategory])
-  @@index([featured])
-  @@index([slug])
-  @@map("performance_articles")
+  @@map("course_intelligence_notes")
 }
 
 model Architect {
   id                  Int      @id @default(autoincrement())
-  name                String   @unique @db.VarChar(255)
-  slug                String   @unique @db.VarChar(255)
+  name                String   @db.VarChar(255)
+  slug                String?  @db.VarChar(255)
   bornYear            Int?     @map("born_year")
   diedYear            Int?     @map("died_year")
   nationality         String?  @db.VarChar(100)
-  bio                 String?  @db.Text
-  designPhilosophy    String?  @map("design_philosophy") @db.Text
-  signatureCourses    String[] @default([]) @map("signature_courses")
-  notableFeatures     String[] @default([]) @map("notable_features")
+  bio                 String?
+  designPhilosophy    String?  @map("design_philosophy")
+  signatureCourses    String[] @map("signature_courses")
+  notableFeatures     String[] @map("notable_features")
   era                 String?  @db.VarChar(50)
   totalCoursesDesigned Int?    @map("total_courses_designed")
   imageUrl            String?  @map("image_url") @db.VarChar(500)
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @default(now()) @map("updated_at")
 
-  @@index([slug])
-  @@index([name])
   @@map("architects")
 }
 
-model WaitlistSignup {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  handicap  String?  // e.g., "0-5", "6-10", "11-15", "16-20", "21+"
-  source    String?  // e.g., "homepage", "waitlist-page", "social"
-  createdAt DateTime @default(now()) @map("created_at")
+model PerformanceArticle {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  title         String   @db.VarChar(255)
+  subtitle      String?  @db.VarChar(500)
+  category      String?  @db.VarChar(100)
+  subcategory   String?  @db.VarChar(100)
+  difficulty    String?  @db.VarChar(50)
+  estimatedTime String?  @map("estimated_time") @db.VarChar(50)
+  heroImage     String?  @map("hero_image") @db.VarChar(500)
+  content       String?
+  tags          String[]
+  videoUrl      String?  @map("video_url") @db.VarChar(500)
+  publishedAt   DateTime? @map("published_at")
+  updatedAt     DateTime? @map("updated_at")
+  featured      Boolean  @default(false)
+  sortOrder     Int      @default(0) @map("sort_order")
 
-  @@map("waitlist_signups")
-}
-
-// ============================================================
-// EQ Tokens & Founders Program — Backend Infrastructure
-// ============================================================
-
-enum TokenTransactionType {
-  EARNED
-  SPENT
-  EXPIRED
-}
-
-enum TokenSource {
-  REVIEW
-  CHECK_IN
-  REFERRAL
-  ACHIEVEMENT
-  PURCHASE
-  ADMIN
-  PROFILE
-}
-
-enum FoundersPhase {
-  GROUND_ZERO
-  CHARTER_CLASS
-  LAST_CALL
-}
-
-enum FoundersStatus {
-  ACTIVE
-  EXPIRED
-}
-
-model EQTokenTransaction {
-  id          String               @id @default(cuid())
-  userId      String               @map("user_id")
-  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  amount      Int
-  type        TokenTransactionType
-  source      TokenSource
-  description String?              @db.VarChar(500)
-  createdAt   DateTime             @default(now()) @map("created_at")
-
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([type])
-  @@index([source])
-  @@map("eq_token_transactions")
-}
-
-model TokenEarningRule {
-  id          String   @id @default(cuid())
-  source      TokenSource
-  action      String   @db.VarChar(100)  // e.g., "submit_review", "check_in", "refer_friend"
-  amount      Int
-  description String?  @db.VarChar(500)
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  @@unique([source, action])
-  @@map("token_earning_rules")
-}
-
-model TierConfig {
-  id          String   @id @default(cuid())
-  name        String   @unique @db.VarChar(50)  // Birdie, Eagle, Albatross, Condor
-  threshold   Int                                 // EQ tokens required
-  sortOrder   Int      @default(0) @map("sort_order")
-  features    Json     @default("[]")             // JSON array of feature strings
-  color       String?  @db.VarChar(20)            // hex color for UI
-  icon        String?  @db.VarChar(50)            // icon name for UI
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  @@map("tier_configs")
-}
-
-model FoundersMembership {
-  id           String         @id @default(cuid())
-  userId       String         @unique @map("user_id")
-  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  memberNumber Int            @unique @map("member_number")  // 1-200
-  joinedAt     DateTime       @default(now()) @map("joined_at")
-  tier         String         @default("FOUNDERS_FLIGHT") @db.VarChar(50)
-  status       FoundersStatus @default(ACTIVE)
-  vaultAccess  Boolean        @default(true) @map("vault_access")
-  badgeAwarded Boolean        @default(true) @map("badge_awarded")
-
-  @@map("founders_memberships")
-}
-
-model FoundersInvite {
-  id          String        @id @default(cuid())
-  code        String        @unique @db.VarChar(50)
-  createdBy   String        @map("created_by")
-  creator     User          @relation("FoundersInvitesSent", fields: [createdBy], references: [id])
-  usedBy      String?       @map("used_by")
-  usedByUser  User?         @relation("FoundersInvitesUsed", fields: [usedBy], references: [id])
-  usedAt      DateTime?     @map("used_at")
-  phase       FoundersPhase
-  expiresAt   DateTime?     @map("expires_at")
-  createdAt   DateTime      @default(now()) @map("created_at")
-
-  @@index([phase])
-  @@index([createdBy])
-  @@map("founders_invites")
-}
-
-model GhinVerification {
-  id              String    @id @default(cuid())
-  userId          String    @map("user_id")
-  ghinNumber      String    @map("ghin_number")
-  handicapIndex   Float?    @map("handicap_index")
-  screenshotUrl   String    @map("screenshot_url") @db.Text
-  status          String    @default("pending") @db.VarChar(20)
-  reviewedBy      String?   @map("reviewed_by")
-  reviewedAt      DateTime? @map("reviewed_at")
-  reviewNote      String?   @map("review_note") @db.Text
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-
-  userProfile     UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
-  reviewer        User?       @relation("GhinReviewedBy", fields: [reviewedBy], references: [id])
-
-  @@index([userId])
-  @@index([status])
-  @@map("ghin_verifications")
+  @@map("performance_articles")
 }
