@@ -7,7 +7,7 @@ export const maxDuration = 60;
 export async function GET(request: NextRequest) {
   try {
     const existingCount = await prisma.externalContent.count();
-    if (existingCount > 0) {
+    if (existingCount >= 9) {
       return NextResponse.json({ message: "Content already seeded", existingCount });
     }
 
@@ -30,6 +30,8 @@ export async function GET(request: NextRequest) {
     let contentCreated = 0;
     for (const { names, ...data } of seeds) {
       const ids = names.map(n => byName.get(n.toLowerCase())).filter((id): id is number => !!id);
+      const exists = await prisma.externalContent.findFirst({ where: { url: data.url } });
+      if (exists) continue;
       try {
         await prisma.externalContent.create({
           data: { ...data, architects: ids.length ? { create: ids.map(id => ({ architectId: id, relevance: "primary" })) } : undefined },
@@ -49,6 +51,8 @@ export async function GET(request: NextRequest) {
     let booksCreated = 0;
     for (const { names, ...data } of bookSeeds) {
       const ids = names.map(n => byName.get(n.toLowerCase())).filter((id): id is number => !!id);
+      const exists = await prisma.book.findFirst({ where: { title: data.title } });
+      if (exists) continue;
       try {
         await prisma.book.create({
           data: { ...data, architects: ids.length ? { create: ids.map(id => ({ architectId: id })) } : undefined },
