@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: "golfEQUALIZER — Dynamic Golf Course Rankings",
   description:
     "Explore 1,500+ ranked golf courses worldwide. golfEQUALIZER aggregates Golf Digest, Golfweek, GOLF Magazine & Top100GolfCourses — then lets you re-weight by what matters to you.",
+  manifest: "/site.webmanifest",
   icons: {
     icon: [
       { url: "/favicon.svg", type: "image/svg+xml" },
