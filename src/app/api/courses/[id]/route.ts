@@ -37,7 +37,18 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
     if (!course) return NextResponse.json({ error: "Course not found" }, { status: 404 });
 
-    return NextResponse.json(course);
+    // Enrich ratings with seed review fields for frontend display
+    const enrichedCourse = {
+      ...course,
+      ratings: course.ratings.map((r: any) => ({
+        ...r,
+        isSeed: r.isSeed || false,
+        seedReviewerName: r.seedReviewerName || null,
+        seedSource: r.seedSource || null,
+      })),
+    };
+
+    return NextResponse.json(enrichedCourse);
   } catch (error: any) {
     console.error("GET /api/courses/[id] error:", error);
     return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });

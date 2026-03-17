@@ -1681,7 +1681,12 @@ export function CourseDetailClient({ course }: { course: any }) {
                       <div className="flex items-center gap-3">
                         {r.user?.image && <img src={r.user.image} alt="" className="h-8 w-8 rounded-full" />}
                         <div>
-                          <div className="font-medium text-sm" style={primaryText}>{safeText(r.user?.name) || "Anonymous"}</div>
+                          <div className="font-medium text-sm" style={primaryText}>
+                            {safeText(r.seedReviewerName) || safeText(r.user?.name) || "Anonymous"}
+                            {r.isSeed && (
+                              <span className="ml-2 text-xs font-normal px-1.5 py-0.5 rounded" style={{ backgroundColor: "rgba(255,255,255,0.06)", color: "var(--cg-text-muted)" }}>via GolfPass</span>
+                            )}
+                          </div>
                           <div className="text-xs" style={mutedText}>{new Date(r.createdAt).toLocaleDateString()}</div>
                         </div>
                         <span className="ml-auto text-lg font-bold" style={{ color: "var(--cg-accent)" }}>
