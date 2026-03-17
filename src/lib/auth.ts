@@ -77,7 +77,26 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = "user";
+        // Look up role from the users table by email
+        try {
+          let dbUser = await prisma.user.findUnique({
+            where: { email: token.email! },
+            select: { role: true },
+          });
+          // If no users entry exists yet, create one so admin role can be set via SQL
+          if (!dbUser && token.email) {
+            dbUser = await prisma.user.create({
+              data: {
+                email: token.email,
+                name: user.name ?? null,
+              },
+              select: { role: true },
+            });
+          }
+          token.role = dbUser?.role ?? "user";
+        } catch {
+          token.role = "user";
+        }
       }
       return token;
     },
