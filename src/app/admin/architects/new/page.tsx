@@ -38,6 +38,7 @@ export default function NewArchitectPage() {
     era: "",
     totalCoursesDesigned: "",
     imageUrl: "",
+    companyUrl: "",
   });
 
   const set = (field: string, value: string) =>
@@ -84,6 +85,7 @@ export default function NewArchitectPage() {
       if (form.era) payload.era = form.era;
       if (form.totalCoursesDesigned) payload.totalCoursesDesigned = parseInt(form.totalCoursesDesigned);
       if (form.imageUrl) payload.imageUrl = form.imageUrl;
+      if (form.companyUrl) payload.companyUrl = form.companyUrl;
 
       const res = await fetch("/api/admin/architects", {
         method: "POST",
@@ -210,6 +212,16 @@ export default function NewArchitectPage() {
                 type="url"
                 value={form.imageUrl}
                 onChange={(e) => set("imageUrl", e.target.value)}
+                className={inputClass}
+                placeholder="https://..."
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Company URL</label>
+              <input
+                type="url"
+                value={form.companyUrl}
+                onChange={(e) => set("companyUrl", e.target.value)}
                 className={inputClass}
                 placeholder="https://..."
               />

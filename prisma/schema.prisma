@@ -656,6 +656,7 @@ model Architect {
   imageUrl            String?  @map("image_url") @db.VarChar(500)
   websiteUrl          String?  @map("website_url") @db.VarChar(500)
   firmName            String?  @map("firm_name") @db.VarChar(255)
+  companyUrl          String?  @map("company_url") @db.VarChar(500)
   heroImageUrl        String?  @map("hero_image_url") @db.VarChar(500)
   portraitUrl         String?  @map("portrait_url") @db.VarChar(500)
   isPartnership       Boolean  @default(false) @map("is_partnership")

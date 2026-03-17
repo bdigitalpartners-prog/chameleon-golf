@@ -15,6 +15,7 @@ interface ArchitectRow {
   bornYear: number | null;
   diedYear: number | null;
   totalCoursesDesigned: number | null;
+  companyUrl: string | null;
 }
 
 interface DuplicatePair {
@@ -222,6 +223,7 @@ export default function AdminArchitectsPage() {
                 <th className="px-4 py-3 font-medium">Nationality</th>
                 <th className="px-4 py-3 font-medium">Era</th>
                 <th className="px-4 py-3 font-medium">Years</th>
+                <th className="px-4 py-3 font-medium">Company URL</th>
                 <th className="px-4 py-3 font-medium text-right">Total Courses</th>
                 <th className="px-4 py-3 font-medium text-right">Actions</th>
               </tr>
@@ -229,13 +231,13 @@ export default function AdminArchitectsPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-gray-500">
+                  <td colSpan={7} className="px-4 py-12 text-center text-gray-500">
                     Loading...
                   </td>
                 </tr>
               ) : architects.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-gray-500">
+                  <td colSpan={7} className="px-4 py-12 text-center text-gray-500">
                     No architects found
                   </td>
                 </tr>
@@ -265,6 +267,19 @@ export default function AdminArchitectsPage() {
                       {a.bornYear
                         ? `${a.bornYear}${a.diedYear ? `–${a.diedYear}` : "–present"}`
                         : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-gray-400">
+                      {a.companyUrl ? (
+                        <a
+                          href={a.companyUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#22c55e] hover:underline text-xs truncate block max-w-[200px]"
+                          title={a.companyUrl}
+                        >
+                          {a.companyUrl.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}
+                        </a>
+                      ) : "—"}
                     </td>
                     <td className="px-4 py-3 text-right text-gray-400 font-mono">
                       {a.totalCoursesDesigned ?? "—"}

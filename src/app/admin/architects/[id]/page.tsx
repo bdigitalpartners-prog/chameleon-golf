@@ -320,6 +320,16 @@ export default function ArchitectEditorPage() {
             />
           </div>
           <div>
+            <label className={labelClass}>Company URL</label>
+            <input
+              type="url"
+              value={form.companyUrl || ""}
+              onChange={(e) => set("companyUrl", e.target.value)}
+              className={inputClass}
+              placeholder="https://..."
+            />
+          </div>
+          <div>
             <label className={labelClass}>Hero Image URL</label>
             <input
               type="url"

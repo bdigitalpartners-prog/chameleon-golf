@@ -19,6 +19,11 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Ensure company_url column exists (safe migration)
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE architects ADD COLUMN IF NOT EXISTS company_url VARCHAR(500)`
+    );
+
     const [architects, total] = await Promise.all([
       prisma.architect.findMany({
         where,
