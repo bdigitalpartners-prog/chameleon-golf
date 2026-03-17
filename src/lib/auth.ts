@@ -9,6 +9,7 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID ?? "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+      checks: ["state"],
     }),
   ],
   session: { strategy: "database" },
@@ -32,6 +33,7 @@ export const authOptions: NextAuthOptions = {
       });
     },
   },
+  debug: process.env.NODE_ENV === "development",
   pages: {
     signIn: "/auth/signin",
   },
