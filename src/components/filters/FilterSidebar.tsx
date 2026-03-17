@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { SlidersHorizontal, ChevronDown } from "lucide-react";
 import type { CourseFilters } from "@/types";
 
@@ -54,16 +54,58 @@ const selectStyle: React.CSSProperties = {
 
 const inputStyle = selectStyle;
 
+interface ArchitectSuggestion {
+  id: number;
+  name: string;
+  slug: string;
+  courseCount: number;
+}
+
 export function FilterSidebar({ filters, onChange, filterOptions }: FilterSidebarProps) {
   const update = (partial: Partial<CourseFilters>) => onChange({ ...filters, ...partial, page: 1 });
 
   const [rankingSources, setRankingSources] = useState<RankingSource[]>([]);
+  const [architectInput, setArchitectInput] = useState(filters.architect || "");
+  const [architectSuggestions, setArchitectSuggestions] = useState<ArchitectSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch("/api/rankings")
       .then((r) => r.json())
       .then((data: RankingSource[]) => setRankingSources(data))
       .catch(() => {});
+  }, []);
+
+  // Architect autocomplete
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!architectInput || architectInput.length < 2) {
+      setArchitectSuggestions([]);
+      return;
+    }
+    debounceRef.current = setTimeout(() => {
+      fetch(`/api/architects?suggest=true&search=${encodeURIComponent(architectInput)}&limit=10`)
+        .then((r) => r.json())
+        .then((data: ArchitectSuggestion[]) => {
+          setArchitectSuggestions(data);
+          setShowSuggestions(true);
+        })
+        .catch(() => {});
+    }, 300);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [architectInput]);
+
+  // Close suggestions on click outside
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
   return (
@@ -195,14 +237,47 @@ export function FilterSidebar({ filters, onChange, filterOptions }: FilterSideba
 
       {/* Architect */}
       <FilterSection title="Architect" defaultOpen={false}>
-        <input
-          type="text"
-          placeholder="e.g. Pete Dye, Alister MacKenzie"
-          value={filters.architect ?? ""}
-          onChange={(e) => update({ architect: e.target.value || undefined })}
-          className="w-full rounded-lg px-3 py-2 text-sm outline-none"
-          style={inputStyle}
-        />
+        <div className="relative" ref={suggestionsRef}>
+          <input
+            type="text"
+            placeholder="e.g. Pete Dye, Alister MacKenzie"
+            value={architectInput}
+            onChange={(e) => {
+              setArchitectInput(e.target.value);
+              if (!e.target.value) update({ architect: undefined });
+            }}
+            onFocus={() => architectSuggestions.length > 0 && setShowSuggestions(true)}
+            className="w-full rounded-lg px-3 py-2 text-sm outline-none"
+            style={inputStyle}
+          />
+          {showSuggestions && architectSuggestions.length > 0 && (
+            <div
+              className="absolute z-20 mt-1 w-full rounded-lg overflow-hidden shadow-lg"
+              style={{
+                backgroundColor: "var(--cg-bg-card)",
+                border: "1px solid var(--cg-border)",
+              }}
+            >
+              {architectSuggestions.map((a) => (
+                <button
+                  key={a.id}
+                  onClick={() => {
+                    setArchitectInput(a.name);
+                    setShowSuggestions(false);
+                    update({ architect: a.name });
+                  }}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-white/5 flex items-center justify-between"
+                  style={{ color: "var(--cg-text-primary)" }}
+                >
+                  <span>{a.name}</span>
+                  <span className="text-xs" style={{ color: "var(--cg-text-muted)" }}>
+                    {a.courseCount} {a.courseCount === 1 ? "course" : "courses"}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </FilterSection>
 
       {/* Year Range */}
@@ -266,6 +341,8 @@ export function FilterSidebar({ filters, onChange, filterOptions }: FilterSideba
           <option value="rank-desc">Most Ranked</option>
           <option value="fee-asc">Green Fee (Low to High)</option>
           <option value="fee-desc">Green Fee (High to Low)</option>
+          <option value="architect-asc">Architect A-Z</option>
+          <option value="architect-desc">Architect Z-A</option>
         </select>
       </FilterSection>
     </aside>
