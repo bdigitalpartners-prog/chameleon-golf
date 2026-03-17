@@ -243,6 +243,8 @@ model CourseMedia {
   credit           String?  @db.VarChar(200)
   sourceName       String?  @map("source_name") @db.VarChar(200)
   isPrimary        Boolean  @default(false) @map("is_primary")
+  isActive         Boolean  @default(true) @map("is_active")
+  sourceUrl        String?  @map("source_url") @db.VarChar(500)
   sortOrder        Int      @default(0) @map("sort_order")
   uploadedBy       String?  @map("uploaded_by")
   createdAt        DateTime @default(now()) @map("created_at")
