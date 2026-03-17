@@ -85,6 +85,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
     }
 
+    // Ensure the waitlist_signups table exists (handles case where prisma db push hasn't been run)
+    try {
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS "waitlist_signups" (
+          "id" SERIAL PRIMARY KEY,
+          "email" VARCHAR(255) NOT NULL UNIQUE,
+          "name" VARCHAR(255),
+          "handicap" VARCHAR(50),
+          "source" VARCHAR(100),
+          "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+    } catch (e) {
+      // Table likely already exists, continue
+    }
+
     // Check if already signed up
     const existing = await prisma.waitlistSignup.findUnique({
       where: { email: trimmedEmail },
