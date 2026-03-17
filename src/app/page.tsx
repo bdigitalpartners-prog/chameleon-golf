@@ -175,8 +175,13 @@ function WaitlistCTA() {
         {success ? (
           <div className="mt-6">
             <p className="text-lg font-semibold" style={{ color: "#01696F" }}>
-              You're in! You're #{position} on the waitlist.
+              You're on the list! We'll be in touch soon.
             </p>
+            {position && (
+              <p className="mt-1 text-sm" style={{ color: "var(--cg-text-secondary)" }}>
+                You're #{position} on the waitlist.
+              </p>
+            )}
             <Link
               href="/waitlist"
               className="mt-3 inline-flex items-center gap-1 text-sm font-medium transition-colors"
