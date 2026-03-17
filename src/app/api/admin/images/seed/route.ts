@@ -35,13 +35,16 @@ function fuzzyMatch(gdName: string, dbName: string): boolean {
   const a = normalize(gdName);
   const b = normalize(dbName);
   if (a === b) return true;
-  if (a.includes(b) || b.includes(a)) return true;
+  // Only allow substring matching if both normalized names are at least 4 chars
+  // This prevents "the", "old", "red" from matching everything
+  if (a.length >= 4 && b.length >= 4 && (a.includes(b) || b.includes(a))) return true;
   const wordsA = a.split(" ").filter((w) => w.length > 2);
   const wordsB = b.split(" ").filter((w) => w.length > 2);
   if (wordsA.length > 0 && wordsB.length > 0) {
     const matchCount = wordsA.filter((w) => wordsB.includes(w)).length;
     const minWords = Math.min(wordsA.length, wordsB.length);
-    if (minWords > 0 && matchCount / minWords >= 0.6) return true;
+    // Require at least 2 matching words if either side has many words
+    if (minWords > 0 && matchCount / minWords >= 0.6 && matchCount >= Math.min(2, minWords)) return true;
   }
   return false;
 }
