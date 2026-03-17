@@ -1,50 +1,30 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import prisma from "./prisma";
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  // Use JWT sessions — no database dependency for auth
+  session: { strategy: "jwt" },
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID ?? "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
-      checks: ["state"],
     }),
   ],
-  session: { strategy: "database" },
   callbacks: {
-    async session({ session, user }) {
+    async jwt({ token, user, account }) {
+      // On initial sign-in, add user info to the token
+      if (user) {
+        token.id = user.id;
+        token.role = "user";
+      }
+      return token;
+    },
+    async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = user.id;
-        (session.user as any).role = (user as any).role ?? "user";
+        (session.user as any).id = token.id ?? token.sub;
+        (session.user as any).role = token.role ?? "user";
       }
       return session;
-    },
-  },
-  events: {
-    async createUser({ user }) {
-      // Auto-create UserProfile on first Google sign-in
-      try {
-        await (prisma as any).userProfile?.create({
-          data: {
-            userId: user.id,
-            avatarUrl: user.image ?? undefined,
-          },
-        });
-      } catch (e) {
-        // UserProfile table may not exist yet — don't block sign-in
-        console.warn("[Auth] Could not create UserProfile:", (e as Error).message);
-      }
-    },
-  },
-  debug: true,
-  logger: {
-    error(code, metadata) {
-      console.error("[NextAuth Error]", code, JSON.stringify(metadata, null, 2));
-    },
-    warn(code) {
-      console.warn("[NextAuth Warn]", code);
     },
   },
   pages: {
