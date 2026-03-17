@@ -1,0 +1,29 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { CirclesSocialWidget } from "@/components/circles-widget/CirclesSocialWidget";
+import { LeaderboardWidget } from "@/components/leaderboard-widget/LeaderboardWidget";
+import { PiEasterEgg } from "@/components/layout/PiEasterEgg";
+
+/**
+ * AppShell routes between the new sidebar dashboard layout
+ * and a plain passthrough for admin pages (which have their
+ * own layout with an admin sidebar).
+ */
+export function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+
+  // Admin pages have their own sidebar + layout — skip the dashboard shell
+  if (pathname.startsWith("/admin")) {
+    return <>{children}</>;
+  }
+
+  return (
+    <DashboardLayout>
+      {children}
+      <CirclesSocialWidget />
+      <LeaderboardWidget />
+    </DashboardLayout>
+  );
+}
