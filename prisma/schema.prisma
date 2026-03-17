@@ -129,6 +129,7 @@ model Course {
   nearbyFrom        CourseNearbyCourses[] @relation("NearbyCourse")
   nearbyRvParks     CourseNearbyRvParks[]
   intelligenceNotes CourseIntelligenceNotes[]
+  weatherMonths     CourseWeather[]
 
   // Social Links
   instagramUrl      String?   @map("instagram_url") @db.VarChar(500)
@@ -142,7 +143,6 @@ model Course {
   courseArchitects   CourseArchitect[]
   externalContent   ContentCourseLink[]
   books             BookCourseLink[]
-  accessGuide       CourseAccessGuide?
 
   @@map("courses")
 }
@@ -890,23 +890,23 @@ model FoundingAdvisoryFeedback {
   @@map("founding_advisory_feedback")
 }
 
-model CourseAccessGuide {
-  id                  Int      @id @default(autoincrement())
-  courseId             Int      @unique @map("course_id")
-  accessType          String?  @map("access_type") @db.VarChar(50)
-  guestPolicy         String?  @map("guest_policy")
-  membershipInfo      String?  @map("membership_info")
-  reciprocalPrograms  Json?    @map("reciprocal_programs")
-  charitableEvents    Json?    @map("charitable_events")
-  stayAndPlay         Json?    @map("stay_and_play")
-  otherPaths          Json?    @map("other_paths")
-  tips                String?
-  difficultyRating    Int?     @map("difficulty_rating")
-  lastVerified        DateTime? @map("last_verified")
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @default(now()) @map("updated_at")
+model CourseWeather {
+  id               Int      @id @default(autoincrement())
+  courseId          Int      @map("course_id")
+  month            Int      // 1-12
+  avgHighF         Decimal  @map("avg_high_f") @db.Decimal(5, 1)
+  avgLowF          Decimal  @map("avg_low_f") @db.Decimal(5, 1)
+  avgPrecipInches  Decimal  @map("avg_precip_inches") @db.Decimal(5, 2)
+  avgPrecipDays    Int      @map("avg_precip_days")
+  avgSunnyDays     Int      @map("avg_sunny_days")
+  humidity         Int      // percentage 0-100
+  windSpeedMph     Decimal  @map("wind_speed_mph") @db.Decimal(4, 1)
+  playabilityScore Int      @map("playability_score") // 0-100
+  bestTimeOfDay    String?  @map("best_time_of_day") @db.VarChar(100)
+  generatedAt      DateTime @default(now()) @map("generated_at")
 
-  course              Course   @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  course           Course   @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
 
-  @@map("course_access_guides")
+  @@unique([courseId, month])
+  @@map("course_weather")
 }

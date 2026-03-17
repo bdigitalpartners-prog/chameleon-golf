@@ -29,7 +29,7 @@ import {
   FileText,
   BookOpen,
   ImageIcon,
-  Key,
+  Sun,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -42,7 +42,7 @@ const NAV_ITEMS = [
   { label: "Images", href: "/admin/images", icon: ImageIcon },
   { label: "Enrichment", href: "/admin/enrichment", icon: Database },
   { label: "Intelligence", href: "/admin/intelligence", icon: Lightbulb },
-  { label: "Access Guides", href: "/admin/access-guides", icon: Key },
+  { label: "Weather", href: "/admin/weather", icon: Sun },
   { label: "Rankings", href: "/admin/rankings", icon: Trophy },
   { label: "Scores", href: "/admin/scores", icon: Calculator },
   { label: "Users", href: "/admin/users", icon: Users },

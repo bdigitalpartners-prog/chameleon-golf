@@ -54,7 +54,7 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
           where: { isPublished: true },
           include: { user: { select: { name: true, image: true } } },
           orderBy: { createdAt: "desc" },
-          take: 50,
+          take: 20,
         },
         teeBoxes: {
           orderBy: { totalYardage: "desc" },
@@ -72,7 +72,9 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
           where: { isVisible: true },
           orderBy: { generatedAt: "desc" },
         },
-        accessGuide: true,
+        weatherMonths: {
+          orderBy: { month: "asc" },
+        },
         architect: {
           select: {
             id: true,
