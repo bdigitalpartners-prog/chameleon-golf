@@ -36,6 +36,12 @@ interface ListCourse {
   yearOpened: number | null;
   greenFeeLow: string | null;
   primaryImageUrl: string | null;
+  architect: {
+    id: number;
+    name: string;
+    slug: string;
+    era: string | null;
+  } | null;
 }
 
 interface ListData {
@@ -126,6 +132,28 @@ export default function ListDetailPage() {
 
   const sourceColor =
     SOURCE_COLORS[data.source.sourceName] ?? "var(--cg-accent)";
+
+  // Architect leaderboard — count how many courses each architect has on this list
+  const architectCounts: Record<
+    string,
+    { name: string; slug: string; era: string | null; count: number }
+  > = {};
+  for (const c of data.courses) {
+    const key = c.architect?.slug ?? c.originalArchitect;
+    if (!key) continue;
+    if (!architectCounts[key]) {
+      architectCounts[key] = {
+        name: c.architect?.name ?? c.originalArchitect ?? "",
+        slug: c.architect?.slug ?? "",
+        era: c.architect?.era ?? null,
+        count: 0,
+      };
+    }
+    architectCounts[key].count++;
+  }
+  const architectLeaderboard = Object.values(architectCounts)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
 
   return (
     <div
@@ -222,6 +250,92 @@ export default function ListDetailPage() {
           </div>
         </div>
 
+        {/* Architect Leaderboard */}
+        {architectLeaderboard.length > 0 && (
+          <div
+            className="rounded-2xl p-6 mb-8"
+            style={{
+              backgroundColor: "var(--cg-bg-card)",
+              border: "1px solid var(--cg-border)",
+            }}
+          >
+            <h2
+              className="text-lg font-semibold mb-4"
+              style={{ color: "var(--cg-text-primary)" }}
+            >
+              Architect Leaderboard
+              <span
+                className="ml-2 text-sm font-normal"
+                style={{ color: "var(--cg-text-muted)" }}
+              >
+                Most courses on this list
+              </span>
+            </h2>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+              {architectLeaderboard.map((a, idx) => {
+                const inner = (
+                  <div
+                    className={`rounded-lg p-3 flex items-center gap-3 transition-all ${
+                      a.slug ? "hover:ring-1 hover:ring-emerald-500 cursor-pointer" : ""
+                    }`}
+                    style={{
+                      backgroundColor: "var(--cg-bg-secondary)",
+                      border: "1px solid var(--cg-border)",
+                    }}
+                  >
+                    <span
+                      className="text-lg font-bold tabular-nums w-7 text-center shrink-0"
+                      style={{
+                        color:
+                          idx === 0
+                            ? "#FFD700"
+                            : idx === 1
+                            ? "#C0C0C0"
+                            : idx === 2
+                            ? "#CD7F32"
+                            : "var(--cg-text-muted)",
+                      }}
+                    >
+                      {idx + 1}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div
+                        className="text-sm font-medium truncate"
+                        style={{ color: "var(--cg-text-primary)" }}
+                      >
+                        {a.name}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="text-xs font-medium"
+                          style={{ color: "var(--cg-accent)" }}
+                        >
+                          {a.count} course{a.count !== 1 ? "s" : ""}
+                        </span>
+                        {a.era && (
+                          <span
+                            className="text-xs"
+                            style={{ color: "var(--cg-text-muted)" }}
+                          >
+                            {a.era}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+                return a.slug ? (
+                  <Link key={a.slug} href={`/architects/${a.slug}`}>
+                    {inner}
+                  </Link>
+                ) : (
+                  <div key={a.name}>{inner}</div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Course list */}
         <div
           className="rounded-xl overflow-hidden"
@@ -234,7 +348,7 @@ export default function ListDetailPage() {
           <div
             className="hidden sm:grid items-center gap-3 px-4 py-3 text-xs font-semibold uppercase tracking-wider"
             style={{
-              gridTemplateColumns: "3.5rem 3rem 1fr 10rem 7rem 5rem",
+              gridTemplateColumns: "3.5rem 3rem 1fr 9rem 8rem 5rem 5rem",
               backgroundColor: "var(--cg-bg-tertiary)",
               color: "var(--cg-text-muted)",
               borderBottom: "1px solid var(--cg-border)",
@@ -243,6 +357,7 @@ export default function ListDetailPage() {
             <span>Rank</span>
             <span></span>
             <span>Course</span>
+            <span>Architect</span>
             <span>Location</span>
             <span>Style</span>
             <span>Fee</span>
@@ -271,7 +386,7 @@ export default function ListDetailPage() {
               <div
                 className="hidden sm:grid items-center gap-3 px-4 py-3"
                 style={{
-                  gridTemplateColumns: "3.5rem 3rem 1fr 10rem 7rem 5rem",
+                  gridTemplateColumns: "3.5rem 3rem 1fr 9rem 8rem 5rem 5rem",
                 }}
               >
                 {/* Rank */}
@@ -322,7 +437,7 @@ export default function ListDetailPage() {
                   )}
                 </div>
 
-                {/* Name + architect */}
+                {/* Name */}
                 <div className="min-w-0">
                   <div
                     className="text-sm font-semibold truncate group-hover:underline"
@@ -330,14 +445,34 @@ export default function ListDetailPage() {
                   >
                     {course.courseName}
                   </div>
-                  {course.originalArchitect && (
+                  {course.yearOpened && (
                     <div
                       className="text-xs truncate"
                       style={{ color: "var(--cg-text-muted)" }}
                     >
-                      {course.originalArchitect}
-                      {course.yearOpened ? ` · ${course.yearOpened}` : ""}
+                      Est. {course.yearOpened}
                     </div>
+                  )}
+                </div>
+
+                {/* Architect */}
+                <div className="text-xs truncate" style={{ color: "var(--cg-text-secondary)" }}>
+                  {course.architect ? (
+                    <span
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.location.href = `/architects/${course.architect!.slug}`;
+                      }}
+                      className="hover:underline cursor-pointer"
+                      style={{ color: "var(--cg-accent)" }}
+                    >
+                      {course.architect.name}
+                    </span>
+                  ) : (
+                    <span style={{ color: "var(--cg-text-muted)" }}>
+                      {course.originalArchitect ?? "—"}
+                    </span>
                   )}
                 </div>
 

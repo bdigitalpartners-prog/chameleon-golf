@@ -23,6 +23,9 @@ export async function GET(
             course: {
               include: {
                 media: { where: { isPrimary: true }, take: 1 },
+                architect: {
+                  select: { id: true, name: true, slug: true, era: true },
+                },
               },
             },
           },
@@ -52,6 +55,14 @@ export async function GET(
       yearOpened: e.course.yearOpened,
       greenFeeLow: e.course.greenFeeLow?.toString() ?? null,
       primaryImageUrl: e.course.media[0]?.url ?? null,
+      architect: e.course.architect
+        ? {
+            id: e.course.architect.id,
+            name: e.course.architect.name,
+            slug: e.course.architect.slug,
+            era: e.course.architect.era,
+          }
+        : null,
     }));
 
     return NextResponse.json({
