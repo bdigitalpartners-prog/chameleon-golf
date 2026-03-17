@@ -23,6 +23,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <DashboardLayout>
       {children}
       <CirclesSocialWidget />
+      {/* Looper Guild lambda easter egg — bottom-right of home page */}
+      {pathname === "/" && (
+        <div className="fixed bottom-4 right-4 z-40">
+          <PiEasterEgg />
+        </div>
+      )}
     </DashboardLayout>
   );
 }
