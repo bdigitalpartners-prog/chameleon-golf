@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Navbar } from "@/components/layout/Navbar";
 import { Providers } from "@/components/layout/Providers";
+import { PiEasterEgg } from "@/components/layout/PiEasterEgg";
 
 export const metadata: Metadata = {
   title: "golfEQUALIZER — Dynamic Golf Course Rankings",
@@ -76,11 +77,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <div className="text-xs mb-2" style={{ color: "var(--cg-text-muted)", opacity: 0.7 }}>
                     Rankings powered by Golf Digest, Golfweek, GOLF Magazine &amp; Top100GolfCourses.
                   </div>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs justify-center sm:justify-start">
-                    <a href="/privacy" className="transition-colors hover:underline" style={{ color: "var(--cg-text-muted)" }}>Privacy Policy</a>
-                    <a href="/terms" className="transition-colors hover:underline" style={{ color: "var(--cg-text-muted)" }}>Terms of Service</a>
-                  </div>
                 </div>
+              </div>
+              {/* Bottom row: legal links + easter egg */}
+              <div className="flex items-center justify-center sm:justify-between mt-4 gap-x-4 gap-y-1 text-xs">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 justify-center sm:justify-start">
+                  <a href="/privacy" className="transition-colors hover:underline" style={{ color: "var(--cg-text-muted)" }}>Privacy Policy</a>
+                  <a href="/terms" className="transition-colors hover:underline" style={{ color: "var(--cg-text-muted)" }}>Terms of Service</a>
+                </div>
+                <PiEasterEgg />
               </div>
             </div>
           </footer>
