@@ -142,7 +142,7 @@ model Course {
   courseArchitects   CourseArchitect[]
   externalContent   ContentCourseLink[]
   books             BookCourseLink[]
-  bucketListItems   BucketListItem[]
+  accessGuide       CourseAccessGuide?
 
   @@map("courses")
 }
@@ -324,7 +324,6 @@ model User {
   scores          PostedScore[]
   weightProfiles  UserWeightProfile[]
   wishlists       CourseWishlist[]
-  bucketListItems BucketListItem[]
 
   @@map("users")
 }
@@ -839,26 +838,6 @@ model BookCourseLink {
   @@map("book_course_links")
 }
 
-model BucketListItem {
-  id          Int       @id @default(autoincrement())
-  userId      String    @map("user_id")
-  courseId     Int       @map("course_id")
-  priority    String    @default("Medium") @db.VarChar(20)
-  notes       String?
-  targetDate  DateTime? @map("target_date") @db.Date
-  status      String    @default("Want to Play") @db.VarChar(30)
-  playedAt    DateTime? @map("played_at") @db.Date
-  rating      Decimal?  @db.Decimal(3, 1)
-  addedAt     DateTime  @default(now()) @map("added_at")
-  updatedAt   DateTime  @default(now()) @map("updated_at")
-
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course      Course    @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
-
-  @@unique([userId, courseId])
-  @@map("bucket_list_items")
-}
-
 model PerformanceArticle {
   id            String   @id @default(cuid())
   slug          String   @unique
@@ -909,4 +888,25 @@ model FoundingAdvisoryFeedback {
   submittedAt           DateTime @default(now()) @map("submitted_at")
 
   @@map("founding_advisory_feedback")
+}
+
+model CourseAccessGuide {
+  id                  Int      @id @default(autoincrement())
+  courseId             Int      @unique @map("course_id")
+  accessType          String?  @map("access_type") @db.VarChar(50)
+  guestPolicy         String?  @map("guest_policy")
+  membershipInfo      String?  @map("membership_info")
+  reciprocalPrograms  Json?    @map("reciprocal_programs")
+  charitableEvents    Json?    @map("charitable_events")
+  stayAndPlay         Json?    @map("stay_and_play")
+  otherPaths          Json?    @map("other_paths")
+  tips                String?
+  difficultyRating    Int?     @map("difficulty_rating")
+  lastVerified        DateTime? @map("last_verified")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @default(now()) @map("updated_at")
+
+  course              Course   @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+
+  @@map("course_access_guides")
 }

@@ -54,24 +54,15 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
           where: { isPublished: true },
           include: { user: { select: { name: true, image: true } } },
           orderBy: { createdAt: "desc" },
-          take: 20,
+          take: 50,
         },
         teeBoxes: {
           orderBy: { totalYardage: "desc" },
-        },
-        holes: {
-          orderBy: { holeNumber: "asc" },
-          include: {
-            teeYardages: {
-              include: { tee: { select: { teeName: true, color: true } } },
-            },
-          },
         },
         nearbyDining: { orderBy: { sortOrder: "asc" }, take: 8 },
         nearbyLodging: { orderBy: { sortOrder: "asc" }, take: 6 },
         nearbyAttractions: { orderBy: { sortOrder: "asc" }, take: 8 },
         nearbyRvParks: { orderBy: { sortOrder: "asc" }, take: 4 },
-        nearbyMetroDistances: { orderBy: { distanceMiles: "asc" }, take: 8 },
         nearbyCourses: {
           include: { nearbyCourse: { include: { media: { where: { isPrimary: true }, take: 1 } } } },
           orderBy: { distanceMiles: "asc" },
@@ -81,7 +72,7 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
           where: { isVisible: true },
           orderBy: { generatedAt: "desc" },
         },
-        courseContent: true,
+        accessGuide: true,
         architect: {
           select: {
             id: true,
@@ -98,16 +89,6 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
             diedYear: true,
             firmName: true,
           },
-        },
-        renovations: {
-          include: {
-            architect: { select: { id: true, name: true, slug: true } },
-          },
-          orderBy: { year: "asc" },
-        },
-        designDna: true,
-        templateHolesRel: {
-          orderBy: { holeNumber: "asc" },
         },
       },
     });

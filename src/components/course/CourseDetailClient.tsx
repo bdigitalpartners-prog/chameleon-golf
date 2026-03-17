@@ -8,15 +8,14 @@ import {
   Clock, Sun, CloudRain, Wind, Leaf, SlidersHorizontal,
   Building2, Map, Mail, ExternalLink, DollarSign,
   Home, Camera, Image, MessageSquare, Brain, Briefcase, Truck, Pencil,
-  Award, ArrowRight,
+  Award, ArrowRight, Key, Lock, Shield, Ticket, Users, Filter,
+  ThumbsUp, ChevronDown,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { CoursePlaceholder } from "./CoursePlaceholder";
 import { CircleRatingsSection } from "./CircleRatingsSection";
 import { PoweredByBadge } from "@/components/brand/PoweredByBadge";
 import { CourseContentSections } from "./CourseContentSections";
-import { BucketListButton } from "@/components/bucket-list/BucketListButton";
-import { BucketListCounter } from "@/components/bucket-list/BucketListCounter";
 
 /* ─── Safe Text Helper ─── */
 
@@ -350,8 +349,136 @@ function HoleCard({ title, holeData, accent }: { title: string; holeData: any; a
 
 /* ─── TABS ─── */
 
-const TABS = ["Overview", "Insider Tips", "Travel & Stay", "Reviews"] as const;
+const TABS = ["Overview", "Play It", "Insider Tips", "Travel & Stay", "Community"] as const;
 type Tab = (typeof TABS)[number];
+
+/* ─── Difficulty Labels & Colors ─── */
+
+const DIFFICULTY_LABELS: Record<number, string> = {
+  1: "Walk-On Friendly",
+  2: "Easy Access",
+  3: "Moderate",
+  4: "Difficult",
+  5: "Nearly Impossible",
+};
+
+const DIFFICULTY_COLORS: Record<number, string> = {
+  1: "#22c55e",
+  2: "#4ade80",
+  3: "#eab308",
+  4: "#f97316",
+  5: "#ef4444",
+};
+
+function DifficultyMeter({ rating }: { rating: number }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-semibold" style={{ color: DIFFICULTY_COLORS[rating] || "#eab308" }}>
+          {DIFFICULTY_LABELS[rating] || "Unknown"}
+        </span>
+      </div>
+      <div className="flex gap-1">
+        {[1, 2, 3, 4, 5].map((level) => (
+          <div
+            key={level}
+            className="h-2 flex-1 rounded-full transition-all"
+            style={{
+              backgroundColor: level <= rating
+                ? (DIFFICULTY_COLORS[rating] || "#eab308")
+                : "var(--cg-bg-tertiary)",
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Access Path Card ─── */
+
+function AccessPathCard({ icon, title, items }: {
+  icon: React.ReactNode;
+  title: string;
+  items: { name?: string; resort?: string; method?: string; description: string; typicalCost?: string; priceRange?: string }[];
+}) {
+  if (!items || items.length === 0) return null;
+  return (
+    <div className="rounded-xl p-4" style={{ backgroundColor: "var(--cg-bg-secondary)", border: "1px solid var(--cg-border)" }}>
+      <div className="flex items-center gap-2 mb-3">
+        <span style={{ color: "var(--cg-accent)" }}>{icon}</span>
+        <h4 className="text-sm font-semibold" style={primaryText}>{title}</h4>
+      </div>
+      <div className="space-y-3">
+        {items.map((item, i) => (
+          <div key={i} className="border-l-2 pl-3" style={{ borderColor: "var(--cg-accent)" }}>
+            <div className="text-sm font-medium" style={primaryText}>
+              {item.name || item.resort || item.method || `Option ${i + 1}`}
+            </div>
+            <p className="text-xs mt-0.5" style={secondaryText}>{item.description}</p>
+            {(item.typicalCost || item.priceRange) && (
+              <span className="text-xs mt-1 inline-block px-2 py-0.5 rounded" style={{ backgroundColor: "var(--cg-bg-tertiary)", color: "var(--cg-text-muted)" }}>
+                {item.typicalCost || item.priceRange}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Review Card ─── */
+
+function ReviewCard({ review, showHandicap }: { review: any; showHandicap?: boolean }) {
+  const rating = parseFloat(review.overallRating);
+  return (
+    <div className="rounded-lg p-4" style={{ backgroundColor: "var(--cg-bg-secondary)" }}>
+      <div className="flex items-center gap-3">
+        {review.user?.image && <img src={review.user.image} alt="" className="h-8 w-8 rounded-full" />}
+        <div className="flex-1 min-w-0">
+          <div className="font-medium text-sm flex items-center gap-2" style={primaryText}>
+            <span className="truncate">
+              {safeText(review.seedReviewerName) || safeText(review.user?.name) || "Anonymous"}
+            </span>
+            {review.isSeed && (
+              <span className="shrink-0 text-xs font-normal px-1.5 py-0.5 rounded" style={{ backgroundColor: "rgba(255,255,255,0.06)", color: "var(--cg-text-muted)" }}>
+                Community
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 text-xs" style={mutedText}>
+            <span>{new Date(review.createdAt).toLocaleDateString()}</span>
+            {showHandicap && review.handicapAtRating != null && (
+              <span>· HCP {parseFloat(review.handicapAtRating).toFixed(0)}</span>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-1">
+          {[1, 2, 3, 4, 5].map((s) => (
+            <Star
+              key={s}
+              className="h-3.5 w-3.5"
+              style={{
+                color: s <= Math.round(rating) ? "#f59e0b" : "var(--cg-border)",
+                fill: s <= Math.round(rating) ? "#f59e0b" : "none",
+              }}
+            />
+          ))}
+          <span className="ml-1 text-sm font-bold tabular-nums" style={{ color: "var(--cg-accent)" }}>
+            {rating.toFixed(1)}
+          </span>
+        </div>
+      </div>
+      {safeText(review.reviewTitle) && (
+        <div className="mt-2 font-medium text-sm" style={primaryText}>{safeText(review.reviewTitle)}</div>
+      )}
+      {safeText(review.reviewText) && (
+        <p className="mt-1 text-sm leading-relaxed" style={secondaryText}>{safeText(review.reviewText)}</p>
+      )}
+    </div>
+  );
+}
 
 /* ════════════════════════════════════════════════════
    MAIN COMPONENT
@@ -486,10 +613,9 @@ export function CourseDetailClient({ course }: { course: any }) {
           )}
         </div>
 
-        {/* CF Score ring + Bucket List - top right */}
-        <div className="absolute top-4 right-4 md:top-6 md:right-6 flex items-center gap-2">
-          <BucketListButton courseId={course.courseId} courseName={course.courseName} size="lg" />
-          {scoreNum !== null && (
+        {/* CF Score ring - top right */}
+        {scoreNum !== null && (
+          <div className="absolute top-4 right-4 md:top-6 md:right-6">
             <div
               className="flex items-center justify-center rounded-full h-16 w-16 text-lg font-bold shadow-lg"
               style={{
@@ -499,8 +625,8 @@ export function CourseDetailClient({ course }: { course: any }) {
             >
               {Math.round(scoreNum)}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Hero text - bottom */}
         <div className="absolute bottom-0 left-0 right-0 px-4 pb-5 md:px-6 md:pb-6">
@@ -1827,143 +1953,322 @@ export function CourseDetailClient({ course }: { course: any }) {
           );
         })()}
 
-        {/* ────── REVIEWS TAB ────── */}
-        {activeTab === "Reviews" && (
-          <div className="max-w-3xl space-y-8">
+        {/* ────── PLAY IT TAB ────── */}
+        {activeTab === "Play It" && (() => {
+          const guide = course.accessGuide;
+          const isPublic = (course.accessType || "").toLowerCase().includes("public") ||
+                           (course.accessType || "").toLowerCase().includes("municipal");
 
-            {/* Your Circles */}
-            <CircleRatingsSection courseId={course.courseId} courseName={course.courseName} />
+          return (
+            <div className="max-w-3xl space-y-8">
+              {/* Public Course Badge */}
+              {isPublic && (
+                <div
+                  className="flex items-center gap-3 rounded-xl p-4"
+                  style={{ backgroundColor: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)" }}
+                >
+                  <Shield className="h-6 w-6" style={{ color: "#22c55e" }} />
+                  <div>
+                    <div className="text-sm font-semibold" style={{ color: "#22c55e" }}>Open to Public</div>
+                    <p className="text-xs" style={secondaryText}>
+                      This course is open to the public. Book a tee time and play!
+                    </p>
+                  </div>
+                  {course.bookingUrl && (
+                    <a
+                      href={course.bookingUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-auto shrink-0 px-4 py-2 rounded-lg text-sm font-medium"
+                      style={{ backgroundColor: "var(--cg-accent)", color: "white" }}
+                    >
+                      Book Tee Time
+                    </a>
+                  )}
+                </div>
+              )}
 
-            {/* Score Breakdown */}
-            {hasDimensions && (
-              <section style={cardStyle}>
-                <SectionHeading icon={<Star className="h-5 w-5" style={{ color: "#f59e0b" }} />}>
-                  Score Breakdown
-                </SectionHeading>
-
-                <div className="flex items-center gap-6 mb-6">
-                  {scoreNum !== null && (
-                    <div className="flex items-center justify-center rounded-full h-20 w-20 text-2xl font-bold shrink-0" style={{
-                      backgroundColor: scoreNum >= 80 ? "var(--cg-accent)" : scoreNum >= 50 ? "#eab308" : "var(--cg-bg-tertiary)",
-                      color: scoreNum >= 50 ? "white" : "var(--cg-text-primary)",
-                    }}>
-                      {Math.round(scoreNum)}
+              {/* Difficulty Meter */}
+              {guide?.difficultyRating && (
+                <section style={cardStyle}>
+                  <SectionHeading icon={<Key className="h-5 w-5" style={{ color: "var(--cg-accent)" }} />}>
+                    Access Difficulty
+                  </SectionHeading>
+                  <DifficultyMeter rating={guide.difficultyRating} />
+                  {guide.lastVerified && (
+                    <div className="mt-3">
+                      <LastUpdated date={guide.lastVerified} />
                     </div>
                   )}
-                  <div>
-                    <div className="text-sm font-medium" style={primaryText}>CF Score</div>
-                    {csData?.totalRatings > 0 && (
-                      <div className="text-xs" style={mutedText}>
-                        Based on {csData.totalRatings} rating{csData.totalRatings !== 1 ? "s" : ""}
-                      </div>
-                    )}
-                    {csData?.numListsAppeared > 0 && (
-                      <div className="text-xs" style={mutedText}>
-                        Appeared on {csData.numListsAppeared} ranking list{csData.numListsAppeared !== 1 ? "s" : ""}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                </section>
+              )}
 
-                <div className="mb-6">
-                  <RadarChart scores={radarScores} />
-                </div>
+              {/* Guest Policy */}
+              {guide?.guestPolicy && (
+                <section style={cardStyle}>
+                  <SectionHeading icon={<Users className="h-5 w-5" style={{ color: "var(--cg-accent)" }} />}>
+                    Guest Policy
+                  </SectionHeading>
+                  <p className="text-sm leading-relaxed" style={secondaryText}>{guide.guestPolicy}</p>
+                </section>
+              )}
 
-                <div className="space-y-2.5">
-                  <ScoreDimRow label="Conditioning" value={radarScores.avgConditioning ?? null} />
-                  <ScoreDimRow label="Layout & Design" value={radarScores.avgLayoutDesign ?? null} />
-                  <ScoreDimRow label="Aesthetics" value={radarScores.avgAesthetics ?? null} />
-                  <ScoreDimRow label="Challenge" value={radarScores.avgChallenge ?? null} />
-                  <ScoreDimRow label="Value" value={radarScores.avgValue ?? null} />
-                  <ScoreDimRow label="Walkability" value={radarScores.avgWalkability ?? null} />
-                  <ScoreDimRow label="Pace of Play" value={radarScores.avgPace ?? null} />
-                  <ScoreDimRow label="Amenities" value={radarScores.avgAmenities ?? null} />
-                  <ScoreDimRow label="Service" value={radarScores.avgService ?? null} />
-                </div>
-                <div className="mt-4 flex justify-end">
-                  <PoweredByBadge variant="ratings" />
-                </div>
+              {/* Membership Info */}
+              {guide?.membershipInfo && (
+                <section style={cardStyle}>
+                  <SectionHeading icon={<Lock className="h-5 w-5" style={{ color: "var(--cg-accent)" }} />}>
+                    Membership
+                  </SectionHeading>
+                  <p className="text-sm leading-relaxed" style={secondaryText}>{guide.membershipInfo}</p>
+                </section>
+              )}
+
+              {/* Access Paths */}
+              <section className="space-y-4">
+                <AccessPathCard
+                  icon={<Globe className="h-4 w-4" />}
+                  title="Reciprocal Programs"
+                  items={Array.isArray(guide?.reciprocalPrograms) ? guide.reciprocalPrograms : []}
+                />
+                <AccessPathCard
+                  icon={<Ticket className="h-4 w-4" />}
+                  title="Charitable Events & Outings"
+                  items={Array.isArray(guide?.charitableEvents) ? guide.charitableEvents : []}
+                />
+                <AccessPathCard
+                  icon={<Bed className="h-4 w-4" />}
+                  title="Stay & Play Packages"
+                  items={Array.isArray(guide?.stayAndPlay) ? guide.stayAndPlay : []}
+                />
+                <AccessPathCard
+                  icon={<Compass className="h-4 w-4" />}
+                  title="Other Ways to Play"
+                  items={Array.isArray(guide?.otherPaths) ? guide.otherPaths : []}
+                />
               </section>
-            )}
 
-            {/* Bucket List Social Counters */}
-            <BucketListCounter courseId={course.courseId} />
+              {/* Insider Tips */}
+              {guide?.tips && (
+                <section style={cardStyle}>
+                  <SectionHeading icon={<Lightbulb className="h-5 w-5" style={{ color: "#f59e0b" }} />}>
+                    Access Tips
+                  </SectionHeading>
+                  <p className="text-sm leading-relaxed" style={secondaryText}>{guide.tips}</p>
+                </section>
+              )}
 
-            {/* Community Ratings */}
-            <section style={cardStyle}>
-              <SectionHeading icon={<Star className="h-5 w-5" style={{ color: "#f59e0b" }} />}>
-                Community Reviews
-              </SectionHeading>
+              {/* Pricing & Policies Quick Info */}
+              {(course.greenFeeLow || course.greenFeeHigh || course.walkingPolicy || course.dressCode || course.caddieAvailability) && (
+                <section style={cardStyle}>
+                  <SectionHeading icon={<DollarSign className="h-5 w-5" style={{ color: "var(--cg-accent)" }} />}>
+                    Pricing & Policies
+                  </SectionHeading>
+                  <div className="grid grid-cols-2 gap-4">
+                    {(course.greenFeeLow || course.greenFeeHigh) && (
+                      <InfoRow
+                        label="Green Fees"
+                        value={
+                          course.greenFeeLow && course.greenFeeHigh
+                            ? `${formatCurrency(parseFloat(course.greenFeeLow))} - ${formatCurrency(parseFloat(course.greenFeeHigh))}`
+                            : course.greenFeeHigh
+                              ? `Up to ${formatCurrency(parseFloat(course.greenFeeHigh))}`
+                              : `From ${formatCurrency(parseFloat(course.greenFeeLow))}`
+                        }
+                      />
+                    )}
+                    <InfoRow label="Walking Policy" value={course.walkingPolicy} />
+                    <InfoRow label="Dress Code" value={course.dressCode} />
+                    <InfoRow label="Caddies" value={course.caddieAvailability} />
+                    <InfoRow label="Cart Policy" value={course.cartPolicy} />
+                    {course.cartFee && <InfoRow label="Cart Fee" value={course.cartFee} />}
+                  </div>
+                </section>
+              )}
 
-              {course.ratings?.length > 0 ? (
-                <div className="space-y-4">
-                  {course.ratings.map((r: any) => (
-                    <div key={r.ratingId} className="rounded-lg p-4" style={{ backgroundColor: "var(--cg-bg-secondary)" }}>
-                      <div className="flex items-center gap-3">
-                        {r.user?.image && <img src={r.user.image} alt="" className="h-8 w-8 rounded-full" />}
-                        <div>
-                          <div className="font-medium text-sm" style={primaryText}>
-                            {safeText(r.seedReviewerName) || safeText(r.user?.name) || "Anonymous"}
-                            {r.isSeed && (
-                              <span className="ml-2 text-xs font-normal px-1.5 py-0.5 rounded" style={{ backgroundColor: "rgba(255,255,255,0.06)", color: "var(--cg-text-muted)" }}>via GolfPass</span>
-                            )}
-                          </div>
-                          <div className="text-xs" style={mutedText}>{new Date(r.createdAt).toLocaleDateString()}</div>
-                        </div>
-                        <span className="ml-auto text-lg font-bold" style={{ color: "var(--cg-accent)" }}>
-                          {parseFloat(r.overallRating).toFixed(1)}
-                        </span>
-                      </div>
-                      {safeText(r.reviewTitle) && (
-                        <div className="mt-2 font-medium text-sm" style={primaryText}>{safeText(r.reviewTitle)}</div>
-                      )}
-                      {safeText(r.reviewText) && (
-                        <p className="mt-1 text-sm leading-relaxed" style={secondaryText}>{safeText(r.reviewText)}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
+              {/* Fallback: existing how-to-get-on text */}
+              {!guide && safeText(course.howToGetOn) && (
+                <section style={cardStyle}>
+                  <SectionHeading icon={<Key className="h-5 w-5" style={{ color: "var(--cg-accent)" }} />}>
+                    How to Get On
+                  </SectionHeading>
+                  <p className="text-sm leading-relaxed" style={secondaryText}>{safeText(course.howToGetOn)}</p>
+                </section>
+              )}
+
+              {/* Empty state */}
+              {!guide && !isPublic && !safeText(course.howToGetOn) && (
                 <EmptyState
-                  icon={<MessageSquare className="h-8 w-8" />}
-                  title="Be the first to rate this course"
-                  description="Share your experience and help fellow golfers discover this course"
-                  cta={
-                    <div className="flex items-center gap-1">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star
-                          key={star}
-                          className="h-7 w-7 cursor-pointer transition-colors hover:scale-110"
-                          style={{ color: "var(--cg-border)", fill: "var(--cg-border)" }}
-                          onMouseEnter={(e) => {
-                            const parent = e.currentTarget.parentElement;
-                            if (!parent) return;
-                            const stars = parent.querySelectorAll("svg");
-                            stars.forEach((s, i) => {
-                              if (i <= star - 1) {
-                                s.style.color = "#f59e0b";
-                                s.style.fill = "#f59e0b";
-                              }
-                            });
-                          }}
-                          onMouseLeave={(e) => {
-                            const parent = e.currentTarget.parentElement;
-                            if (!parent) return;
-                            const stars = parent.querySelectorAll("svg");
-                            stars.forEach((s) => {
-                              s.style.color = "var(--cg-border)";
-                              s.style.fill = "var(--cg-border)";
-                            });
-                          }}
-                        />
-                      ))}
-                    </div>
-                  }
+                  icon={<Key className="h-8 w-8" />}
+                  title="Access guide coming soon"
+                  description="We're researching how to get on this course. Check back soon for detailed access information."
                 />
               )}
-            </section>
-          </div>
-        )}
+            </div>
+          );
+        })()}
+
+        {/* ────── COMMUNITY TAB ────── */}
+        {activeTab === "Community" && (() => {
+          const reviews = course.ratings || [];
+          const avgRating = reviews.length > 0
+            ? reviews.reduce((sum: number, r: any) => sum + parseFloat(r.overallRating), 0) / reviews.length
+            : 0;
+
+          return (
+            <div className="max-w-3xl space-y-8">
+              {/* Your Circles */}
+              <CircleRatingsSection courseId={course.courseId} courseName={course.courseName} />
+
+              {/* Average Rating Summary */}
+              {reviews.length > 0 && (
+                <section style={cardStyle}>
+                  <div className="flex items-center gap-6">
+                    <div className="text-center">
+                      <div className="text-4xl font-bold tabular-nums" style={{ color: "var(--cg-accent)" }}>
+                        {avgRating.toFixed(1)}
+                      </div>
+                      <div className="flex items-center justify-center gap-0.5 mt-1">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Star
+                            key={s}
+                            className="h-4 w-4"
+                            style={{
+                              color: s <= Math.round(avgRating) ? "#f59e0b" : "var(--cg-border)",
+                              fill: s <= Math.round(avgRating) ? "#f59e0b" : "none",
+                            }}
+                          />
+                        ))}
+                      </div>
+                      <div className="text-xs mt-1" style={mutedText}>
+                        {reviews.length} review{reviews.length !== 1 ? "s" : ""}
+                      </div>
+                    </div>
+
+                    {/* Rating Distribution */}
+                    <div className="flex-1 space-y-1">
+                      {[5, 4, 3, 2, 1].map((star) => {
+                        const count = reviews.filter((r: any) => Math.round(parseFloat(r.overallRating)) === star).length;
+                        const pct = reviews.length > 0 ? (count / reviews.length) * 100 : 0;
+                        return (
+                          <div key={star} className="flex items-center gap-2">
+                            <span className="text-xs w-3 text-right tabular-nums" style={mutedText}>{star}</span>
+                            <Star className="h-3 w-3" style={{ color: "#f59e0b", fill: "#f59e0b" }} />
+                            <div className="flex-1 h-2 rounded-full" style={{ backgroundColor: "var(--cg-bg-tertiary)" }}>
+                              <div
+                                className="h-full rounded-full"
+                                style={{ width: `${pct}%`, backgroundColor: "#f59e0b", minWidth: count > 0 ? 4 : 0 }}
+                              />
+                            </div>
+                            <span className="text-xs w-6 text-right tabular-nums" style={mutedText}>{count}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {/* Score Breakdown */}
+              {hasDimensions && (
+                <section style={cardStyle}>
+                  <SectionHeading icon={<Star className="h-5 w-5" style={{ color: "#f59e0b" }} />}>
+                    Score Breakdown
+                  </SectionHeading>
+
+                  <div className="flex items-center gap-6 mb-6">
+                    {scoreNum !== null && (
+                      <div className="flex items-center justify-center rounded-full h-20 w-20 text-2xl font-bold shrink-0" style={{
+                        backgroundColor: scoreNum >= 80 ? "var(--cg-accent)" : scoreNum >= 50 ? "#eab308" : "var(--cg-bg-tertiary)",
+                        color: scoreNum >= 50 ? "white" : "var(--cg-text-primary)",
+                      }}>
+                        {Math.round(scoreNum)}
+                      </div>
+                    )}
+                    <div>
+                      <div className="text-sm font-medium" style={primaryText}>CF Score</div>
+                      {csData?.totalRatings > 0 && (
+                        <div className="text-xs" style={mutedText}>
+                          Based on {csData.totalRatings} rating{csData.totalRatings !== 1 ? "s" : ""}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mb-6">
+                    <RadarChart scores={radarScores} />
+                  </div>
+
+                  <div className="space-y-2.5">
+                    <ScoreDimRow label="Conditioning" value={radarScores.avgConditioning ?? null} />
+                    <ScoreDimRow label="Layout & Design" value={radarScores.avgLayoutDesign ?? null} />
+                    <ScoreDimRow label="Aesthetics" value={radarScores.avgAesthetics ?? null} />
+                    <ScoreDimRow label="Challenge" value={radarScores.avgChallenge ?? null} />
+                    <ScoreDimRow label="Value" value={radarScores.avgValue ?? null} />
+                    <ScoreDimRow label="Walkability" value={radarScores.avgWalkability ?? null} />
+                    <ScoreDimRow label="Pace of Play" value={radarScores.avgPace ?? null} />
+                    <ScoreDimRow label="Amenities" value={radarScores.avgAmenities ?? null} />
+                    <ScoreDimRow label="Service" value={radarScores.avgService ?? null} />
+                  </div>
+                  <div className="mt-4 flex justify-end">
+                    <PoweredByBadge variant="ratings" />
+                  </div>
+                </section>
+              )}
+
+              {/* Reviews List */}
+              <section style={cardStyle}>
+                <SectionHeading icon={<MessageSquare className="h-5 w-5" style={{ color: "var(--cg-accent)" }} />}>
+                  Community Reviews
+                </SectionHeading>
+
+                {reviews.length > 0 ? (
+                  <div className="space-y-4">
+                    {reviews.map((r: any) => (
+                      <ReviewCard key={r.ratingId} review={r} showHandicap />
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState
+                    icon={<MessageSquare className="h-8 w-8" />}
+                    title="Be the first to review this course"
+                    description="Share your experience and help fellow golfers discover this course"
+                    cta={
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            className="h-7 w-7 cursor-pointer transition-colors hover:scale-110"
+                            style={{ color: "var(--cg-border)", fill: "var(--cg-border)" }}
+                            onMouseEnter={(e) => {
+                              const parent = e.currentTarget.parentElement;
+                              if (!parent) return;
+                              const stars = parent.querySelectorAll("svg");
+                              stars.forEach((s, i) => {
+                                if (i <= star - 1) {
+                                  s.style.color = "#f59e0b";
+                                  s.style.fill = "#f59e0b";
+                                }
+                              });
+                            }}
+                            onMouseLeave={(e) => {
+                              const parent = e.currentTarget.parentElement;
+                              if (!parent) return;
+                              const stars = parent.querySelectorAll("svg");
+                              stars.forEach((s) => {
+                                s.style.color = "var(--cg-border)";
+                                s.style.fill = "var(--cg-border)";
+                              });
+                            }}
+                          />
+                        ))}
+                      </div>
+                    }
+                  />
+                )}
+              </section>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

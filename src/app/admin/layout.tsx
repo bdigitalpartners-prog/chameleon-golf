@@ -18,7 +18,6 @@ import {
   Shield,
   Database,
   Lightbulb,
-  Sparkles,
   Coins,
   Crown,
   Layers,
@@ -30,7 +29,7 @@ import {
   FileText,
   BookOpen,
   ImageIcon,
-  Plane,
+  Key,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -40,12 +39,10 @@ const NAV_ITEMS = [
   { label: "Content", href: "/admin/content", icon: FileText },
   { label: "Books", href: "/admin/books", icon: BookOpen },
   { label: "POIs", href: "/admin/pois", icon: Navigation },
-  { label: "Travel & Stay", href: "/admin/travel-enrichment", icon: Plane },
   { label: "Images", href: "/admin/images", icon: ImageIcon },
   { label: "Enrichment", href: "/admin/enrichment", icon: Database },
-  { label: "Architecture", href: "/admin/architecture", icon: Layers },
   { label: "Intelligence", href: "/admin/intelligence", icon: Lightbulb },
-  { label: "AI Content", href: "/admin/content-generation", icon: Sparkles },
+  { label: "Access Guides", href: "/admin/access-guides", icon: Key },
   { label: "Rankings", href: "/admin/rankings", icon: Trophy },
   { label: "Scores", href: "/admin/scores", icon: Calculator },
   { label: "Users", href: "/admin/users", icon: Users },
