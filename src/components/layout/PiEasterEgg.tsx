@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 
 const GREEN = "#4ADE80";
 
@@ -119,8 +120,9 @@ export function PiEasterEgg() {
             </p>
 
             {/* CTA */}
-            <a
-              href="mailto:calvin@bdigitalpartners.com?subject=golfEQUALIZER%20Founding%20Advisory%20Feedback"
+            <Link
+              href="/feedback"
+              onClick={close}
               className="inline-block w-full text-center rounded-lg px-5 py-3 text-sm font-semibold transition-all duration-200"
               style={{
                 backgroundColor: GREEN,
@@ -135,8 +137,8 @@ export function PiEasterEgg() {
                 e.currentTarget.style.boxShadow = "none";
               }}
             >
-              Share Your Recommendations →
-            </a>
+              Share Your Recommendations &rarr;
+            </Link>
           </div>
         </div>
       )}
