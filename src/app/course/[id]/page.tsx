@@ -72,6 +72,9 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
           where: { isVisible: true },
           orderBy: { generatedAt: "desc" },
         },
+        weatherMonths: {
+          orderBy: { month: "asc" },
+        },
         architect: {
           select: {
             id: true,

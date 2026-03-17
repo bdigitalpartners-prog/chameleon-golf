@@ -129,6 +129,7 @@ model Course {
   nearbyFrom        CourseNearbyCourses[] @relation("NearbyCourse")
   nearbyRvParks     CourseNearbyRvParks[]
   intelligenceNotes CourseIntelligenceNotes[]
+  weatherMonths     CourseWeather[]
 
   // Social Links
   instagramUrl      String?   @map("instagram_url") @db.VarChar(500)
@@ -887,4 +888,25 @@ model FoundingAdvisoryFeedback {
   submittedAt           DateTime @default(now()) @map("submitted_at")
 
   @@map("founding_advisory_feedback")
+}
+
+model CourseWeather {
+  id               Int      @id @default(autoincrement())
+  courseId          Int      @map("course_id")
+  month            Int      // 1-12
+  avgHighF         Decimal  @map("avg_high_f") @db.Decimal(5, 1)
+  avgLowF          Decimal  @map("avg_low_f") @db.Decimal(5, 1)
+  avgPrecipInches  Decimal  @map("avg_precip_inches") @db.Decimal(5, 2)
+  avgPrecipDays    Int      @map("avg_precip_days")
+  avgSunnyDays     Int      @map("avg_sunny_days")
+  humidity         Int      // percentage 0-100
+  windSpeedMph     Decimal  @map("wind_speed_mph") @db.Decimal(4, 1)
+  playabilityScore Int      @map("playability_score") // 0-100
+  bestTimeOfDay    String?  @map("best_time_of_day") @db.VarChar(100)
+  generatedAt      DateTime @default(now()) @map("generated_at")
+
+  course           Course   @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+
+  @@unique([courseId, month])
+  @@map("course_weather")
 }

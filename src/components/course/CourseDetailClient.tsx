@@ -15,6 +15,7 @@ import { CoursePlaceholder } from "./CoursePlaceholder";
 import { CircleRatingsSection } from "./CircleRatingsSection";
 import { PoweredByBadge } from "@/components/brand/PoweredByBadge";
 import { CourseContentSections } from "./CourseContentSections";
+import { WeatherPlayabilityCalendar, BestMonthsBadge } from "@/components/weather/WeatherPlayabilityCalendar";
 
 /* ─── Safe Text Helper ─── */
 
@@ -1211,7 +1212,7 @@ export function CourseDetailClient({ course }: { course: any }) {
             {/* Empty state for entire tab */}
             {!safeText(course.howToGetOn) && !safeText(course.resortAffiliateAccess) && !safeText(course.guestPolicy) &&
              insiderTips.length === 0 && !safeText(course.courseStrategy) && !safeText(course.whatToExpect) &&
-             !safeText(course.bestTimeToPlay) && !course.weatherData && !safeText(course.bestConditionMonths) &&
+             !safeText(course.bestTimeToPlay) && !course.weatherData && !safeText(course.bestConditionMonths) && !course.weatherMonths?.length &&
              !safeText(course.fairwayGrass) && !safeText(course.greenGrass) && !safeText(course.greenSpeed) &&
              !safeText(course.aerationSchedule) && !safeText(course.golfSeason) && !safeText(course.paceOfPlayNotes) && (
               <section style={cardStyle}>
@@ -1303,12 +1304,34 @@ export function CourseDetailClient({ course }: { course: any }) {
                     <p className="text-sm mt-1" style={primaryText}>{safeText(course.bestConditionMonths)}</p>
                   </div>
                 )}
-                {course.weatherData && typeof course.weatherData === "object" && (
+                {course.weatherData && typeof course.weatherData === "object" && !course.weatherMonths?.length && (
                   <div>
                     <SubHeading>Average Monthly Temperatures</SubHeading>
                     <WeatherChart weatherData={course.weatherData} />
                   </div>
                 )}
+                {course.weatherMonths?.length > 0 && (
+                  <div>
+                    <SubHeading>Playability Calendar</SubHeading>
+                    <WeatherPlayabilityCalendar
+                      months={course.weatherMonths}
+                      bestMonths={course.bestMonths as number[] | null}
+                    />
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* Standalone weather section if no bestTimeToPlay but has weather months */}
+            {!safeText(course.bestTimeToPlay) && !course.weatherData && !safeText(course.bestConditionMonths) && course.weatherMonths?.length > 0 && (
+              <section style={cardStyle}>
+                <SectionHeading icon={<Sun className="h-5 w-5" style={{ color: "#fbbf24" }} />}>
+                  Best Time to Play
+                </SectionHeading>
+                <WeatherPlayabilityCalendar
+                  months={course.weatherMonths}
+                  bestMonths={course.bestMonths as number[] | null}
+                />
               </section>
             )}
 
@@ -1472,6 +1495,20 @@ export function CourseDetailClient({ course }: { course: any }) {
 
                 {/* Right column — quick glance cards */}
                 <div className="space-y-8">
+                  {/* Weather Playability */}
+                  {course.weatherMonths?.length > 0 && (
+                    <section style={cardStyle}>
+                      <SectionHeading icon={<Sun className="h-5 w-5" style={{ color: "#fbbf24" }} />}>
+                        When to Visit
+                      </SectionHeading>
+                      <WeatherPlayabilityCalendar
+                        months={course.weatherMonths}
+                        bestMonths={course.bestMonths as number[] | null}
+                        compact
+                      />
+                    </section>
+                  )}
+
                   {/* Lodging preview */}
                   {nearbyLodging.length > 0 && (
                     <section style={cardStyle}>
