@@ -133,25 +133,49 @@ export default function CourseEditorPage() {
 
   // Calculate enrichment completeness percentage
   const ENRICHMENT_CHECK_FIELDS = [
+    // Core info
     { key: "description", weight: 3 },
     { key: "par", weight: 2 },
-    { key: "yearOpened", weight: 1 },
     { key: "originalArchitect", weight: 2 },
-    { key: "courseType", weight: 1 },
     { key: "accessType", weight: 2 },
+    { key: "yearOpened", weight: 1 },
+    { key: "courseType", weight: 1 },
     { key: "courseStyle", weight: 1 },
+    { key: "tagline", weight: 1 },
+    // Pricing
     { key: "greenFeeLow", weight: 1 },
     { key: "greenFeeHigh", weight: 1 },
+    { key: "priceTier", weight: 1 },
+    // Policies
     { key: "walkingPolicy", weight: 1 },
     { key: "dressCode", weight: 1 },
     { key: "caddieAvailability", weight: 1 },
+    { key: "howToGetOn", weight: 2 },
+    { key: "guestPolicy", weight: 1 },
+    // Character & tips
+    { key: "whatToExpect", weight: 2 },
+    { key: "courseStrategy", weight: 1 },
+    { key: "insiderTips", weight: 2 },
+    { key: "signatureHoleDescription", weight: 1 },
+    { key: "bestPar3", weight: 1 },
+    { key: "bestPar4", weight: 1 },
+    { key: "bestPar5", weight: 1 },
+    { key: "designPhilosophy", weight: 1 },
+    // Conditions
+    { key: "fairwayGrass", weight: 1 },
+    { key: "greenGrass", weight: 1 },
+    { key: "greenSpeed", weight: 1 },
+    { key: "bestConditionMonths", weight: 1 },
     { key: "practiceFacilities", weight: 1 },
+    // Season / timing
     { key: "bestTimeToPlay", weight: 1 },
     { key: "bestMonths", weight: 1 },
     { key: "golfSeason", weight: 1 },
     { key: "averageRoundTime", weight: 1 },
-    { key: "fairwayGrass", weight: 1 },
-    { key: "greenGrass", weight: 1 },
+    // History
+    { key: "championshipHistory", weight: 1 },
+    { key: "famousMoments", weight: 1 },
+    // Contact & location
     { key: "websiteUrl", weight: 1 },
     { key: "phone", weight: 1 },
     { key: "latitude", weight: 1 },
