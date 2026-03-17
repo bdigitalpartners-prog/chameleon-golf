@@ -384,15 +384,8 @@ export default async function ArchitectDetailPage({ params }: Props) {
                       <td className="py-2.5 pr-4">
                         <Link
                           href={`/course/${course.courseId}`}
-                          className="font-medium transition-colors"
+                          className="font-medium transition-colors hover:underline"
                           style={{ color: "var(--cg-text-primary)" }}
-                          onMouseEnter={(e: any) =>
-                            (e.currentTarget.style.color = "var(--cg-accent)")
-                          }
-                          onMouseLeave={(e: any) =>
-                            (e.currentTarget.style.color =
-                              "var(--cg-text-primary)")
-                          }
                         >
                           {course.courseName}
                         </Link>

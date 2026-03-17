@@ -648,7 +648,7 @@ export function CourseDetailClient({ course }: { course: any }) {
                           </div>
                           {tee.totalYardage && <div style={mutedText}>{Number(tee.totalYardage).toLocaleString()} yds</div>}
                           {tee.courseRating && tee.slopeRating && (
-                            <div style={mutedText}>{parseFloat(tee.courseRating).toFixed(1)} / {tee.slopeRating}</div>
+                            <div style={mutedText}>{tee.courseRating != null ? parseFloat(tee.courseRating).toFixed(1) : "—"} / {tee.slopeRating ?? "—"}</div>
                           )}
                         </div>
                       ))}
@@ -977,7 +977,7 @@ export function CourseDetailClient({ course }: { course: any }) {
                           <div className="text-xs" style={mutedText}>{a.airport.airportType}</div>
                         </div>
                         <div className="text-right">
-                          <div className="font-medium" style={secondaryText}>{parseFloat(a.distanceMiles).toFixed(0)} mi</div>
+                          <div className="font-medium" style={secondaryText}>{a.distanceMiles != null ? parseFloat(a.distanceMiles).toFixed(0) : "—"} mi</div>
                           {a.driveTimeMinutes && <div className="text-xs" style={mutedText}>{a.driveTimeMinutes} min drive</div>}
                         </div>
                       </div>
@@ -1205,7 +1205,7 @@ export function CourseDetailClient({ course }: { course: any }) {
                             </div>
                             <div className="text-right">
                               <div className="font-medium text-sm" style={secondaryText}>
-                                {parseFloat(a.distanceMiles).toFixed(0)} mi
+                                {a.distanceMiles != null ? parseFloat(a.distanceMiles).toFixed(0) : "—"} mi
                               </div>
                               {a.driveTimeMinutes && <div className="text-xs" style={mutedText}>{a.driveTimeMinutes} min</div>}
                             </div>
@@ -1405,7 +1405,7 @@ export function CourseDetailClient({ course }: { course: any }) {
                               <span style={primaryText}>{parseFloat(dining.rating).toFixed(1)}</span>
                             </span>
                           )}
-                          {dining.distanceMiles && <span style={mutedText}>{parseFloat(dining.distanceMiles).toFixed(1)} mi</span>}
+                          {dining.distanceMiles != null && <span style={mutedText}>{parseFloat(dining.distanceMiles).toFixed(1)} mi</span>}
                         </div>
                         {dining.description && <p className="text-xs leading-relaxed" style={mutedText}>{dining.description}</p>}
                         {(dining.websiteUrl || dining.phone) && (
@@ -1690,7 +1690,7 @@ export function CourseDetailClient({ course }: { course: any }) {
                           <div className="text-xs" style={mutedText}>{new Date(r.createdAt).toLocaleDateString()}</div>
                         </div>
                         <span className="ml-auto text-lg font-bold" style={{ color: "var(--cg-accent)" }}>
-                          {parseFloat(r.overallRating).toFixed(1)}
+                          {r.overallRating != null ? parseFloat(r.overallRating).toFixed(1) : "—"}
                         </span>
                       </div>
                       {safeText(r.reviewTitle) && (
