@@ -4,8 +4,6 @@ import { usePathname } from "next/navigation";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { CirclesSocialWidget } from "@/components/circles-widget/CirclesSocialWidget";
 
-import { PiEasterEgg } from "@/components/layout/PiEasterEgg";
-
 /**
  * AppShell routes between the new sidebar dashboard layout
  * and a plain passthrough for admin pages (which have their
