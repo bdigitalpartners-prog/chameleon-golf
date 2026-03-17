@@ -25,12 +25,17 @@ export const authOptions: NextAuthOptions = {
   events: {
     async createUser({ user }) {
       // Auto-create UserProfile on first Google sign-in
-      await prisma.userProfile.create({
-        data: {
-          userId: user.id,
-          avatarUrl: user.image ?? undefined,
-        },
-      });
+      try {
+        await (prisma as any).userProfile?.create({
+          data: {
+            userId: user.id,
+            avatarUrl: user.image ?? undefined,
+          },
+        });
+      } catch (e) {
+        // UserProfile table may not exist yet — don't block sign-in
+        console.warn("[Auth] Could not create UserProfile:", (e as Error).message);
+      }
     },
   },
   debug: true,
