@@ -43,6 +43,7 @@ const NAV_ITEMS = [
   { label: "Travel & Stay", href: "/admin/travel-enrichment", icon: Plane },
   { label: "Images", href: "/admin/images", icon: ImageIcon },
   { label: "Enrichment", href: "/admin/enrichment", icon: Database },
+  { label: "Architecture", href: "/admin/architecture", icon: Layers },
   { label: "Intelligence", href: "/admin/intelligence", icon: Lightbulb },
   { label: "AI Content", href: "/admin/content-generation", icon: Sparkles },
   { label: "Rankings", href: "/admin/rankings", icon: Trophy },
