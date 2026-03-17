@@ -5,8 +5,8 @@ import { checkAdminAuth } from "@/lib/admin-auth";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
-  const authError = await checkAdminAuth(request);
-  if (authError) return authError;
+  const authErr = await checkAdminAuth(request);
+  if (authErr) return authErr;
 
   try {
     const todayStart = new Date();
@@ -28,8 +28,8 @@ export async function GET(request: NextRequest) {
         _sum: { totalCost: true },
       }),
       prisma.user.findMany({
-        take: 10,
         orderBy: { createdAt: "desc" },
+        take: 10,
         select: { id: true, name: true, email: true, createdAt: true },
       }),
     ]);

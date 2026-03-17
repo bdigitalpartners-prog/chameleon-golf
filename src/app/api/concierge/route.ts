@@ -6,12 +6,10 @@ export const dynamic = "force-dynamic";
 const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
 const PERPLEXITY_ENDPOINT = "https://api.perplexity.ai/chat/completions";
 
-// Cost per model (per token)
-const MODEL_COSTS: Record<string, { input: number; output: number; requestFee: number }> = {
-  "sonar": { input: 1 / 1_000_000, output: 1 / 1_000_000, requestFee: 0.005 },
-  "sonar-pro": { input: 3 / 1_000_000, output: 15 / 1_000_000, requestFee: 0.006 },
-  "sonar-reasoning-pro": { input: 2 / 1_000_000, output: 8 / 1_000_000, requestFee: 0.006 },
-};
+// Sonar Pro pricing
+const INPUT_COST_PER_TOKEN = 3 / 1_000_000; // $3 per 1M input tokens
+const OUTPUT_COST_PER_TOKEN = 15 / 1_000_000; // $15 per 1M output tokens
+const REQUEST_FEE = 0.006; // $6 per 1K requests = $0.006 per request
 
 // Simple in-memory rate limiter: 20 requests per minute per IP
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -75,9 +73,14 @@ function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
 
+interface AdminConfigRow {
+  key: string;
+  value: string;
+}
+
 async function getAdminConfig(): Promise<Record<string, string>> {
   try {
-    const rows = await prisma.$queryRaw<Array<{ key: string; value: string }>>`
+    const rows = await prisma.$queryRaw<AdminConfigRow[]>`
       SELECT key, value FROM admin_config
     `;
     const config: Record<string, string> = {};
@@ -86,22 +89,19 @@ async function getAdminConfig(): Promise<Record<string, string>> {
     }
     return config;
   } catch {
-    // Table may not exist yet — return empty config (use defaults)
+    // Table may not exist yet
     return {};
   }
 }
 
 async function getTodaySpend(): Promise<number> {
-  try {
-    const rows = await prisma.$queryRaw<Array<{ total: number | null }>>`
-      SELECT COALESCE(SUM("total_cost"), 0) as total
-      FROM concierge_usage
-      WHERE "created_at" >= CURRENT_DATE
-    `;
-    return Number(rows[0]?.total ?? 0);
-  } catch {
-    return 0;
-  }
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const result = await prisma.conciergeUsage.aggregate({
+    where: { createdAt: { gte: todayStart } },
+    _sum: { totalCost: true },
+  });
+  return Number(result._sum.totalCost || 0);
 }
 
 export async function POST(request: NextRequest) {
@@ -137,36 +137,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Message is required" }, { status: 400 });
   }
 
-  // Read admin config for model, budget, and system prompt
-  const config = await getAdminConfig();
-  let activeModel = config.concierge_active_model || "sonar-pro";
-  const dailyBudgetCap = parseFloat(config.concierge_daily_budget_cap || "0");
-  const fallbackModel = config.concierge_fallback_model || "sonar";
-  const autoDowngrade = config.concierge_auto_downgrade === "true";
-  const customPrompt = config.concierge_system_prompt || null;
+  // Read admin config for model selection and budget caps
+  const adminConfig = await getAdminConfig();
+  let activeModel = adminConfig.concierge_active_model || "sonar-pro";
+  const budgetCap = parseFloat(adminConfig.concierge_daily_budget_cap || "50");
+  const fallbackModel = adminConfig.concierge_fallback_model || "sonar";
+  const autoDowngrade = adminConfig.concierge_auto_downgrade === "true";
 
-  // Check budget cap before proceeding
-  if (dailyBudgetCap > 0) {
+  // Check budget cap and auto-downgrade
+  if (autoDowngrade && budgetCap > 0) {
     const todaySpend = await getTodaySpend();
-    if (todaySpend >= dailyBudgetCap) {
-      if (autoDowngrade && activeModel !== fallbackModel) {
-        activeModel = fallbackModel;
-      } else if (!autoDowngrade) {
-        return NextResponse.json(
-          { error: "Daily concierge budget has been reached. Please try again tomorrow." },
-          { status: 429 }
-        );
-      }
+    if (todaySpend >= budgetCap) {
+      activeModel = fallbackModel;
     }
   }
 
-  // Validate model
-  if (!MODEL_COSTS[activeModel]) {
-    activeModel = "sonar-pro";
-  }
-
-  const costs = MODEL_COSTS[activeModel];
-  const systemPrompt = customPrompt || DEFAULT_SYSTEM_PROMPT;
+  // Read custom system prompt
+  const systemPrompt = adminConfig.concierge_system_prompt || DEFAULT_SYSTEM_PROMPT;
 
   const messages = [
     { role: "system", content: systemPrompt },
@@ -202,7 +189,6 @@ export async function POST(request: NextRequest) {
     }
 
     let outputText = "";
-    const usedModel = activeModel;
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -251,9 +237,9 @@ export async function POST(request: NextRequest) {
           // Log usage after stream completes
           const outputTokens = estimateTokens(outputText);
           const estimatedCost =
-            inputTokens * costs.input +
-            outputTokens * costs.output;
-          const totalCost = estimatedCost + costs.requestFee;
+            inputTokens * INPUT_COST_PER_TOKEN +
+            outputTokens * OUTPUT_COST_PER_TOKEN;
+          const totalCost = estimatedCost + REQUEST_FEE;
 
           try {
             await prisma.conciergeUsage.create({
@@ -263,9 +249,9 @@ export async function POST(request: NextRequest) {
                 inputTokens,
                 outputTokens,
                 estimatedCost,
-                requestFee: costs.requestFee,
+                requestFee: REQUEST_FEE,
                 totalCost,
-                model: usedModel,
+                model: activeModel,
                 messagePreview: message.slice(0, 200),
               },
             });

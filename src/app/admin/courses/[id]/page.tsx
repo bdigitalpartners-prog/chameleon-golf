@@ -1,328 +1,373 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, Save, Loader2, Plus, Trash2, X, Star, Pencil, ImageIcon, Sparkles, CheckCircle, AlertCircle, Video, Instagram, Play, Link as LinkIcon, ExternalLink } from "lucide-react";
-
-function getAdminKey() {
-  if (typeof window === "undefined") return "";
-  return sessionStorage.getItem("golfEQ_admin_key") || "";
-}
+import { useRouter, useParams } from "next/navigation";
+import {
+  ArrowLeft,
+  Save,
+  Loader2,
+  Plus,
+  Trash2,
+  AlertCircle,
+  CheckCircle,
+} from "lucide-react";
 
 const TABS = [
   "Basic Info",
-  "Pricing",
+  "Pricing & Policies",
   "Design & Character",
   "Conditions",
   "History",
   "Nearby",
   "Media",
-  "Tee Boxes",
+  "Tee Boxes & Holes",
 ] as const;
+
 type Tab = (typeof TABS)[number];
 
+interface NearbyDining {
+  name: string;
+  cuisineType: string;
+  priceLevel: string;
+  rating: string;
+  distanceMiles: string;
+  description: string;
+  address: string;
+  phone: string;
+  websiteUrl: string;
+  isOnSite: boolean;
+  sortOrder: number;
+}
+
+interface NearbyLodging {
+  name: string;
+  lodgingType: string;
+  priceTier: string;
+  avgPricePerNight: string;
+  rating: string;
+  distanceMiles: string;
+  description: string;
+  address: string;
+  phone: string;
+  websiteUrl: string;
+  bookingUrl: string;
+  isOnSite: boolean;
+  isPartner: boolean;
+  sortOrder: number;
+}
+
+interface NearbyAttraction {
+  name: string;
+  category: string;
+  description: string;
+  distanceMiles: string;
+  websiteUrl: string;
+}
+
+interface MediaItem {
+  mediaId?: number;
+  mediaType: string;
+  imageType: string;
+  url: string;
+  caption: string;
+  credit: string;
+  isPrimary: boolean;
+  sortOrder: number;
+}
+
+interface TeeBox {
+  teeId?: number;
+  teeName: string;
+  color: string;
+  gender: string;
+  courseRating: string;
+  slopeRating: string;
+  totalYardage: string;
+}
+
+interface HoleData {
+  holeId?: number;
+  holeNumber: number;
+  par: string;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type CourseData = Record<string, any>;
+
 export default function CourseEditorPage() {
-  const params = useParams();
   const router = useRouter();
+  const params = useParams();
   const courseId = params.id as string;
 
-  const [course, setCourse] = useState<Record<string, any> | null>(null);
-  const [form, setForm] = useState<Record<string, any>>({});
-  const [activeTab, setActiveTab] = useState<Tab>("Basic Info");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [enriching, setEnriching] = useState(false);
-  const [enrichResult, setEnrichResult] = useState<{
-    fieldsEnriched: number;
-    ruleBasedFields: string[];
-    aiFields: string[];
-    beforePct: number;
-    afterPct: number;
-    aiError?: string | null;
-  } | null>(null);
+  const [activeTab, setActiveTab] = useState<Tab>("Basic Info");
+  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  const fetchCourse = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/admin/courses/${courseId}`, {
-        headers: { "x-admin-key": getAdminKey() },
-      });
-      if (!res.ok) throw new Error("Not found");
-      const data = await res.json();
-      setCourse(data);
-      setForm(data);
-    } catch {
-      setCourse(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [courseId]);
+  // Course data
+  const [course, setCourse] = useState<CourseData>({});
+  const [dining, setDining] = useState<NearbyDining[]>([]);
+  const [lodging, setLodging] = useState<NearbyLodging[]>([]);
+  const [attractions, setAttractions] = useState<NearbyAttraction[]>([]);
+  const [media, setMedia] = useState<MediaItem[]>([]);
+  const [teeBoxes, setTeeBoxes] = useState<TeeBox[]>([]);
+  const [holes, setHoles] = useState<HoleData[]>([]);
+
+  const showToast = useCallback((type: "success" | "error", message: string) => {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 3000);
+  }, []);
 
   useEffect(() => {
-    fetchCourse();
-  }, [fetchCourse]);
+    async function load() {
+      try {
+        const res = await fetch(`/api/admin/courses/${courseId}`, {
+          headers: { "x-admin-key": localStorage.getItem("golfEQ_admin_key") || "" },
+        });
+        if (!res.ok) throw new Error("Failed to load course");
+        const data = await res.json();
 
-  const set = (field: string, value: any) =>
-    setForm((prev) => ({ ...prev, [field]: value }));
+        // Separate relations from course fields
+        const { nearbyDining: d, nearbyLodging: l, nearbyAttractions: a, media: m, teeBoxes: t, holes: h, rankings, chameleonScores, ...courseFields } = data;
+
+        setCourse(courseFields);
+        setDining(
+          (d || []).map((item: CourseData) => ({
+            name: item.name || "",
+            cuisineType: item.cuisineType || "",
+            priceLevel: item.priceLevel || "",
+            rating: item.rating?.toString() || "",
+            distanceMiles: item.distanceMiles?.toString() || "",
+            description: item.description || "",
+            address: item.address || "",
+            phone: item.phone || "",
+            websiteUrl: item.websiteUrl || "",
+            isOnSite: item.isOnSite || false,
+            sortOrder: item.sortOrder || 0,
+          }))
+        );
+        setLodging(
+          (l || []).map((item: CourseData) => ({
+            name: item.name || "",
+            lodgingType: item.lodgingType || "",
+            priceTier: item.priceTier || "",
+            avgPricePerNight: item.avgPricePerNight?.toString() || "",
+            rating: item.rating?.toString() || "",
+            distanceMiles: item.distanceMiles?.toString() || "",
+            description: item.description || "",
+            address: item.address || "",
+            phone: item.phone || "",
+            websiteUrl: item.websiteUrl || "",
+            bookingUrl: item.bookingUrl || "",
+            isOnSite: item.isOnSite || false,
+            isPartner: item.isPartner || false,
+            sortOrder: item.sortOrder || 0,
+          }))
+        );
+        setAttractions(
+          (a || []).map((item: CourseData) => ({
+            name: item.name || "",
+            category: item.category || "",
+            description: item.description || "",
+            distanceMiles: item.distanceMiles?.toString() || "",
+            websiteUrl: item.websiteUrl || "",
+          }))
+        );
+        setMedia(
+          (m || []).map((item: CourseData) => ({
+            mediaId: item.mediaId,
+            mediaType: item.mediaType || "image",
+            imageType: item.imageType || "",
+            url: item.url || "",
+            caption: item.caption || "",
+            credit: item.credit || "",
+            isPrimary: item.isPrimary || false,
+            sortOrder: item.sortOrder || 0,
+          }))
+        );
+        setTeeBoxes(
+          (t || []).map((item: CourseData) => ({
+            teeId: item.teeId,
+            teeName: item.teeName || "",
+            color: item.color || "",
+            gender: item.gender || "",
+            courseRating: item.courseRating?.toString() || "",
+            slopeRating: item.slopeRating?.toString() || "",
+            totalYardage: item.totalYardage?.toString() || "",
+          }))
+        );
+        setHoles(
+          (h || []).map((item: CourseData) => ({
+            holeId: item.holeId,
+            holeNumber: item.holeNumber,
+            par: item.par?.toString() || "4",
+          }))
+        );
+      } catch (err) {
+        console.error(err);
+        showToast("error", "Failed to load course");
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [courseId, showToast]);
 
   const handleSave = async () => {
     setSaving(true);
-    setMessage(null);
     try {
+      // Build update body - convert numeric strings
+      const numericFields = [
+        "par", "numHoles", "yearOpened", "renovationYear", "signatureHoleNumber",
+      ];
+      const decimalFields = [
+        "latitude", "longitude", "greenFeeLow", "greenFeeHigh",
+        "greenFeePeak", "greenFeeOffPeak", "greenFeeTwilight",
+      ];
+      const boolFields = [
+        "isVerified", "isEnriched", "clubRentalAvailable",
+        "onSiteLodging", "includesCart",
+      ];
+
+      const body: CourseData = {};
+      for (const [k, v] of Object.entries(course)) {
+        if (["courseId", "createdAt", "updatedAt"].includes(k)) continue;
+        if (numericFields.includes(k)) {
+          body[k] = v === "" || v === null ? null : parseInt(v);
+        } else if (decimalFields.includes(k)) {
+          body[k] = v === "" || v === null ? null : parseFloat(v);
+        } else if (boolFields.includes(k)) {
+          body[k] = Boolean(v);
+        } else {
+          body[k] = v === "" ? null : v;
+        }
+      }
+
+      // Add nearby data
+      body.dining = dining.map((d, i) => ({
+        name: d.name,
+        cuisineType: d.cuisineType || null,
+        priceLevel: d.priceLevel || null,
+        rating: d.rating ? parseFloat(d.rating) : null,
+        distanceMiles: d.distanceMiles ? parseFloat(d.distanceMiles) : null,
+        description: d.description || null,
+        address: d.address || null,
+        phone: d.phone || null,
+        websiteUrl: d.websiteUrl || null,
+        isOnSite: d.isOnSite,
+        sortOrder: i,
+      }));
+
+      body.lodging = lodging.map((l, i) => ({
+        name: l.name,
+        lodgingType: l.lodgingType || null,
+        priceTier: l.priceTier || null,
+        avgPricePerNight: l.avgPricePerNight ? parseInt(l.avgPricePerNight) : null,
+        rating: l.rating ? parseFloat(l.rating) : null,
+        distanceMiles: l.distanceMiles ? parseFloat(l.distanceMiles) : null,
+        description: l.description || null,
+        address: l.address || null,
+        phone: l.phone || null,
+        websiteUrl: l.websiteUrl || null,
+        bookingUrl: l.bookingUrl || null,
+        isOnSite: l.isOnSite,
+        isPartner: l.isPartner,
+        sortOrder: i,
+      }));
+
+      body.attractions = attractions.map((a) => ({
+        name: a.name,
+        category: a.category || null,
+        description: a.description || null,
+        distanceMiles: a.distanceMiles ? parseFloat(a.distanceMiles) : null,
+        websiteUrl: a.websiteUrl || null,
+      }));
+
       const res = await fetch(`/api/admin/courses/${courseId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-key": getAdminKey(),
+          "x-admin-key": localStorage.getItem("golfEQ_admin_key") || "",
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify(body),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Save failed");
-      }
-      const updated = await res.json();
-      setCourse(updated);
-      setMessage({ type: "success", text: "Course saved successfully" });
-      setTimeout(() => setMessage(null), 3000);
-    } catch (err: any) {
-      setMessage({ type: "error", text: err.message });
+
+      if (!res.ok) throw new Error("Failed to save");
+      showToast("success", "Course saved successfully");
+    } catch (err) {
+      console.error(err);
+      showToast("error", "Failed to save course");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleEnrich = async () => {
-    setEnriching(true);
-    setEnrichResult(null);
-    setMessage(null);
-    try {
-      const res = await fetch(`/api/admin/courses/${courseId}/enrich`, {
-        method: "POST",
-        headers: { "x-admin-key": getAdminKey() },
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Enrichment failed");
-      }
-      const data = await res.json();
-      setEnrichResult({
-        fieldsEnriched: data.fieldsEnriched,
-        ruleBasedFields: data.ruleBasedFields || [],
-        aiFields: data.aiFields || [],
-        beforePct: data.beforePct,
-        afterPct: data.afterPct,
-        aiError: data.aiError,
-      });
-      if (data.fieldsEnriched > 0) {
-        setMessage({ type: "success", text: `Enriched ${data.fieldsEnriched} fields (${data.beforePct}% → ${data.afterPct}%)` });
-        // Refresh course data to pick up enriched fields
-        await fetchCourse();
-      } else {
-        setMessage({ type: "success", text: "No additional data could be found" });
-      }
-    } catch (err: any) {
-      setMessage({ type: "error", text: err.message });
-    } finally {
-      setEnriching(false);
-    }
+  const updateField = (field: string, value: unknown) => {
+    setCourse((prev) => ({ ...prev, [field]: value }));
   };
-
-  // Calculate enrichment completeness percentage
-  const ENRICHMENT_CHECK_FIELDS = [
-    { key: "description", weight: 3 },
-    { key: "par", weight: 2 },
-    { key: "yearOpened", weight: 1 },
-    { key: "originalArchitect", weight: 2 },
-    { key: "courseType", weight: 1 },
-    { key: "accessType", weight: 2 },
-    { key: "courseStyle", weight: 1 },
-    { key: "greenFeeLow", weight: 1 },
-    { key: "greenFeeHigh", weight: 1 },
-    { key: "walkingPolicy", weight: 1 },
-    { key: "dressCode", weight: 1 },
-    { key: "caddieAvailability", weight: 1 },
-    { key: "practiceFacilities", weight: 1 },
-    { key: "bestTimeToPlay", weight: 1 },
-    { key: "bestMonths", weight: 1 },
-    { key: "golfSeason", weight: 1 },
-    { key: "averageRoundTime", weight: 1 },
-    { key: "fairwayGrass", weight: 1 },
-    { key: "greenGrass", weight: 1 },
-    { key: "websiteUrl", weight: 1 },
-    { key: "phone", weight: 1 },
-    { key: "latitude", weight: 1 },
-    { key: "streetAddress", weight: 1 },
-  ];
-
-  const enrichmentPct = course
-    ? (() => {
-        let totalWeight = 0;
-        let filledWeight = 0;
-        for (const f of ENRICHMENT_CHECK_FIELDS) {
-          totalWeight += f.weight;
-          const val = (course as any)[f.key];
-          if (val !== null && val !== undefined && val !== "") {
-            filledWeight += f.weight;
-          }
-        }
-        return totalWeight > 0 ? Math.round((filledWeight / totalWeight) * 100) : 0;
-      })()
-    : 0;
-
-  const enrichmentColor =
-    enrichmentPct >= 80 ? "text-green-400" :
-    enrichmentPct >= 60 ? "text-blue-400" :
-    enrichmentPct >= 40 ? "text-yellow-400" :
-    enrichmentPct >= 20 ? "text-orange-400" :
-    "text-red-400";
-
-  const enrichmentBgColor =
-    enrichmentPct >= 80 ? "bg-green-500" :
-    enrichmentPct >= 60 ? "bg-blue-500" :
-    enrichmentPct >= 40 ? "bg-yellow-500" :
-    enrichmentPct >= 20 ? "bg-orange-500" :
-    "bg-red-500";
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="animate-spin text-gray-500" size={32} />
+        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
       </div>
     );
   }
-
-  if (!course) {
-    return (
-      <div className="text-center py-20">
-        <p className="text-gray-400">Course not found</p>
-        <Link href="/admin/courses" className="text-[#22c55e] hover:underline mt-2 inline-block">
-          Back to courses
-        </Link>
-      </div>
-    );
-  }
-
-  const inputClass =
-    "w-full px-3 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-white text-sm focus:outline-none focus:border-[#22c55e]";
-  const labelClass = "block text-xs text-gray-400 mb-1";
-  const readOnlyClass =
-    "w-full px-3 py-2 rounded-lg bg-[#0d0d0d] border border-[#222] text-gray-500 text-sm cursor-not-allowed";
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/admin/courses" className="p-2 rounded-lg hover:bg-[#1a1a1a] text-gray-400">
-            <ArrowLeft size={20} />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-white">{course.courseName}</h1>
-            <p className="text-sm text-gray-400">
-              {[course.city, course.state].filter(Boolean).join(", ")} &middot; ID {course.courseId}
-            </p>
-          </div>
-          {/* Enrichment completeness indicator */}
-          <div className="flex items-center gap-2 ml-2">
-            <div className="w-24 h-2 rounded-full bg-[#222] overflow-hidden">
-              <div className={`h-full rounded-full ${enrichmentBgColor} transition-all duration-500`} style={{ width: `${enrichmentPct}%` }} />
-            </div>
-            <span className={`text-xs font-medium ${enrichmentColor}`}>{enrichmentPct}%</span>
-          </div>
+    <div className="max-w-6xl">
+      {/* Toast */}
+      {toast && (
+        <div
+          className="fixed top-4 right-4 z-50 flex items-center gap-2 rounded-lg px-4 py-3 text-sm shadow-lg"
+          style={{
+            backgroundColor: toast.type === "success" ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
+            color: toast.type === "success" ? "#22c55e" : "#ef4444",
+            border: `1px solid ${toast.type === "success" ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"}`,
+          }}
+        >
+          {toast.type === "success" ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+          {toast.message}
         </div>
+      )}
+
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <button
-            onClick={handleEnrich}
-            disabled={enriching}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700 disabled:opacity-50 transition-colors"
+            onClick={() => router.push("/admin/courses")}
+            className="rounded-lg p-2 text-gray-400 hover:text-white hover:bg-white/5"
           >
-            {enriching ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-            {enriching ? "Enriching..." : "Enrich Course"}
+            <ArrowLeft className="h-5 w-5" />
           </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-2 px-5 py-2 rounded-lg bg-[#22c55e] text-black font-medium hover:bg-[#16a34a] disabled:opacity-50 transition-colors"
-          >
-            {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-            {saving ? "Saving..." : "Save Changes"}
-          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-white">{course.courseName || "Course"}</h1>
+            <p className="text-xs text-gray-500">ID: {courseId}</p>
+          </div>
         </div>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex items-center gap-2 rounded-lg px-5 py-2 text-sm font-medium transition-colors"
+          style={{ backgroundColor: "#22c55e", color: "#000" }}
+        >
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          Save Changes
+        </button>
       </div>
 
-      {/* Message */}
-      {message && (
-        <div className={`p-3 rounded-lg text-sm ${
-          message.type === "success"
-            ? "bg-green-900/30 border border-green-800 text-green-400"
-            : "bg-red-900/30 border border-red-800 text-red-400"
-        }`}>
-          <div className="flex items-center gap-2">
-            {message.type === "success" ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
-            {message.text}
-          </div>
-        </div>
-      )}
-
-      {/* Enrichment Results */}
-      {enrichResult && enrichResult.fieldsEnriched > 0 && (
-        <div className="p-4 rounded-lg bg-purple-900/20 border border-purple-800/50 text-sm">
-          <div className="flex items-center gap-2 text-purple-300 font-medium mb-2">
-            <Sparkles size={16} />
-            Enrichment Complete — {enrichResult.fieldsEnriched} fields updated
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-2">
-            <div className="text-center p-2 rounded bg-[#111]">
-              <div className="text-lg font-bold text-white">{enrichResult.beforePct}%</div>
-              <div className="text-xs text-gray-500">Before</div>
-            </div>
-            <div className="text-center p-2 rounded bg-[#111]">
-              <div className="text-lg font-bold text-green-400">{enrichResult.afterPct}%</div>
-              <div className="text-xs text-gray-500">After</div>
-            </div>
-            <div className="text-center p-2 rounded bg-[#111]">
-              <div className="text-lg font-bold text-blue-400">{enrichResult.ruleBasedFields.length}</div>
-              <div className="text-xs text-gray-500">Rule-based</div>
-            </div>
-            <div className="text-center p-2 rounded bg-[#111]">
-              <div className="text-lg font-bold text-purple-400">{enrichResult.aiFields.length}</div>
-              <div className="text-xs text-gray-500">AI-powered</div>
-            </div>
-          </div>
-          {enrichResult.aiFields.length > 0 && (
-            <p className="text-xs text-gray-400">
-              <span className="text-purple-400">AI fields:</span> {enrichResult.aiFields.join(", ")}
-            </p>
-          )}
-          {enrichResult.ruleBasedFields.length > 0 && (
-            <p className="text-xs text-gray-400 mt-1">
-              <span className="text-blue-400">Rule-based:</span> {enrichResult.ruleBasedFields.join(", ")}
-            </p>
-          )}
-          {enrichResult.aiError && (
-            <p className="text-xs text-yellow-400 mt-1">{enrichResult.aiError}</p>
-          )}
-          <button onClick={() => setEnrichResult(null)} className="text-xs text-gray-500 hover:text-gray-300 mt-2">
-            Dismiss
-          </button>
-        </div>
-      )}
-
       {/* Tabs */}
-      <div className="border-b border-[#222] flex gap-1 overflow-x-auto">
+      <div className="flex gap-1 mb-6 overflow-x-auto pb-1">
         {TABS.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2.5 text-sm whitespace-nowrap border-b-2 transition-colors ${
+            className="whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+            style={
               activeTab === tab
-                ? "border-[#22c55e] text-[#22c55e]"
-                : "border-transparent text-gray-400 hover:text-white"
-            }`}
+                ? { backgroundColor: "rgba(34,197,94,0.1)", color: "#22c55e" }
+                : { color: "#9ca3af" }
+            }
           >
             {tab}
           </button>
@@ -330,1080 +375,1080 @@ export default function CourseEditorPage() {
       </div>
 
       {/* Tab Content */}
-      <div className="bg-[#111] border border-[#222] rounded-xl p-6">
+      <div
+        className="rounded-xl p-6"
+        style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
+      >
         {activeTab === "Basic Info" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <label className={labelClass}>Course Name</label>
-              <input type="text" value={form.courseName || ""} onChange={(e) => set("courseName", e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Facility Name</label>
-              <input type="text" value={form.facilityName || ""} onChange={(e) => set("facilityName", e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Original Architect</label>
-              <input type="text" value={form.originalArchitect || ""} onChange={(e) => set("originalArchitect", e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Renovation Architect</label>
-              <input type="text" value={form.renovationArchitect || ""} onChange={(e) => set("renovationArchitect", e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Renovation Year</label>
-              <input type="number" value={form.renovationYear || ""} onChange={(e) => set("renovationYear", e.target.value ? parseInt(e.target.value) : null)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Street Address</label>
-              <input type="text" value={form.streetAddress || ""} onChange={(e) => set("streetAddress", e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>City</label>
-              <input type="text" value={form.city || ""} onChange={(e) => set("city", e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>State</label>
-              <input type="text" value={form.state || ""} onChange={(e) => set("state", e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Zip Code</label>
-              <input type="text" value={form.zipCode || ""} onChange={(e) => set("zipCode", e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Country</label>
-              <input type="text" value={form.country || ""} onChange={(e) => set("country", e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Latitude</label>
-              <input type="number" step="any" value={form.latitude || ""} onChange={(e) => set("latitude", e.target.value ? parseFloat(e.target.value) : null)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Longitude</label>
-              <input type="number" step="any" value={form.longitude || ""} onChange={(e) => set("longitude", e.target.value ? parseFloat(e.target.value) : null)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Course Type</label>
-              <select value={form.courseType || ""} onChange={(e) => set("courseType", e.target.value || null)} className={inputClass}>
-                <option value="">Select...</option>
-                <option value="Regulation">Regulation</option>
-                <option value="Links">Links</option>
-                <option value="Parkland">Parkland</option>
-                <option value="Desert">Desert</option>
-                <option value="Mountain">Mountain</option>
-                <option value="Executive">Executive</option>
-                <option value="Par-3">Par-3</option>
-              </select>
-            </div>
-            <div>
-              <label className={labelClass}>Access Type</label>
-              <select value={form.accessType || ""} onChange={(e) => set("accessType", e.target.value || null)} className={inputClass}>
-                <option value="">Select...</option>
-                <option value="Public">Public</option>
-                <option value="Private">Private</option>
-                <option value="Resort">Resort</option>
-                <option value="Semi-Private">Semi-Private</option>
-                <option value="Military">Military</option>
-              </select>
-            </div>
-            <div>
-              <label className={labelClass}>Course Style</label>
-              <input type="text" value={form.courseStyle || ""} onChange={(e) => set("courseStyle", e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Number of Holes</label>
-              <input type="number" value={form.numHoles ?? 18} onChange={(e) => set("numHoles", parseInt(e.target.value) || 18)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Par</label>
-              <input type="number" value={form.par || ""} onChange={(e) => set("par", e.target.value ? parseInt(e.target.value) : null)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Year Opened</label>
-              <input type="number" value={form.yearOpened || ""} onChange={(e) => set("yearOpened", e.target.value ? parseInt(e.target.value) : null)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Website URL</label>
-              <input type="url" value={form.websiteUrl || ""} onChange={(e) => set("websiteUrl", e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Phone</label>
-              <input type="text" value={form.phone || ""} onChange={(e) => set("phone", e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Email</label>
-              <input type="email" value={form.email || ""} onChange={(e) => set("email", e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Tagline</label>
-              <input type="text" value={form.tagline || ""} onChange={(e) => set("tagline", e.target.value)} className={inputClass} />
-            </div>
-            <div className="md:col-span-2">
-              <label className={labelClass}>Description</label>
-              <textarea rows={4} value={form.description || ""} onChange={(e) => set("description", e.target.value)} className={inputClass} />
-            </div>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2 text-sm text-gray-300">
-                <input type="checkbox" checked={form.isVerified || false} onChange={(e) => set("isVerified", e.target.checked)} className="accent-[#22c55e]" />
-                Verified
-              </label>
-              <label className="flex items-center gap-2 text-sm text-gray-300">
-                <input type="checkbox" checked={form.isEnriched || false} onChange={(e) => set("isEnriched", e.target.checked)} className="accent-[#22c55e]" />
-                Enriched
-              </label>
-            </div>
-
-            {/* Social Links */}
-            <div className="md:col-span-2 pt-4 border-t border-[#222]">
-              <h3 className="text-sm font-semibold text-gray-400 mb-3">Social Links</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className={labelClass}>Instagram URL</label>
-                  <input type="url" value={form.instagramUrl || ""} onChange={(e) => set("instagramUrl", e.target.value)} placeholder="https://instagram.com/..." className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>Twitter / X URL</label>
-                  <input type="url" value={form.twitterUrl || ""} onChange={(e) => set("twitterUrl", e.target.value)} placeholder="https://x.com/..." className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>Facebook URL</label>
-                  <input type="url" value={form.facebookUrl || ""} onChange={(e) => set("facebookUrl", e.target.value)} placeholder="https://facebook.com/..." className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>TikTok URL</label>
-                  <input type="url" value={form.tiktokUrl || ""} onChange={(e) => set("tiktokUrl", e.target.value)} placeholder="https://tiktok.com/@..." className={inputClass} />
-                </div>
-              </div>
-            </div>
-          </div>
+          <BasicInfoTab course={course} updateField={updateField} />
         )}
-
-        {activeTab === "Pricing" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className={labelClass}>Green Fee Low ($)</label>
-              <input type="number" step="0.01" value={form.greenFeeLow ?? ""} onChange={(e) => set("greenFeeLow", e.target.value ? parseFloat(e.target.value) : null)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Green Fee High ($)</label>
-              <input type="number" step="0.01" value={form.greenFeeHigh ?? ""} onChange={(e) => set("greenFeeHigh", e.target.value ? parseFloat(e.target.value) : null)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Green Fee Peak ($)</label>
-              <input type="number" step="0.01" value={form.greenFeePeak ?? ""} onChange={(e) => set("greenFeePeak", e.target.value ? parseFloat(e.target.value) : null)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Green Fee Off-Peak ($)</label>
-              <input type="number" step="0.01" value={form.greenFeeOffPeak ?? ""} onChange={(e) => set("greenFeeOffPeak", e.target.value ? parseFloat(e.target.value) : null)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Green Fee Twilight ($)</label>
-              <input type="number" step="0.01" value={form.greenFeeTwilight ?? ""} onChange={(e) => set("greenFeeTwilight", e.target.value ? parseFloat(e.target.value) : null)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Currency</label>
-              <input type="text" value={form.greenFeeCurrency || "USD"} onChange={(e) => set("greenFeeCurrency", e.target.value)} className={inputClass} maxLength={3} />
-            </div>
-            <div>
-              <label className={labelClass}>Price Tier</label>
-              <select value={form.priceTier || ""} onChange={(e) => set("priceTier", e.target.value || null)} className={inputClass}>
-                <option value="">Select...</option>
-                <option value="$">$ (Budget)</option>
-                <option value="$$">$$ (Moderate)</option>
-                <option value="$$$">$$$ (Premium)</option>
-                <option value="$$$$">$$$$ (Luxury)</option>
-              </select>
-            </div>
-            <div className="flex items-center gap-2 pt-6">
-              <input type="checkbox" checked={form.includesCart || false} onChange={(e) => set("includesCart", e.target.checked)} className="accent-[#22c55e]" />
-              <label className="text-sm text-gray-300">Green fee includes cart</label>
-            </div>
-            <div>
-              <label className={labelClass}>Booking URL</label>
-              <input type="url" value={form.bookingUrl || ""} onChange={(e) => set("bookingUrl", e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Walking Policy</label>
-              <input type="text" value={form.walkingPolicy || ""} onChange={(e) => set("walkingPolicy", e.target.value)} className={inputClass} placeholder="e.g., Walking allowed, Cart mandatory" />
-            </div>
-            <div>
-              <label className={labelClass}>Cart Policy</label>
-              <input type="text" value={form.cartPolicy || ""} onChange={(e) => set("cartPolicy", e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Cart Fee</label>
-              <input type="text" value={form.cartFee || ""} onChange={(e) => set("cartFee", e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Caddie Availability</label>
-              <input type="text" value={form.caddieAvailability || ""} onChange={(e) => set("caddieAvailability", e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Caddie Fee</label>
-              <input type="text" value={form.caddieFee || ""} onChange={(e) => set("caddieFee", e.target.value)} className={inputClass} />
-            </div>
-            <div className="flex items-center gap-2 pt-6">
-              <input type="checkbox" checked={form.clubRentalAvailable || false} onChange={(e) => set("clubRentalAvailable", e.target.checked)} className="accent-[#22c55e]" />
-              <label className="text-sm text-gray-300">Club rental available</label>
-            </div>
-          </div>
+        {activeTab === "Pricing & Policies" && (
+          <PricingTab course={course} updateField={updateField} />
         )}
-
         {activeTab === "Design & Character" && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className={labelClass}>Signature Hole Number</label>
-                <input type="number" value={form.signatureHoleNumber ?? ""} onChange={(e) => set("signatureHoleNumber", e.target.value ? parseInt(e.target.value) : null)} className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>Dress Code</label>
-                <input type="text" value={form.dressCode || ""} onChange={(e) => set("dressCode", e.target.value)} className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>Cell Phone Policy</label>
-                <input type="text" value={form.cellPhonePolicy || ""} onChange={(e) => set("cellPhonePolicy", e.target.value)} className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>Guest Policy</label>
-                <input type="text" value={form.guestPolicy || ""} onChange={(e) => set("guestPolicy", e.target.value)} className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>How to Get On</label>
-                <input type="text" value={form.howToGetOn || ""} onChange={(e) => set("howToGetOn", e.target.value)} className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>Resort Affiliate Access</label>
-                <input type="text" value={form.resortAffiliateAccess || ""} onChange={(e) => set("resortAffiliateAccess", e.target.value)} className={inputClass} />
-              </div>
-            </div>
-            <div>
-              <label className={labelClass}>Signature Hole Description</label>
-              <textarea rows={3} value={form.signatureHoleDescription || ""} onChange={(e) => set("signatureHoleDescription", e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Course Strategy</label>
-              <textarea rows={3} value={form.courseStrategy || ""} onChange={(e) => set("courseStrategy", e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>What to Expect</label>
-              <textarea rows={3} value={form.whatToExpect || ""} onChange={(e) => set("whatToExpect", e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Best Time to Play</label>
-              <input type="text" value={form.bestTimeToPlay || ""} onChange={(e) => set("bestTimeToPlay", e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Pace of Play Notes</label>
-              <input type="text" value={form.paceOfPlayNotes || ""} onChange={(e) => set("paceOfPlayNotes", e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Insider Tips (JSON)</label>
-              <textarea rows={3} value={typeof form.insiderTips === "object" ? JSON.stringify(form.insiderTips, null, 2) : form.insiderTips || ""} onChange={(e) => {
-                try { set("insiderTips", JSON.parse(e.target.value)); } catch { set("insiderTips", e.target.value); }
-              }} className={inputClass} placeholder='["Tip 1", "Tip 2"]' />
-            </div>
-            <div>
-              <label className={labelClass}>Design Philosophy</label>
-              <textarea rows={3} value={form.designPhilosophy || ""} onChange={(e) => set("designPhilosophy", e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Architect Bio</label>
-              <textarea rows={3} value={form.architectBio || ""} onChange={(e) => set("architectBio", e.target.value)} className={inputClass} />
-            </div>
-          </div>
+          <DesignTab course={course} updateField={updateField} />
         )}
-
         {activeTab === "Conditions" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className={labelClass}>Fairway Grass</label>
-              <input type="text" value={form.fairwayGrass || ""} onChange={(e) => set("fairwayGrass", e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Green Grass</label>
-              <input type="text" value={form.greenGrass || ""} onChange={(e) => set("greenGrass", e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Green Speed</label>
-              <input type="text" value={form.greenSpeed || ""} onChange={(e) => set("greenSpeed", e.target.value)} className={inputClass} placeholder="e.g., 11-12 on stimpmeter" />
-            </div>
-            <div>
-              <label className={labelClass}>Aeration Schedule</label>
-              <input type="text" value={form.aerationSchedule || ""} onChange={(e) => set("aerationSchedule", e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Best Condition Months</label>
-              <input type="text" value={form.bestConditionMonths || ""} onChange={(e) => set("bestConditionMonths", e.target.value)} className={inputClass} placeholder="e.g., April-June, September-October" />
-            </div>
-            <div>
-              <label className={labelClass}>Golf Season</label>
-              <input type="text" value={form.golfSeason || ""} onChange={(e) => set("golfSeason", e.target.value)} className={inputClass} placeholder="e.g., Year-round, March-November" />
-            </div>
-          </div>
+          <ConditionsTab course={course} updateField={updateField} />
         )}
-
         {activeTab === "History" && (
-          <div className="space-y-4">
-            <div>
-              <label className={labelClass}>Renovation Notes</label>
-              <textarea rows={3} value={form.renovationNotes || ""} onChange={(e) => set("renovationNotes", e.target.value)} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Championship History (JSON)</label>
-              <textarea rows={4} value={typeof form.championshipHistory === "object" ? JSON.stringify(form.championshipHistory, null, 2) : form.championshipHistory || ""} onChange={(e) => {
-                try { set("championshipHistory", JSON.parse(e.target.value)); } catch { set("championshipHistory", e.target.value); }
-              }} className={inputClass} placeholder='[{"event": "US Open", "year": 2020}]' />
-            </div>
-            <div>
-              <label className={labelClass}>Famous Moments (JSON)</label>
-              <textarea rows={4} value={typeof form.famousMoments === "object" ? JSON.stringify(form.famousMoments, null, 2) : form.famousMoments || ""} onChange={(e) => {
-                try { set("famousMoments", JSON.parse(e.target.value)); } catch { set("famousMoments", e.target.value); }
-              }} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Upcoming Events (JSON)</label>
-              <textarea rows={4} value={typeof form.upcomingEvents === "object" ? JSON.stringify(form.upcomingEvents, null, 2) : form.upcomingEvents || ""} onChange={(e) => {
-                try { set("upcomingEvents", JSON.parse(e.target.value)); } catch { set("upcomingEvents", e.target.value); }
-              }} className={inputClass} />
-            </div>
-            <div>
-              <label className={labelClass}>Renovation History (JSON)</label>
-              <textarea rows={4} value={typeof form.renovationHistory === "object" ? JSON.stringify(form.renovationHistory, null, 2) : form.renovationHistory || ""} onChange={(e) => {
-                try { set("renovationHistory", JSON.parse(e.target.value)); } catch { set("renovationHistory", e.target.value); }
-              }} className={inputClass} />
-            </div>
-          </div>
+          <HistoryTab course={course} updateField={updateField} />
         )}
-
         {activeTab === "Nearby" && (
-          <div className="space-y-6">
-            {/* Lodging section */}
-            <div>
-              <h3 className="text-sm font-medium text-white mb-1">On-site Lodging</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                <div className="flex items-center gap-2">
-                  <input type="checkbox" checked={form.onSiteLodging || false} onChange={(e) => set("onSiteLodging", e.target.checked)} className="accent-[#22c55e]" />
-                  <label className="text-sm text-gray-300">Has on-site lodging</label>
-                </div>
-                <div />
-                <div>
-                  <label className={labelClass}>Resort Name</label>
-                  <input type="text" value={form.resortNameField || ""} onChange={(e) => set("resortNameField", e.target.value)} className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>Resort Booking URL</label>
-                  <input type="url" value={form.resortBookingUrl || ""} onChange={(e) => set("resortBookingUrl", e.target.value)} className={inputClass} />
-                </div>
-              </div>
-            </div>
-
-            {/* Read-only nearby relations */}
-            <div>
-              <h3 className="text-sm font-medium text-white mb-2">Nearby Dining ({course.nearbyDining?.length || 0})</h3>
-              {course.nearbyDining?.length > 0 ? (
-                <div className="space-y-2">
-                  {course.nearbyDining.map((d: any) => (
-                    <div key={d.id} className="p-3 rounded-lg bg-[#0d0d0d] border border-[#222] text-sm">
-                      <span className="text-white font-medium">{d.name}</span>
-                      {d.cuisineType && <span className="text-gray-500 ml-2">{d.cuisineType}</span>}
-                      {d.distanceMiles && <span className="text-gray-600 ml-2">{Number(d.distanceMiles).toFixed(1)} mi</span>}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-600 text-sm">No nearby dining entries</p>
-              )}
-            </div>
-
-            <div>
-              <h3 className="text-sm font-medium text-white mb-2">Nearby Lodging ({course.nearbyLodging?.length || 0})</h3>
-              {course.nearbyLodging?.length > 0 ? (
-                <div className="space-y-2">
-                  {course.nearbyLodging.map((l: any) => (
-                    <div key={l.id} className="p-3 rounded-lg bg-[#0d0d0d] border border-[#222] text-sm">
-                      <span className="text-white font-medium">{l.name}</span>
-                      {l.lodgingType && <span className="text-gray-500 ml-2">{l.lodgingType}</span>}
-                      {l.distanceMiles && <span className="text-gray-600 ml-2">{Number(l.distanceMiles).toFixed(1)} mi</span>}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-600 text-sm">No nearby lodging entries</p>
-              )}
-            </div>
-
-            <div>
-              <h3 className="text-sm font-medium text-white mb-2">Nearby Attractions ({course.nearbyAttractions?.length || 0})</h3>
-              {course.nearbyAttractions?.length > 0 ? (
-                <div className="space-y-2">
-                  {course.nearbyAttractions.map((a: any) => (
-                    <div key={a.id} className="p-3 rounded-lg bg-[#0d0d0d] border border-[#222] text-sm">
-                      <span className="text-white font-medium">{a.name}</span>
-                      {a.category && <span className="text-gray-500 ml-2">{a.category}</span>}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-600 text-sm">No nearby attraction entries</p>
-              )}
-            </div>
-          </div>
+          <NearbyTab
+            dining={dining} setDining={setDining}
+            lodging={lodging} setLodging={setLodging}
+            attractions={attractions} setAttractions={setAttractions}
+          />
         )}
-
         {activeTab === "Media" && (
-          <MediaTab courseId={courseId} adminKey={getAdminKey()} initialMedia={course.media || []} onMediaChange={fetchCourse} />
+          <MediaTab media={media} setMedia={setMedia} />
         )}
-
-        {activeTab === "Tee Boxes" && (
-          <div>
-            <h3 className="text-sm font-medium text-white mb-3">Tee Boxes ({course.teeBoxes?.length || 0})</h3>
-            {course.teeBoxes?.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-[#222] text-gray-400 text-left">
-                      <th className="px-4 py-2 font-medium">Tee Name</th>
-                      <th className="px-4 py-2 font-medium">Color</th>
-                      <th className="px-4 py-2 font-medium">Gender</th>
-                      <th className="px-4 py-2 font-medium text-right">Yardage</th>
-                      <th className="px-4 py-2 font-medium text-right">Rating</th>
-                      <th className="px-4 py-2 font-medium text-right">Slope</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {course.teeBoxes.map((t: any) => (
-                      <tr key={t.teeId} className="border-b border-[#1a1a1a]">
-                        <td className="px-4 py-2 text-white">{t.teeName}</td>
-                        <td className="px-4 py-2 text-gray-400">{t.color || "—"}</td>
-                        <td className="px-4 py-2 text-gray-400">{t.gender || "—"}</td>
-                        <td className="px-4 py-2 text-right text-white font-mono">{t.totalYardage?.toLocaleString() || "—"}</td>
-                        <td className="px-4 py-2 text-right text-gray-400">{t.courseRating ? Number(t.courseRating).toFixed(1) : "—"}</td>
-                        <td className="px-4 py-2 text-right text-gray-400">{t.slopeRating || "—"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="text-gray-600 text-sm">No tee boxes configured</p>
-            )}
-
-            {course.holes?.length > 0 && (
-              <div className="mt-6">
-                <h3 className="text-sm font-medium text-white mb-3">Holes ({course.holes.length})</h3>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-[#222] text-gray-400 text-left">
-                        <th className="px-4 py-2 font-medium">Hole</th>
-                        <th className="px-4 py-2 font-medium">Par</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {course.holes.map((h: any) => (
-                        <tr key={h.holeId} className="border-b border-[#1a1a1a]">
-                          <td className="px-4 py-2 text-white">{h.holeNumber}</td>
-                          <td className="px-4 py-2 text-gray-400">{h.par}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </div>
+        {activeTab === "Tee Boxes & Holes" && (
+          <TeeBoxesHolesTab
+            teeBoxes={teeBoxes} setTeeBoxes={setTeeBoxes}
+            holes={holes} setHoles={setHoles}
+            numHoles={course.numHoles || 18}
+          />
         )}
       </div>
     </div>
   );
 }
 
-/* ─────────────────────────── Media Tab Component ─────────────────────────── */
+/* ─── Shared Components ──────────────────────────────────────────── */
 
-function getVideoThumbnail(url: string): string | null {
-  // YouTube
-  const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  if (ytMatch) return `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
-  // Vimeo — can't easily get thumbnail without API, return null
-  return null;
-}
-
-function getVideoEmbedUrl(url: string): string | null {
-  const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
-  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
-  if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
-  return null;
-}
-
-function detectVideoType(url: string): string {
-  if (url.match(/youtube\.com|youtu\.be/i)) return "youtube";
-  if (url.match(/vimeo\.com/i)) return "vimeo";
-  return "direct";
-}
-
-function MediaTab({
-  courseId,
-  adminKey,
-  initialMedia,
-  onMediaChange,
+function Field({
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder,
+  className = "",
 }: {
-  courseId: string;
-  adminKey: string;
-  initialMedia: any[];
-  onMediaChange: () => void;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+  placeholder?: string;
+  className?: string;
 }) {
-  const [media, setMedia] = useState<any[]>(initialMedia);
-  const [showAddForm, setShowAddForm] = useState<"photo" | "video" | "instagram" | null>(null);
-  const [addUrl, setAddUrl] = useState("");
-  const [addCaption, setAddCaption] = useState("");
-  const [addCredit, setAddCredit] = useState("");
-  const [addIsPrimary, setAddIsPrimary] = useState(false);
-  const [previewError, setPreviewError] = useState(false);
-  const [adding, setAdding] = useState(false);
-  const [deleteId, setDeleteId] = useState<number | null>(null);
-  const [deleting, setDeleting] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editCaption, setEditCaption] = useState("");
-  const [editCredit, setEditCredit] = useState("");
-  const [editSaving, setEditSaving] = useState(false);
-  const [mediaMessage, setMediaMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  return (
+    <div className={className}>
+      <label className="block text-xs font-medium text-gray-400 mb-1.5">{label}</label>
+      <input
+        type={type}
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-lg px-3 py-2 text-sm text-white outline-none"
+        style={{ backgroundColor: "#0a0a0a", border: "1px solid #1f1f1f" }}
+      />
+    </div>
+  );
+}
 
-  useEffect(() => {
-    setMedia(initialMedia);
-  }, [initialMedia]);
-
-  const showMsg = (type: "success" | "error", text: string) => {
-    setMediaMessage({ type, text });
-    setTimeout(() => setMediaMessage(null), 3000);
-  };
-
-  const resetForm = () => {
-    setShowAddForm(null);
-    setAddUrl("");
-    setAddCaption("");
-    setAddCredit("");
-    setAddIsPrimary(false);
-    setPreviewError(false);
-  };
-
-  const handleAdd = async (mediaType: string) => {
-    if (!addUrl.trim()) return;
-    setAdding(true);
-    try {
-      const body: any = {
-        url: addUrl.trim(),
-        caption: addCaption.trim() || null,
-        credit: addCredit.trim() || null,
-        mediaType,
-        isPrimary: mediaType === "image" ? addIsPrimary : false,
-      };
-      if (mediaType === "video") {
-        body.imageType = detectVideoType(addUrl.trim());
-      }
-      const res = await fetch(`/api/admin/courses/${courseId}/media`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to add");
-      }
-      resetForm();
-      const labels: Record<string, string> = { image: "Photo", video: "Video", instagram: "Instagram post" };
-      showMsg("success", `${labels[mediaType] || "Media"} added successfully`);
-      onMediaChange();
-    } catch (err: any) {
-      showMsg("error", err.message);
-    } finally {
-      setAdding(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (deleteId === null) return;
-    setDeleting(true);
-    try {
-      const res = await fetch(`/api/admin/courses/${courseId}/media/${deleteId}`, {
-        method: "DELETE",
-        headers: { "x-admin-key": adminKey },
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to delete");
-      }
-      setDeleteId(null);
-      showMsg("success", "Media deleted");
-      onMediaChange();
-    } catch (err: any) {
-      showMsg("error", err.message);
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  const handleTogglePrimary = async (mediaId: number, current: boolean) => {
-    try {
-      const res = await fetch(`/api/admin/courses/${courseId}/media/${mediaId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
-        body: JSON.stringify({ isPrimary: !current }),
-      });
-      if (!res.ok) throw new Error("Failed to update");
-      onMediaChange();
-    } catch (err: any) {
-      showMsg("error", err.message);
-    }
-  };
-
-  const startEdit = (m: any) => {
-    setEditingId(m.mediaId);
-    setEditCaption(m.caption || "");
-    setEditCredit(m.credit || "");
-  };
-
-  const handleEditSave = async () => {
-    if (editingId === null) return;
-    setEditSaving(true);
-    try {
-      const res = await fetch(`/api/admin/courses/${courseId}/media/${editingId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
-        body: JSON.stringify({ caption: editCaption, credit: editCredit }),
-      });
-      if (!res.ok) throw new Error("Failed to update");
-      setEditingId(null);
-      showMsg("success", "Caption updated");
-      onMediaChange();
-    } catch (err: any) {
-      showMsg("error", err.message);
-    } finally {
-      setEditSaving(false);
-    }
-  };
-
-  const inputClass =
-    "w-full px-3 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-white text-sm focus:outline-none focus:border-[#22c55e]";
-  const labelClass = "block text-xs text-gray-400 mb-1";
-
-  const videoThumb = showAddForm === "video" && addUrl.trim() ? getVideoThumbnail(addUrl.trim()) : null;
-
+function TextArea({
+  label,
+  value,
+  onChange,
+  rows = 3,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  rows?: number;
+}) {
   return (
     <div>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-medium text-white">Course Media ({media.length})</h3>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowAddForm("photo")}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#22c55e] text-black text-sm font-medium hover:bg-[#16a34a] transition-colors"
-          >
-            <Plus size={16} />
-            Add Photo
-          </button>
-          <button
-            onClick={() => setShowAddForm("video")}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
-          >
-            <Video size={16} />
-            Add Video
-          </button>
-          <button
-            onClick={() => setShowAddForm("instagram")}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-pink-600 text-white text-sm font-medium hover:bg-pink-700 transition-colors"
-          >
-            <Instagram size={16} />
-            Add Instagram
-          </button>
-        </div>
+      <label className="block text-xs font-medium text-gray-400 mb-1.5">{label}</label>
+      <textarea
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value)}
+        rows={rows}
+        className="w-full rounded-lg px-3 py-2 text-sm text-white outline-none resize-y"
+        style={{ backgroundColor: "#0a0a0a", border: "1px solid #1f1f1f" }}
+      />
+    </div>
+  );
+}
+
+function Select({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { label: string; value: string }[];
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-gray-400 mb-1.5">{label}</label>
+      <select
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-lg px-3 py-2 text-sm text-white outline-none"
+        style={{ backgroundColor: "#0a0a0a", border: "1px solid #1f1f1f" }}
+      >
+        <option value="">—</option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function Toggle({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <label className="flex items-center gap-3 cursor-pointer">
+      <div
+        className="relative w-10 h-5 rounded-full transition-colors"
+        style={{ backgroundColor: checked ? "#22c55e" : "#333" }}
+        onClick={() => onChange(!checked)}
+      >
+        <div
+          className="absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform"
+          style={{ left: checked ? "22px" : "2px" }}
+        />
+      </div>
+      <span className="text-sm text-gray-300">{label}</span>
+    </label>
+  );
+}
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return <h3 className="text-sm font-semibold text-white mb-4">{children}</h3>;
+}
+
+/* ─── Tab: Basic Info ────────────────────────────────────────────── */
+
+function BasicInfoTab({ course, updateField }: { course: CourseData; updateField: (f: string, v: unknown) => void }) {
+  return (
+    <div className="space-y-6">
+      <SectionTitle>Core Details</SectionTitle>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Field label="Course Name" value={course.courseName || ""} onChange={(v) => updateField("courseName", v)} className="md:col-span-2" />
+        <Field label="Facility Name" value={course.facilityName || ""} onChange={(v) => updateField("facilityName", v)} />
+        <Field label="Website URL" value={course.websiteUrl || ""} onChange={(v) => updateField("websiteUrl", v)} />
+        <Field label="Phone" value={course.phone || ""} onChange={(v) => updateField("phone", v)} />
+        <Field label="Email" value={course.email || ""} onChange={(v) => updateField("email", v)} />
       </div>
 
-      {/* Message */}
-      {mediaMessage && (
-        <div className={`p-3 rounded-lg text-sm mb-4 ${
-          mediaMessage.type === "success"
-            ? "bg-green-900/30 border border-green-800 text-green-400"
-            : "bg-red-900/30 border border-red-800 text-red-400"
-        }`}>
-          {mediaMessage.text}
+      <SectionTitle>Location</SectionTitle>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Field label="Street Address" value={course.streetAddress || ""} onChange={(v) => updateField("streetAddress", v)} className="md:col-span-2 lg:col-span-3" />
+        <Field label="City" value={course.city || ""} onChange={(v) => updateField("city", v)} />
+        <Field label="State" value={course.state || ""} onChange={(v) => updateField("state", v)} />
+        <Field label="Zip Code" value={course.zipCode || ""} onChange={(v) => updateField("zipCode", v)} />
+        <Field label="Country" value={course.country || "United States"} onChange={(v) => updateField("country", v)} />
+        <Field label="Latitude" value={course.latitude?.toString() || ""} onChange={(v) => updateField("latitude", v)} type="number" />
+        <Field label="Longitude" value={course.longitude?.toString() || ""} onChange={(v) => updateField("longitude", v)} type="number" />
+      </div>
+
+      <SectionTitle>Classification</SectionTitle>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Select
+          label="Access Type"
+          value={course.accessType || ""}
+          onChange={(v) => updateField("accessType", v)}
+          options={[
+            { label: "Public", value: "Public" },
+            { label: "Private", value: "Private" },
+            { label: "Resort", value: "Resort" },
+            { label: "Semi-Private", value: "Semi-Private" },
+            { label: "Military", value: "Military" },
+          ]}
+        />
+        <Select
+          label="Course Type"
+          value={course.courseType || ""}
+          onChange={(v) => updateField("courseType", v)}
+          options={[
+            { label: "Links", value: "Links" },
+            { label: "Parkland", value: "Parkland" },
+            { label: "Desert", value: "Desert" },
+            { label: "Mountain", value: "Mountain" },
+            { label: "Heathland", value: "Heathland" },
+            { label: "Tropical", value: "Tropical" },
+          ]}
+        />
+        <Select
+          label="Course Style"
+          value={course.courseStyle || ""}
+          onChange={(v) => updateField("courseStyle", v)}
+          options={[
+            { label: "Traditional", value: "Traditional" },
+            { label: "Modern", value: "Modern" },
+            { label: "Classic", value: "Classic" },
+            { label: "Resort", value: "Resort" },
+          ]}
+        />
+        <Field label="Number of Holes" value={course.numHoles?.toString() || "18"} onChange={(v) => updateField("numHoles", v)} type="number" />
+        <Field label="Par" value={course.par?.toString() || ""} onChange={(v) => updateField("par", v)} type="number" />
+        <Field label="Year Opened" value={course.yearOpened?.toString() || ""} onChange={(v) => updateField("yearOpened", v)} type="number" />
+      </div>
+
+      <SectionTitle>Status</SectionTitle>
+      <div className="flex flex-wrap gap-6">
+        <Toggle label="Verified" checked={course.isVerified || false} onChange={(v) => updateField("isVerified", v)} />
+        <Toggle label="Enriched" checked={course.isEnriched || false} onChange={(v) => updateField("isEnriched", v)} />
+      </div>
+
+      <SectionTitle>Description</SectionTitle>
+      <TextArea label="Description" value={course.description || ""} onChange={(v) => updateField("description", v)} rows={4} />
+      <Field label="Tagline" value={course.tagline || ""} onChange={(v) => updateField("tagline", v)} />
+    </div>
+  );
+}
+
+/* ─── Tab: Pricing & Policies ────────────────────────────────────── */
+
+function PricingTab({ course, updateField }: { course: CourseData; updateField: (f: string, v: unknown) => void }) {
+  return (
+    <div className="space-y-6">
+      <SectionTitle>Green Fees</SectionTitle>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Field label="Green Fee (Low)" value={course.greenFeeLow?.toString() || ""} onChange={(v) => updateField("greenFeeLow", v)} type="number" placeholder="$" />
+        <Field label="Green Fee (High)" value={course.greenFeeHigh?.toString() || ""} onChange={(v) => updateField("greenFeeHigh", v)} type="number" placeholder="$" />
+        <Field label="Green Fee (Peak)" value={course.greenFeePeak?.toString() || ""} onChange={(v) => updateField("greenFeePeak", v)} type="number" placeholder="$" />
+        <Field label="Green Fee (Off-Peak)" value={course.greenFeeOffPeak?.toString() || ""} onChange={(v) => updateField("greenFeeOffPeak", v)} type="number" placeholder="$" />
+        <Field label="Green Fee (Twilight)" value={course.greenFeeTwilight?.toString() || ""} onChange={(v) => updateField("greenFeeTwilight", v)} type="number" placeholder="$" />
+        <Select
+          label="Price Tier"
+          value={course.priceTier || ""}
+          onChange={(v) => updateField("priceTier", v)}
+          options={[
+            { label: "$", value: "$" },
+            { label: "$$", value: "$$" },
+            { label: "$$$", value: "$$$" },
+            { label: "$$$$", value: "$$$$" },
+          ]}
+        />
+        <Select
+          label="Currency"
+          value={course.greenFeeCurrency || "USD"}
+          onChange={(v) => updateField("greenFeeCurrency", v)}
+          options={[
+            { label: "USD", value: "USD" },
+            { label: "EUR", value: "EUR" },
+            { label: "GBP", value: "GBP" },
+          ]}
+        />
+        <Toggle label="Includes Cart" checked={course.includesCart || false} onChange={(v) => updateField("includesCart", v)} />
+      </div>
+
+      <SectionTitle>Walking & Carts</SectionTitle>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Select
+          label="Walking Policy"
+          value={course.walkingPolicy || ""}
+          onChange={(v) => updateField("walkingPolicy", v)}
+          options={[
+            { label: "Walking Only", value: "Walking Only" },
+            { label: "Walking Allowed", value: "Walking Allowed" },
+            { label: "Cart Required", value: "Cart Required" },
+            { label: "Restricted Times", value: "Restricted Times" },
+          ]}
+        />
+        <Field label="Cart Policy" value={course.cartPolicy || ""} onChange={(v) => updateField("cartPolicy", v)} />
+        <Field label="Cart Fee" value={course.cartFee || ""} onChange={(v) => updateField("cartFee", v)} />
+      </div>
+
+      <SectionTitle>Caddie</SectionTitle>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Select
+          label="Caddie Availability"
+          value={course.caddieAvailability || ""}
+          onChange={(v) => updateField("caddieAvailability", v)}
+          options={[
+            { label: "Available", value: "Available" },
+            { label: "Required", value: "Required" },
+            { label: "Not Available", value: "Not Available" },
+          ]}
+        />
+        <Field label="Caddie Fee" value={course.caddieFee || ""} onChange={(v) => updateField("caddieFee", v)} />
+      </div>
+
+      <SectionTitle>Policies & Access</SectionTitle>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Field label="Dress Code" value={course.dressCode || ""} onChange={(v) => updateField("dressCode", v)} />
+        <Field label="Cell Phone Policy" value={course.cellPhonePolicy || ""} onChange={(v) => updateField("cellPhonePolicy", v)} />
+        <Field label="Booking URL" value={course.bookingUrl || ""} onChange={(v) => updateField("bookingUrl", v)} />
+        <Toggle label="Club Rental Available" checked={course.clubRentalAvailable || false} onChange={(v) => updateField("clubRentalAvailable", v)} />
+      </div>
+
+      <SectionTitle>Guest Access</SectionTitle>
+      <div className="grid grid-cols-1 gap-4">
+        <TextArea label="How to Get On" value={course.howToGetOn || ""} onChange={(v) => updateField("howToGetOn", v)} />
+        <Field label="Resort/Affiliate Access" value={course.resortAffiliateAccess || ""} onChange={(v) => updateField("resortAffiliateAccess", v)} />
+        <Field label="Guest Policy" value={course.guestPolicy || ""} onChange={(v) => updateField("guestPolicy", v)} />
+      </div>
+
+      <SectionTitle>Resort</SectionTitle>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Toggle label="On-Site Lodging" checked={course.onSiteLodging || false} onChange={(v) => updateField("onSiteLodging", v)} />
+        <Field label="Resort Name" value={course.resortNameField || ""} onChange={(v) => updateField("resortNameField", v)} />
+        <Field label="Resort Booking URL" value={course.resortBookingUrl || ""} onChange={(v) => updateField("resortBookingUrl", v)} />
+      </div>
+    </div>
+  );
+}
+
+/* ─── Tab: Design & Character ────────────────────────────────────── */
+
+function DesignTab({ course, updateField }: { course: CourseData; updateField: (f: string, v: unknown) => void }) {
+  return (
+    <div className="space-y-6">
+      <SectionTitle>Architects</SectionTitle>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Field label="Original Architect" value={course.originalArchitect || ""} onChange={(v) => updateField("originalArchitect", v)} />
+        <Field label="Renovation Architect" value={course.renovationArchitect || ""} onChange={(v) => updateField("renovationArchitect", v)} />
+        <Field label="Renovation Year" value={course.renovationYear?.toString() || ""} onChange={(v) => updateField("renovationYear", v)} type="number" />
+        <Field label="Renovation Notes" value={course.renovationNotes || ""} onChange={(v) => updateField("renovationNotes", v)} />
+      </div>
+      <TextArea label="Architect Bio" value={course.architectBio || ""} onChange={(v) => updateField("architectBio", v)} />
+      <TextArea label="Design Philosophy" value={course.designPhilosophy || ""} onChange={(v) => updateField("designPhilosophy", v)} />
+
+      <SectionTitle>Signature Hole</SectionTitle>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Field label="Signature Hole Number" value={course.signatureHoleNumber?.toString() || ""} onChange={(v) => updateField("signatureHoleNumber", v)} type="number" />
+      </div>
+      <TextArea label="Signature Hole Description" value={course.signatureHoleDescription || ""} onChange={(v) => updateField("signatureHoleDescription", v)} />
+
+      <SectionTitle>Character</SectionTitle>
+      <TextArea label="What to Expect" value={course.whatToExpect || ""} onChange={(v) => updateField("whatToExpect", v)} />
+      <TextArea label="Course Strategy" value={course.courseStrategy || ""} onChange={(v) => updateField("courseStrategy", v)} />
+      <TextArea label="Pace of Play Notes" value={course.paceOfPlayNotes || ""} onChange={(v) => updateField("paceOfPlayNotes", v)} />
+
+      <SectionTitle>Best Time to Play</SectionTitle>
+      <Field label="Best Time to Play" value={course.bestTimeToPlay || ""} onChange={(v) => updateField("bestTimeToPlay", v)} />
+    </div>
+  );
+}
+
+/* ─── Tab: Conditions ────────────────────────────────────────────── */
+
+function ConditionsTab({ course, updateField }: { course: CourseData; updateField: (f: string, v: unknown) => void }) {
+  return (
+    <div className="space-y-6">
+      <SectionTitle>Turf</SectionTitle>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Field label="Fairway Grass" value={course.fairwayGrass || ""} onChange={(v) => updateField("fairwayGrass", v)} />
+        <Field label="Green Grass" value={course.greenGrass || ""} onChange={(v) => updateField("greenGrass", v)} />
+        <Field label="Green Speed" value={course.greenSpeed || ""} onChange={(v) => updateField("greenSpeed", v)} />
+      </div>
+
+      <SectionTitle>Maintenance</SectionTitle>
+      <Field label="Aeration Schedule" value={course.aerationSchedule || ""} onChange={(v) => updateField("aerationSchedule", v)} />
+      <Field label="Best Condition Months" value={course.bestConditionMonths || ""} onChange={(v) => updateField("bestConditionMonths", v)} />
+      <Field label="Golf Season" value={course.golfSeason || ""} onChange={(v) => updateField("golfSeason", v)} />
+    </div>
+  );
+}
+
+/* ─── Tab: History ────────────────────────────────────────────────── */
+
+function HistoryTab({ course, updateField }: { course: CourseData; updateField: (f: string, v: unknown) => void }) {
+  const parseJson = (val: unknown): string => {
+    if (!val) return "";
+    if (typeof val === "string") return val;
+    return JSON.stringify(val, null, 2);
+  };
+
+  const setJson = (field: string, val: string) => {
+    try {
+      updateField(field, val ? JSON.parse(val) : null);
+    } catch {
+      // Keep as string while editing
+      updateField(field, val);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <SectionTitle>Championship History</SectionTitle>
+      <TextArea label="Championship History (JSON)" value={parseJson(course.championshipHistory)} onChange={(v) => setJson("championshipHistory", v)} rows={5} />
+
+      <SectionTitle>Famous Moments</SectionTitle>
+      <TextArea label="Famous Moments (JSON)" value={parseJson(course.famousMoments)} onChange={(v) => setJson("famousMoments", v)} rows={5} />
+
+      <SectionTitle>Upcoming Events</SectionTitle>
+      <TextArea label="Upcoming Events (JSON)" value={parseJson(course.upcomingEvents)} onChange={(v) => setJson("upcomingEvents", v)} rows={5} />
+
+      <SectionTitle>Insider Tips</SectionTitle>
+      <TextArea label="Insider Tips (JSON)" value={parseJson(course.insiderTips)} onChange={(v) => setJson("insiderTips", v)} rows={5} />
+    </div>
+  );
+}
+
+/* ─── Tab: Nearby ─────────────────────────────────────────────────── */
+
+function NearbyTab({
+  dining, setDining,
+  lodging, setLodging,
+  attractions, setAttractions,
+}: {
+  dining: NearbyDining[];
+  setDining: (v: NearbyDining[]) => void;
+  lodging: NearbyLodging[];
+  setLodging: (v: NearbyLodging[]) => void;
+  attractions: NearbyAttraction[];
+  setAttractions: (v: NearbyAttraction[]) => void;
+}) {
+  return (
+    <div className="space-y-8">
+      {/* Dining */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <SectionTitle>Nearby Dining ({dining.length})</SectionTitle>
+          <button
+            onClick={() =>
+              setDining([...dining, {
+                name: "", cuisineType: "", priceLevel: "", rating: "",
+                distanceMiles: "", description: "", address: "", phone: "",
+                websiteUrl: "", isOnSite: false, sortOrder: dining.length,
+              }])
+            }
+            className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg"
+            style={{ backgroundColor: "rgba(34,197,94,0.1)", color: "#22c55e" }}
+          >
+            <Plus className="h-3 w-3" /> Add
+          </button>
         </div>
-      )}
-
-      {/* Add Photo Form */}
-      {showAddForm === "photo" && (
-        <div className="mb-6 p-4 rounded-xl bg-[#0d0d0d] border border-[#333]">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-sm font-medium text-white">Add Photo by URL</h4>
-            <button onClick={resetForm} className="text-gray-500 hover:text-white">
-              <X size={18} />
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            <div>
-              <label className={labelClass}>Image URL *</label>
+        {dining.map((d, i) => (
+          <div
+            key={i}
+            className="rounded-lg p-4 mb-3"
+            style={{ backgroundColor: "#0a0a0a", border: "1px solid #1f1f1f" }}
+          >
+            <div className="flex justify-between items-start mb-3">
+              <span className="text-xs text-gray-500">#{i + 1}</span>
+              <button
+                onClick={() => setDining(dining.filter((_, j) => j !== i))}
+                className="text-red-400 hover:text-red-300"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <input
-                type="url"
-                value={addUrl}
-                onChange={(e) => { setAddUrl(e.target.value); setPreviewError(false); }}
-                placeholder="https://example.com/photo.jpg"
-                className={inputClass}
+                placeholder="Name"
+                value={d.name}
+                onChange={(e) => {
+                  const updated = [...dining];
+                  updated[i] = { ...d, name: e.target.value };
+                  setDining(updated);
+                }}
+                className="rounded px-3 py-1.5 text-sm text-white outline-none"
+                style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
+              />
+              <input
+                placeholder="Cuisine Type"
+                value={d.cuisineType}
+                onChange={(e) => {
+                  const updated = [...dining];
+                  updated[i] = { ...d, cuisineType: e.target.value };
+                  setDining(updated);
+                }}
+                className="rounded px-3 py-1.5 text-sm text-white outline-none"
+                style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
+              />
+              <input
+                placeholder="Price Level"
+                value={d.priceLevel}
+                onChange={(e) => {
+                  const updated = [...dining];
+                  updated[i] = { ...d, priceLevel: e.target.value };
+                  setDining(updated);
+                }}
+                className="rounded px-3 py-1.5 text-sm text-white outline-none"
+                style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
+              />
+              <input
+                placeholder="Rating"
+                value={d.rating}
+                onChange={(e) => {
+                  const updated = [...dining];
+                  updated[i] = { ...d, rating: e.target.value };
+                  setDining(updated);
+                }}
+                className="rounded px-3 py-1.5 text-sm text-white outline-none"
+                style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
+              />
+              <input
+                placeholder="Distance (miles)"
+                value={d.distanceMiles}
+                onChange={(e) => {
+                  const updated = [...dining];
+                  updated[i] = { ...d, distanceMiles: e.target.value };
+                  setDining(updated);
+                }}
+                className="rounded px-3 py-1.5 text-sm text-white outline-none"
+                style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
+              />
+              <input
+                placeholder="Phone"
+                value={d.phone}
+                onChange={(e) => {
+                  const updated = [...dining];
+                  updated[i] = { ...d, phone: e.target.value };
+                  setDining(updated);
+                }}
+                className="rounded px-3 py-1.5 text-sm text-white outline-none"
+                style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
+              />
+              <input
+                placeholder="Address"
+                value={d.address}
+                onChange={(e) => {
+                  const updated = [...dining];
+                  updated[i] = { ...d, address: e.target.value };
+                  setDining(updated);
+                }}
+                className="rounded px-3 py-1.5 text-sm text-white outline-none col-span-full"
+                style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
               />
             </div>
+          </div>
+        ))}
+      </div>
 
-            {/* Preview */}
-            {addUrl.trim() && (
-              <div>
-                <label className={labelClass}>Preview</label>
-                <div className="rounded-lg border border-[#333] overflow-hidden bg-[#1a1a1a] max-w-sm">
-                  {previewError ? (
-                    <div className="w-full h-40 flex flex-col items-center justify-center text-gray-500 text-sm gap-2">
-                      <ImageIcon size={24} />
-                      <span>Could not load preview</span>
-                    </div>
-                  ) : (
-                    <img
-                      src={addUrl.trim()}
-                      alt="Preview"
-                      className="w-full h-40 object-cover"
-                      onError={() => setPreviewError(true)}
-                    />
-                  )}
-                </div>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label className={labelClass}>Caption</label>
-                <input type="text" value={addCaption} onChange={(e) => setAddCaption(e.target.value)} placeholder="e.g., Hole 18 at sunset" className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>Credit</label>
-                <input type="text" value={addCredit} onChange={(e) => setAddCredit(e.target.value)} placeholder="e.g., Photographer name" className={inputClass} />
-              </div>
+      {/* Lodging */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <SectionTitle>Nearby Lodging ({lodging.length})</SectionTitle>
+          <button
+            onClick={() =>
+              setLodging([...lodging, {
+                name: "", lodgingType: "", priceTier: "", avgPricePerNight: "",
+                rating: "", distanceMiles: "", description: "", address: "",
+                phone: "", websiteUrl: "", bookingUrl: "", isOnSite: false,
+                isPartner: false, sortOrder: lodging.length,
+              }])
+            }
+            className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg"
+            style={{ backgroundColor: "rgba(34,197,94,0.1)", color: "#22c55e" }}
+          >
+            <Plus className="h-3 w-3" /> Add
+          </button>
+        </div>
+        {lodging.map((l, i) => (
+          <div
+            key={i}
+            className="rounded-lg p-4 mb-3"
+            style={{ backgroundColor: "#0a0a0a", border: "1px solid #1f1f1f" }}
+          >
+            <div className="flex justify-between items-start mb-3">
+              <span className="text-xs text-gray-500">#{i + 1}</span>
+              <button
+                onClick={() => setLodging(lodging.filter((_, j) => j !== i))}
+                className="text-red-400 hover:text-red-300"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <input
+                placeholder="Name"
+                value={l.name}
+                onChange={(e) => {
+                  const updated = [...lodging];
+                  updated[i] = { ...l, name: e.target.value };
+                  setLodging(updated);
+                }}
+                className="rounded px-3 py-1.5 text-sm text-white outline-none"
+                style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
+              />
+              <input
+                placeholder="Lodging Type"
+                value={l.lodgingType}
+                onChange={(e) => {
+                  const updated = [...lodging];
+                  updated[i] = { ...l, lodgingType: e.target.value };
+                  setLodging(updated);
+                }}
+                className="rounded px-3 py-1.5 text-sm text-white outline-none"
+                style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
+              />
+              <input
+                placeholder="Avg Price/Night"
+                value={l.avgPricePerNight}
+                onChange={(e) => {
+                  const updated = [...lodging];
+                  updated[i] = { ...l, avgPricePerNight: e.target.value };
+                  setLodging(updated);
+                }}
+                className="rounded px-3 py-1.5 text-sm text-white outline-none"
+                style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
+              />
+              <input
+                placeholder="Rating"
+                value={l.rating}
+                onChange={(e) => {
+                  const updated = [...lodging];
+                  updated[i] = { ...l, rating: e.target.value };
+                  setLodging(updated);
+                }}
+                className="rounded px-3 py-1.5 text-sm text-white outline-none"
+                style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
+              />
+              <input
+                placeholder="Distance (miles)"
+                value={l.distanceMiles}
+                onChange={(e) => {
+                  const updated = [...lodging];
+                  updated[i] = { ...l, distanceMiles: e.target.value };
+                  setLodging(updated);
+                }}
+                className="rounded px-3 py-1.5 text-sm text-white outline-none"
+                style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
+              />
+              <input
+                placeholder="Phone"
+                value={l.phone}
+                onChange={(e) => {
+                  const updated = [...lodging];
+                  updated[i] = { ...l, phone: e.target.value };
+                  setLodging(updated);
+                }}
+                className="rounded px-3 py-1.5 text-sm text-white outline-none"
+                style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
 
-            <label className="flex items-center gap-2 text-sm text-gray-300">
-              <input type="checkbox" checked={addIsPrimary} onChange={(e) => setAddIsPrimary(e.target.checked)} className="accent-[#22c55e]" />
-              Set as primary photo
+      {/* Attractions */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <SectionTitle>Nearby Attractions ({attractions.length})</SectionTitle>
+          <button
+            onClick={() =>
+              setAttractions([...attractions, {
+                name: "", category: "", description: "", distanceMiles: "", websiteUrl: "",
+              }])
+            }
+            className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg"
+            style={{ backgroundColor: "rgba(34,197,94,0.1)", color: "#22c55e" }}
+          >
+            <Plus className="h-3 w-3" /> Add
+          </button>
+        </div>
+        {attractions.map((a, i) => (
+          <div
+            key={i}
+            className="rounded-lg p-4 mb-3"
+            style={{ backgroundColor: "#0a0a0a", border: "1px solid #1f1f1f" }}
+          >
+            <div className="flex justify-between items-start mb-3">
+              <span className="text-xs text-gray-500">#{i + 1}</span>
+              <button
+                onClick={() => setAttractions(attractions.filter((_, j) => j !== i))}
+                className="text-red-400 hover:text-red-300"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <input
+                placeholder="Name"
+                value={a.name}
+                onChange={(e) => {
+                  const updated = [...attractions];
+                  updated[i] = { ...a, name: e.target.value };
+                  setAttractions(updated);
+                }}
+                className="rounded px-3 py-1.5 text-sm text-white outline-none"
+                style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
+              />
+              <input
+                placeholder="Category"
+                value={a.category}
+                onChange={(e) => {
+                  const updated = [...attractions];
+                  updated[i] = { ...a, category: e.target.value };
+                  setAttractions(updated);
+                }}
+                className="rounded px-3 py-1.5 text-sm text-white outline-none"
+                style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
+              />
+              <input
+                placeholder="Distance (miles)"
+                value={a.distanceMiles}
+                onChange={(e) => {
+                  const updated = [...attractions];
+                  updated[i] = { ...a, distanceMiles: e.target.value };
+                  setAttractions(updated);
+                }}
+                className="rounded px-3 py-1.5 text-sm text-white outline-none"
+                style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
+              />
+              <input
+                placeholder="Description"
+                value={a.description}
+                onChange={(e) => {
+                  const updated = [...attractions];
+                  updated[i] = { ...a, description: e.target.value };
+                  setAttractions(updated);
+                }}
+                className="rounded px-3 py-1.5 text-sm text-white outline-none col-span-full"
+                style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Tab: Media ──────────────────────────────────────────────────── */
+
+function MediaTab({
+  media,
+  setMedia,
+}: {
+  media: MediaItem[];
+  setMedia: (v: MediaItem[]) => void;
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <SectionTitle>Media ({media.length})</SectionTitle>
+        <button
+          onClick={() =>
+            setMedia([...media, {
+              mediaType: "image", imageType: "", url: "", caption: "",
+              credit: "", isPrimary: false, sortOrder: media.length,
+            }])
+          }
+          className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg"
+          style={{ backgroundColor: "rgba(34,197,94,0.1)", color: "#22c55e" }}
+        >
+          <Plus className="h-3 w-3" /> Add Media
+        </button>
+      </div>
+      {media.length === 0 && (
+        <p className="text-sm text-gray-500 text-center py-8">No media items yet</p>
+      )}
+      {media.map((m, i) => (
+        <div
+          key={i}
+          className="rounded-lg p-4 mb-3"
+          style={{ backgroundColor: "#0a0a0a", border: "1px solid #1f1f1f" }}
+        >
+          <div className="flex justify-between items-start mb-3">
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-gray-500">#{i + 1}</span>
+              {m.isPrimary && (
+                <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: "rgba(34,197,94,0.15)", color: "#22c55e" }}>
+                  Primary
+                </span>
+              )}
+            </div>
+            <button
+              onClick={() => setMedia(media.filter((_, j) => j !== i))}
+              className="text-red-400 hover:text-red-300"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <input
+              placeholder="URL"
+              value={m.url}
+              onChange={(e) => {
+                const updated = [...media];
+                updated[i] = { ...m, url: e.target.value };
+                setMedia(updated);
+              }}
+              className="rounded px-3 py-1.5 text-sm text-white outline-none col-span-full"
+              style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
+            />
+            <input
+              placeholder="Caption"
+              value={m.caption}
+              onChange={(e) => {
+                const updated = [...media];
+                updated[i] = { ...m, caption: e.target.value };
+                setMedia(updated);
+              }}
+              className="rounded px-3 py-1.5 text-sm text-white outline-none"
+              style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
+            />
+            <input
+              placeholder="Credit"
+              value={m.credit}
+              onChange={(e) => {
+                const updated = [...media];
+                updated[i] = { ...m, credit: e.target.value };
+                setMedia(updated);
+              }}
+              className="rounded px-3 py-1.5 text-sm text-white outline-none"
+              style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
+            />
+            <select
+              value={m.mediaType}
+              onChange={(e) => {
+                const updated = [...media];
+                updated[i] = { ...m, mediaType: e.target.value };
+                setMedia(updated);
+              }}
+              className="rounded px-3 py-1.5 text-sm text-white outline-none"
+              style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
+            >
+              <option value="image">Image</option>
+              <option value="video">Video</option>
+            </select>
+            <input
+              placeholder="Image Type (e.g., hero, gallery)"
+              value={m.imageType}
+              onChange={(e) => {
+                const updated = [...media];
+                updated[i] = { ...m, imageType: e.target.value };
+                setMedia(updated);
+              }}
+              className="rounded px-3 py-1.5 text-sm text-white outline-none"
+              style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
+            />
+          </div>
+          <div className="mt-3">
+            <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={m.isPrimary}
+                onChange={(e) => {
+                  const updated = media.map((item, j) => ({
+                    ...item,
+                    isPrimary: j === i ? e.target.checked : false,
+                  }));
+                  setMedia(updated);
+                }}
+                className="accent-green-500"
+              />
+              Set as primary
             </label>
-
-            <div className="flex gap-2 pt-1">
-              <button
-                onClick={() => handleAdd("image")}
-                disabled={adding || !addUrl.trim()}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#22c55e] text-black text-sm font-medium hover:bg-[#16a34a] disabled:opacity-50 transition-colors"
-              >
-                {adding ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-                {adding ? "Adding..." : "Add Photo"}
-              </button>
-              <button onClick={resetForm} className="px-4 py-2 rounded-lg border border-[#333] text-gray-400 text-sm hover:text-white hover:border-[#555] transition-colors">
-                Cancel
-              </button>
-            </div>
           </div>
         </div>
-      )}
+      ))}
+    </div>
+  );
+}
 
-      {/* Add Video Form */}
-      {showAddForm === "video" && (
-        <div className="mb-6 p-4 rounded-xl bg-[#0d0d0d] border border-[#333]">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-sm font-medium text-white flex items-center gap-2">
-              <Video size={16} className="text-blue-400" />
-              Add Video by URL
-            </h4>
-            <button onClick={resetForm} className="text-gray-500 hover:text-white">
-              <X size={18} />
-            </button>
-          </div>
+/* ─── Tab: Tee Boxes & Holes ──────────────────────────────────────── */
 
-          <div className="space-y-3">
-            <div>
-              <label className={labelClass}>Video URL * (YouTube, Vimeo, or direct video link)</label>
-              <input
-                type="url"
-                value={addUrl}
-                onChange={(e) => { setAddUrl(e.target.value); setPreviewError(false); }}
-                placeholder="https://www.youtube.com/watch?v=... or https://vimeo.com/..."
-                className={inputClass}
-              />
-            </div>
+function TeeBoxesHolesTab({
+  teeBoxes,
+  setTeeBoxes,
+  holes,
+  setHoles,
+  numHoles,
+}: {
+  teeBoxes: TeeBox[];
+  setTeeBoxes: (v: TeeBox[]) => void;
+  holes: HoleData[];
+  setHoles: (v: HoleData[]) => void;
+  numHoles: number;
+}) {
+  const initHoles = () => {
+    const newHoles: HoleData[] = [];
+    for (let i = 1; i <= numHoles; i++) {
+      const existing = holes.find((h) => h.holeNumber === i);
+      newHoles.push(existing || { holeNumber: i, par: "4" });
+    }
+    setHoles(newHoles);
+  };
 
-            {/* Video Preview */}
-            {addUrl.trim() && (
-              <div>
-                <label className={labelClass}>Preview</label>
-                <div className="rounded-lg border border-[#333] overflow-hidden bg-[#1a1a1a] max-w-sm">
-                  {videoThumb ? (
-                    <div className="relative">
-                      <img src={videoThumb} alt="Video thumbnail" className="w-full h-40 object-cover" />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-12 h-12 rounded-full bg-black/70 flex items-center justify-center">
-                          <Play size={20} className="text-white ml-0.5" />
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="w-full h-40 flex flex-col items-center justify-center text-gray-500 text-sm gap-2">
-                      <Video size={24} />
-                      <span className="text-xs">{detectVideoType(addUrl.trim())} video</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <div>
-              <label className={labelClass}>Caption / Title</label>
-              <input type="text" value={addCaption} onChange={(e) => setAddCaption(e.target.value)} placeholder="e.g., Course flyover video" className={inputClass} />
-            </div>
-
-            <div className="flex gap-2 pt-1">
-              <button
-                onClick={() => handleAdd("video")}
-                disabled={adding || !addUrl.trim()}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
-              >
-                {adding ? <Loader2 size={14} className="animate-spin" /> : <Video size={14} />}
-                {adding ? "Adding..." : "Add Video"}
-              </button>
-              <button onClick={resetForm} className="px-4 py-2 rounded-lg border border-[#333] text-gray-400 text-sm hover:text-white hover:border-[#555] transition-colors">
-                Cancel
-              </button>
-            </div>
-          </div>
+  return (
+    <div className="space-y-8">
+      {/* Tee Boxes */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <SectionTitle>Tee Boxes ({teeBoxes.length})</SectionTitle>
+          <button
+            onClick={() =>
+              setTeeBoxes([...teeBoxes, {
+                teeName: "", color: "", gender: "",
+                courseRating: "", slopeRating: "", totalYardage: "",
+              }])
+            }
+            className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg"
+            style={{ backgroundColor: "rgba(34,197,94,0.1)", color: "#22c55e" }}
+          >
+            <Plus className="h-3 w-3" /> Add Tee Box
+          </button>
         </div>
-      )}
-
-      {/* Add Instagram Form */}
-      {showAddForm === "instagram" && (
-        <div className="mb-6 p-4 rounded-xl bg-[#0d0d0d] border border-[#333]">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="text-sm font-medium text-white flex items-center gap-2">
-              <Instagram size={16} className="text-pink-400" />
-              Add Instagram Post
-            </h4>
-            <button onClick={resetForm} className="text-gray-500 hover:text-white">
-              <X size={18} />
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            <div>
-              <label className={labelClass}>Instagram Post or Reel URL *</label>
-              <input
-                type="url"
-                value={addUrl}
-                onChange={(e) => setAddUrl(e.target.value)}
-                placeholder="https://www.instagram.com/p/... or https://www.instagram.com/reel/..."
-                className={inputClass}
-              />
-            </div>
-
-            {addUrl.trim() && (
-              <div>
-                <label className={labelClass}>Preview</label>
-                <div className="rounded-lg border border-[#333] overflow-hidden bg-[#1a1a1a] max-w-sm p-4 flex flex-col items-center gap-2">
-                  <Instagram size={24} className="text-pink-400" />
-                  <span className="text-xs text-gray-400 break-all text-center">{addUrl.trim()}</span>
-                </div>
-              </div>
-            )}
-
-            <div>
-              <label className={labelClass}>Caption / Description</label>
-              <input type="text" value={addCaption} onChange={(e) => setAddCaption(e.target.value)} placeholder="e.g., Beautiful aerial view from @golfer" className={inputClass} />
-            </div>
-
-            <div className="flex gap-2 pt-1">
-              <button
-                onClick={() => handleAdd("instagram")}
-                disabled={adding || !addUrl.trim()}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-pink-600 text-white text-sm font-medium hover:bg-pink-700 disabled:opacity-50 transition-colors"
-              >
-                {adding ? <Loader2 size={14} className="animate-spin" /> : <Instagram size={14} />}
-                {adding ? "Adding..." : "Add Instagram"}
-              </button>
-              <button onClick={resetForm} className="px-4 py-2 rounded-lg border border-[#333] text-gray-400 text-sm hover:text-white hover:border-[#555] transition-colors">
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Dialog */}
-      {deleteId !== null && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-          <div className="bg-[#111] border border-[#333] rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
-            <h4 className="text-white font-medium mb-2">Delete Media</h4>
-            <p className="text-gray-400 text-sm mb-4">Are you sure you want to delete this item? This action cannot be undone.</p>
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => setDeleteId(null)}
-                disabled={deleting}
-                className="px-4 py-2 rounded-lg border border-[#333] text-gray-400 text-sm hover:text-white hover:border-[#555] transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
-              >
-                {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                {deleting ? "Deleting..." : "Delete"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Media Grid */}
-      {media.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {media.map((m: any) => {
-            const isVideo = m.mediaType === "video";
-            const isInstagram = m.mediaType === "instagram";
-            const isImage = !isVideo && !isInstagram;
-            const thumbUrl = isVideo ? getVideoThumbnail(m.url) : null;
-
-            return (
-              <div key={m.mediaId} className="group rounded-lg border border-[#222] overflow-hidden bg-[#0d0d0d] relative">
-                {/* Media preview */}
-                <div className="relative">
-                  {isImage && (m.url?.match(/\.(jpg|jpeg|png|gif|webp)/i) || m.mediaType === "image") ? (
-                    <img src={m.url} alt={m.caption || "Course media"} className="w-full h-40 object-cover" />
-                  ) : isVideo && thumbUrl ? (
-                    <div className="relative cursor-pointer" onClick={() => window.open(m.url, "_blank")}>
-                      <img src={thumbUrl} alt={m.caption || "Video"} className="w-full h-40 object-cover" />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-12 h-12 rounded-full bg-black/70 flex items-center justify-center">
-                          <Play size={20} className="text-white ml-0.5" />
-                        </div>
-                      </div>
-                      <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-blue-600 text-white text-xs font-medium flex items-center gap-1">
-                        <Video size={10} />
-                        {m.imageType || "Video"}
-                      </div>
-                    </div>
-                  ) : isVideo ? (
-                    <div className="w-full h-40 flex flex-col items-center justify-center text-blue-400 bg-blue-900/10 cursor-pointer" onClick={() => window.open(m.url, "_blank")}>
-                      <Video size={28} />
-                      <span className="text-xs mt-2 text-gray-400">{m.imageType || "Video"}</span>
-                      <span className="text-xs text-gray-600 mt-1">Click to open</span>
-                    </div>
-                  ) : isInstagram ? (
-                    <div className="w-full h-40 flex flex-col items-center justify-center bg-gradient-to-br from-pink-900/20 to-purple-900/20 cursor-pointer" onClick={() => window.open(m.url, "_blank")}>
-                      <Instagram size={28} className="text-pink-400" />
-                      <span className="text-xs mt-2 text-gray-400">Instagram Post</span>
-                      <span className="text-xs text-pink-400/60 mt-1 flex items-center gap-1">
-                        <ExternalLink size={10} /> View on Instagram
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="w-full h-40 flex items-center justify-center text-gray-600 text-sm">
-                      <ImageIcon size={24} className="mr-2" />
-                      {m.mediaType || "Media"}
-                    </div>
-                  )}
-
-                  {/* Overlay actions */}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-start justify-end p-2 gap-1 opacity-0 group-hover:opacity-100">
-                    {isImage && (
-                      <button
-                        onClick={() => handleTogglePrimary(m.mediaId, m.isPrimary)}
-                        title={m.isPrimary ? "Remove primary" : "Set as primary"}
-                        className={`p-1.5 rounded-lg transition-colors ${m.isPrimary ? "bg-yellow-500 text-black" : "bg-black/60 text-white hover:bg-black/80"}`}
+        {teeBoxes.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ borderBottom: "1px solid #1f1f1f" }}>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Name</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Color</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Gender</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Rating</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Slope</th>
+                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Yardage</th>
+                  <th className="px-3 py-2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {teeBoxes.map((t, i) => (
+                  <tr key={i} style={{ borderBottom: "1px solid #1a1a1a" }}>
+                    <td className="px-3 py-2">
+                      <input
+                        value={t.teeName}
+                        onChange={(e) => {
+                          const updated = [...teeBoxes];
+                          updated[i] = { ...t, teeName: e.target.value };
+                          setTeeBoxes(updated);
+                        }}
+                        className="w-full rounded px-2 py-1 text-sm text-white outline-none"
+                        style={{ backgroundColor: "#0a0a0a", border: "1px solid #1f1f1f" }}
+                        placeholder="Championship"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        value={t.color}
+                        onChange={(e) => {
+                          const updated = [...teeBoxes];
+                          updated[i] = { ...t, color: e.target.value };
+                          setTeeBoxes(updated);
+                        }}
+                        className="w-24 rounded px-2 py-1 text-sm text-white outline-none"
+                        style={{ backgroundColor: "#0a0a0a", border: "1px solid #1f1f1f" }}
+                        placeholder="Blue"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <select
+                        value={t.gender}
+                        onChange={(e) => {
+                          const updated = [...teeBoxes];
+                          updated[i] = { ...t, gender: e.target.value };
+                          setTeeBoxes(updated);
+                        }}
+                        className="rounded px-2 py-1 text-sm text-white outline-none"
+                        style={{ backgroundColor: "#0a0a0a", border: "1px solid #1f1f1f" }}
                       >
-                        <Star size={14} fill={m.isPrimary ? "currentColor" : "none"} />
+                        <option value="">—</option>
+                        <option value="Men">Men</option>
+                        <option value="Women">Women</option>
+                        <option value="All">All</option>
+                      </select>
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        value={t.courseRating}
+                        onChange={(e) => {
+                          const updated = [...teeBoxes];
+                          updated[i] = { ...t, courseRating: e.target.value };
+                          setTeeBoxes(updated);
+                        }}
+                        className="w-20 rounded px-2 py-1 text-sm text-white outline-none"
+                        style={{ backgroundColor: "#0a0a0a", border: "1px solid #1f1f1f" }}
+                        placeholder="72.5"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        value={t.slopeRating}
+                        onChange={(e) => {
+                          const updated = [...teeBoxes];
+                          updated[i] = { ...t, slopeRating: e.target.value };
+                          setTeeBoxes(updated);
+                        }}
+                        className="w-20 rounded px-2 py-1 text-sm text-white outline-none"
+                        style={{ backgroundColor: "#0a0a0a", border: "1px solid #1f1f1f" }}
+                        placeholder="135"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        value={t.totalYardage}
+                        onChange={(e) => {
+                          const updated = [...teeBoxes];
+                          updated[i] = { ...t, totalYardage: e.target.value };
+                          setTeeBoxes(updated);
+                        }}
+                        className="w-24 rounded px-2 py-1 text-sm text-white outline-none"
+                        style={{ backgroundColor: "#0a0a0a", border: "1px solid #1f1f1f" }}
+                        placeholder="7200"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <button
+                        onClick={() => setTeeBoxes(teeBoxes.filter((_, j) => j !== i))}
+                        className="text-red-400 hover:text-red-300"
+                      >
+                        <Trash2 className="h-4 w-4" />
                       </button>
-                    )}
-                    <button
-                      onClick={() => startEdit(m)}
-                      title="Edit caption"
-                      className="p-1.5 rounded-lg bg-black/60 text-white hover:bg-black/80 transition-colors"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <button
-                      onClick={() => setDeleteId(m.mediaId)}
-                      title="Delete"
-                      className="p-1.5 rounded-lg bg-black/60 text-red-400 hover:bg-red-600 hover:text-white transition-colors"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
-                  {/* Primary badge */}
-                  {m.isPrimary && isImage && (
-                    <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-yellow-500 text-black text-xs font-medium flex items-center gap-1">
-                      <Star size={10} fill="currentColor" />
-                      Primary
-                    </div>
-                  )}
-                </div>
-
-                {/* Info / Edit */}
-                <div className="p-3">
-                  {editingId === m.mediaId ? (
-                    <div className="space-y-2">
-                      <input
-                        type="text"
-                        value={editCaption}
-                        onChange={(e) => setEditCaption(e.target.value)}
-                        placeholder="Caption"
-                        className={inputClass}
-                        autoFocus
-                      />
-                      <input
-                        type="text"
-                        value={editCredit}
-                        onChange={(e) => setEditCredit(e.target.value)}
-                        placeholder="Credit"
-                        className={inputClass}
-                      />
-                      <div className="flex gap-2">
-                        <button
-                          onClick={handleEditSave}
-                          disabled={editSaving}
-                          className="flex items-center gap-1 px-3 py-1 rounded bg-[#22c55e] text-black text-xs font-medium hover:bg-[#16a34a] disabled:opacity-50"
-                        >
-                          {editSaving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
-                          Save
-                        </button>
-                        <button
-                          onClick={() => setEditingId(null)}
-                          className="px-3 py-1 rounded border border-[#333] text-gray-400 text-xs hover:text-white"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <p className="text-xs text-gray-400">{m.caption || "No caption"}</p>
-                      {m.credit && <p className="text-xs text-gray-600 mt-0.5">Credit: {m.credit}</p>}
-                      <p className="text-xs text-gray-600 mt-1">
-                        {m.mediaType}{m.imageType && m.mediaType === "video" ? ` (${m.imageType})` : ""} &middot; Order: {m.sortOrder}
-                      </p>
-                    </>
-                  )}
-                </div>
+      {/* Holes */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <SectionTitle>Holes ({holes.length})</SectionTitle>
+          {holes.length === 0 && (
+            <button
+              onClick={initHoles}
+              className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg"
+              style={{ backgroundColor: "rgba(34,197,94,0.1)", color: "#22c55e" }}
+            >
+              <Plus className="h-3 w-3" /> Initialize {numHoles} Holes
+            </button>
+          )}
+        </div>
+        {holes.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+            {holes.map((h, i) => (
+              <div
+                key={i}
+                className="rounded-lg p-3 text-center"
+                style={{ backgroundColor: "#0a0a0a", border: "1px solid #1f1f1f" }}
+              >
+                <div className="text-xs text-gray-500 mb-1">Hole {h.holeNumber}</div>
+                <select
+                  value={h.par}
+                  onChange={(e) => {
+                    const updated = [...holes];
+                    updated[i] = { ...h, par: e.target.value };
+                    setHoles(updated);
+                  }}
+                  className="w-full rounded px-2 py-1 text-sm text-white text-center outline-none"
+                  style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
+                >
+                  <option value="3">Par 3</option>
+                  <option value="4">Par 4</option>
+                  <option value="5">Par 5</option>
+                  <option value="6">Par 6</option>
+                </select>
               </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="text-center py-12">
-          <ImageIcon size={32} className="mx-auto text-gray-600 mb-3" />
-          <p className="text-gray-500 text-sm">No media uploaded</p>
-          <p className="text-gray-600 text-xs mt-1">Add photos, videos, or Instagram posts to get started</p>
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

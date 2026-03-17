@@ -12,89 +12,49 @@ interface AdminConfigRow {
 }
 
 export async function GET(request: NextRequest) {
-  const authError = await checkAdminAuth(request);
-  if (authError) return authError;
+  const authErr = await checkAdminAuth(request);
+  if (authErr) return authErr;
 
   try {
-    const { searchParams } = new URL(request.url);
-    const format = searchParams.get("format");
-
     const rows = await prisma.$queryRaw<AdminConfigRow[]>`
       SELECT key, value, updated_at, updated_by FROM admin_config ORDER BY key
     `;
 
-    // If format=rows, return full row data for the config editor
-    if (format === "rows") {
-      return NextResponse.json({
-        rows: rows.map((r) => ({
-          key: r.key,
-          value: r.value,
-          updatedAt: r.updated_at,
-          updatedBy: r.updated_by,
-        })),
-      });
-    }
-
-    // Default: return key-value map (backward compatible)
     const config: Record<string, string> = {};
     for (const row of rows) {
       config[row.key] = row.value;
     }
 
     return NextResponse.json(config);
-  } catch {
-    return NextResponse.json({ error: "admin_config table may not exist." }, { status: 500 });
+  } catch (err) {
+    console.error("Config GET error:", err);
+    return NextResponse.json({ error: "Failed to fetch config" }, { status: 500 });
   }
 }
 
 export async function PUT(request: NextRequest) {
-  const authError = await checkAdminAuth(request);
-  if (authError) return authError;
+  const authErr = await checkAdminAuth(request);
+  if (authErr) return authErr;
 
   try {
     const body = await request.json();
-    const { key, value } = body as { key: string; value: string };
+    const { key, value } = body;
 
-    if (!key || value === undefined) {
+    if (!key || typeof value !== "string") {
       return NextResponse.json({ error: "key and value are required" }, { status: 400 });
     }
 
     await prisma.$executeRawUnsafe(
       `INSERT INTO admin_config (key, value, updated_at, updated_by)
-       VALUES ($1, $2, NOW(), $3)
-       ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = NOW(), updated_by = $3`,
+       VALUES ($1, $2, NOW(), 'admin')
+       ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = NOW(), updated_by = 'admin'`,
       key,
-      String(value),
-      "admin"
+      value
     );
 
     return NextResponse.json({ success: true, key, value });
   } catch (err) {
-    console.error("Config update error:", err);
+    console.error("Config PUT error:", err);
     return NextResponse.json({ error: "Failed to update config" }, { status: 500 });
-  }
-}
-
-export async function DELETE(request: NextRequest) {
-  const authError = await checkAdminAuth(request);
-  if (authError) return authError;
-
-  try {
-    const body = await request.json();
-    const { key } = body as { key: string };
-
-    if (!key) {
-      return NextResponse.json({ error: "key is required" }, { status: 400 });
-    }
-
-    await prisma.$executeRawUnsafe(
-      `DELETE FROM admin_config WHERE key = $1`,
-      key
-    );
-
-    return NextResponse.json({ success: true, key });
-  } catch (err) {
-    console.error("Config delete error:", err);
-    return NextResponse.json({ error: "Failed to delete config" }, { status: 500 });
   }
 }

@@ -1,10 +1,16 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
-import { Search, Plus, Upload, ChevronLeft, ChevronRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  Search,
+  Plus,
+  Upload,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  MapPin,
+} from "lucide-react";
 
 interface CourseRow {
   courseId: number;
@@ -17,233 +23,254 @@ interface CourseRow {
   enrichmentPct: number;
 }
 
-function getAdminKey() {
-  if (typeof window === "undefined") return "";
-  return sessionStorage.getItem("golfEQ_admin_key") || "";
-}
-
-export default function CoursesPage() {
+export default function AdminCoursesPage() {
+  const router = useRouter();
   const [courses, setCourses] = useState<CourseRow[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [stateFilter, setStateFilter] = useState("");
   const [accessFilter, setAccessFilter] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const fetchCourses = useCallback(async () => {
     setLoading(true);
-    try {
-      const params = new URLSearchParams({ page: String(page), limit: "25" });
-      if (search) params.set("search", search);
-      if (stateFilter) params.set("state", stateFilter);
-      if (accessFilter) params.set("accessType", accessFilter);
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: "25",
+    });
+    if (debouncedSearch) params.set("search", debouncedSearch);
+    if (stateFilter) params.set("state", stateFilter);
+    if (accessFilter) params.set("accessType", accessFilter);
 
+    try {
       const res = await fetch(`/api/admin/courses?${params}`, {
-        headers: { "x-admin-key": getAdminKey() },
+        headers: { "x-admin-key": localStorage.getItem("golfEQ_admin_key") || "" },
       });
       const data = await res.json();
       setCourses(data.courses || []);
       setTotal(data.total || 0);
       setTotalPages(data.totalPages || 1);
-    } catch {
-      setCourses([]);
+    } catch (err) {
+      console.error("Failed to fetch courses:", err);
     } finally {
       setLoading(false);
     }
-  }, [page, search, stateFilter, accessFilter]);
+  }, [page, debouncedSearch, stateFilter, accessFilter]);
 
   useEffect(() => {
     fetchCourses();
   }, [fetchCourses]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  // Reset page on filter change
+  useEffect(() => {
     setPage(1);
-    fetchCourses();
-  };
-
-  const US_STATES = [
-    "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",
-    "KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
-    "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT",
-    "VA","WA","WV","WI","WY",
-  ];
+  }, [debouncedSearch, stateFilter, accessFilter]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Course Management</h1>
-          <p className="text-sm text-gray-400 mt-1">{total.toLocaleString()} courses total</p>
-        </div>
-        <div className="flex gap-3">
-          <Link
-            href="/admin/courses/import"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-gray-300 hover:bg-[#222] transition-colors"
+    <div className="max-w-7xl">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-white">Courses</h1>
+        <div className="flex gap-2">
+          <button
+            onClick={() => router.push("/admin/courses/import")}
+            className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-gray-300 transition-colors hover:bg-white/10"
+            style={{ border: "1px solid #252525" }}
           >
-            <Upload size={16} />
-            Bulk Import
-          </Link>
-          <Link
-            href="/admin/courses/new"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#22c55e] text-black font-medium hover:bg-[#16a34a] transition-colors"
+            <Upload className="h-4 w-4" />
+            Import CSV
+          </button>
+          <button
+            onClick={() => router.push("/admin/courses/new")}
+            className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+            style={{ backgroundColor: "#22c55e", color: "#000" }}
           >
-            <Plus size={16} />
+            <Plus className="h-4 w-4" />
             Add Course
-          </Link>
+          </button>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 items-end">
-        <form onSubmit={handleSearch} className="flex-1 min-w-[200px]">
-          <label className="block text-xs text-gray-500 mb-1">Search</label>
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by course name..."
-              className="w-full pl-9 pr-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-white placeholder-gray-600 text-sm focus:outline-none focus:border-[#22c55e]"
-            />
-          </div>
-        </form>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">State</label>
-          <select
-            value={stateFilter}
-            onChange={(e) => { setStateFilter(e.target.value); setPage(1); }}
-            className="px-3 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-white text-sm focus:outline-none focus:border-[#22c55e]"
-          >
-            <option value="">All States</option>
-            {US_STATES.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
+      <div className="flex flex-wrap gap-3 mb-6">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search courses..."
+            className="w-full rounded-lg pl-10 pr-4 py-2 text-sm text-white outline-none"
+            style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
+          />
         </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Access</label>
-          <select
-            value={accessFilter}
-            onChange={(e) => { setAccessFilter(e.target.value); setPage(1); }}
-            className="px-3 py-2 rounded-lg bg-[#1a1a1a] border border-[#333] text-white text-sm focus:outline-none focus:border-[#22c55e]"
-          >
-            <option value="">All Access</option>
-            <option value="Public">Public</option>
-            <option value="Private">Private</option>
-            <option value="Resort">Resort</option>
-            <option value="Semi-Private">Semi-Private</option>
-            <option value="Military">Military</option>
-          </select>
-        </div>
+        <select
+          value={stateFilter}
+          onChange={(e) => setStateFilter(e.target.value)}
+          className="rounded-lg px-3 py-2 text-sm text-white outline-none"
+          style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
+        >
+          <option value="">All States</option>
+          {US_STATES.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+        <select
+          value={accessFilter}
+          onChange={(e) => setAccessFilter(e.target.value)}
+          className="rounded-lg px-3 py-2 text-sm text-white outline-none"
+          style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
+        >
+          <option value="">All Access Types</option>
+          <option value="Public">Public</option>
+          <option value="Private">Private</option>
+          <option value="Resort">Resort</option>
+          <option value="Semi-Private">Semi-Private</option>
+          <option value="Military">Military</option>
+        </select>
       </div>
 
-      {/* Table */}
-      <div className="bg-[#111] border border-[#222] rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[#222] text-gray-400 text-left">
-                <th className="px-4 py-3 font-medium">Course Name</th>
-                <th className="px-4 py-3 font-medium">Location</th>
-                <th className="px-4 py-3 font-medium">Type</th>
-                <th className="px-4 py-3 font-medium">Access</th>
-                <th className="px-4 py-3 font-medium text-right">Score</th>
-                <th className="px-4 py-3 font-medium text-right">Enrichment</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-gray-500">
-                    Loading...
-                  </td>
-                </tr>
-              ) : courses.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-gray-500">
-                    No courses found
-                  </td>
-                </tr>
-              ) : (
-                courses.map((c) => (
-                  <tr
-                    key={c.courseId}
-                    className="border-b border-[#1a1a1a] hover:bg-[#1a1a1a] transition-colors cursor-pointer"
-                  >
-                    <td className="px-4 py-3">
-                      <Link href={`/admin/courses/${c.courseId}`} className="text-white font-medium hover:text-[#22c55e]">
-                        {c.courseName}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 text-gray-400">
-                      {[c.city, c.state].filter(Boolean).join(", ") || "—"}
-                    </td>
-                    <td className="px-4 py-3 text-gray-400">{c.courseType || "—"}</td>
-                    <td className="px-4 py-3">
-                      {c.accessType ? (
-                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
-                          c.accessType === "Public" ? "bg-green-900/40 text-green-400" :
-                          c.accessType === "Private" ? "bg-red-900/40 text-red-400" :
-                          c.accessType === "Resort" ? "bg-blue-900/40 text-blue-400" :
-                          "bg-yellow-900/40 text-yellow-400"
-                        }`}>
-                          {c.accessType}
-                        </span>
-                      ) : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-right text-white font-mono">
-                      {c.chameleonScore != null ? c.chameleonScore.toFixed(1) : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <div className="w-16 h-1.5 rounded-full bg-[#222] overflow-hidden">
-                          <div
-                            className="h-full rounded-full"
-                            style={{
-                              width: `${c.enrichmentPct}%`,
-                              backgroundColor: c.enrichmentPct >= 80 ? "#22c55e" : c.enrichmentPct >= 50 ? "#eab308" : "#ef4444",
-                            }}
-                          />
-                        </div>
-                        <span className="text-gray-400 text-xs w-8 text-right">{c.enrichmentPct}%</span>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+      {/* Results count */}
+      <div className="text-xs text-gray-500 mb-3">{total} courses found</div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-[#222]">
-            <p className="text-xs text-gray-500">
-              Page {page} of {totalPages} ({total.toLocaleString()} courses)
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-                className="p-1.5 rounded bg-[#1a1a1a] border border-[#333] text-gray-400 disabled:opacity-30 hover:bg-[#222]"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-                className="p-1.5 rounded bg-[#1a1a1a] border border-[#333] text-gray-400 disabled:opacity-30 hover:bg-[#222]"
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
+      {/* Table */}
+      <div
+        className="rounded-xl overflow-hidden"
+        style={{ backgroundColor: "#111111", border: "1px solid #1f1f1f" }}
+      >
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ borderBottom: "1px solid #1f1f1f" }}>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Name</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Location</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Access</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Type</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500">CF Score</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500">Enrichment</th>
+                </tr>
+              </thead>
+              <tbody>
+                {courses.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-8 text-center text-gray-500">No courses found</td>
+                  </tr>
+                ) : (
+                  courses.map((c) => (
+                    <tr
+                      key={c.courseId}
+                      onClick={() => router.push(`/admin/courses/${c.courseId}`)}
+                      className="cursor-pointer transition-colors hover:bg-white/5"
+                      style={{ borderBottom: "1px solid #1a1a1a" }}
+                    >
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 flex-shrink-0 text-gray-500" />
+                          <span className="text-white font-medium">{c.courseName}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-400">
+                        {[c.city, c.state].filter(Boolean).join(", ") || "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        {c.accessType ? (
+                          <span
+                            className="text-xs px-2 py-0.5 rounded-full"
+                            style={{
+                              backgroundColor:
+                                c.accessType === "Public"
+                                  ? "rgba(34,197,94,0.15)"
+                                  : c.accessType === "Private"
+                                  ? "rgba(239,68,68,0.15)"
+                                  : "rgba(255,255,255,0.1)",
+                              color:
+                                c.accessType === "Public"
+                                  ? "#22c55e"
+                                  : c.accessType === "Private"
+                                  ? "#ef4444"
+                                  : "#9ca3af",
+                            }}
+                          >
+                            {c.accessType}
+                          </span>
+                        ) : (
+                          <span className="text-gray-600">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-gray-400">{c.courseType || "—"}</td>
+                      <td className="px-4 py-3 text-right font-mono" style={{ color: "#22c55e" }}>
+                        {c.chameleonScore ? c.chameleonScore.toFixed(1) : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <EnrichmentBadge pct={c.enrichmentPct} />
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <span className="text-xs text-gray-500">
+            Page {page} of {totalPages}
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="rounded-lg px-3 py-1.5 text-xs text-gray-300 disabled:opacity-30"
+              style={{ backgroundColor: "#1a1a1a", border: "1px solid #252525" }}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="rounded-lg px-3 py-1.5 text-xs text-gray-300 disabled:opacity-30"
+              style={{ backgroundColor: "#1a1a1a", border: "1px solid #252525" }}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+function EnrichmentBadge({ pct }: { pct: number }) {
+  const color = pct >= 75 ? "#22c55e" : pct >= 40 ? "#eab308" : "#ef4444";
+  return (
+    <div className="flex items-center justify-end gap-2">
+      <div className="w-16 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: "#1a1a1a" }}>
+        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
+      </div>
+      <span className="text-xs font-mono" style={{ color }}>{pct}%</span>
+    </div>
+  );
+}
+
+const US_STATES = [
+  "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",
+  "KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
+  "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT",
+  "VA","WA","WV","WI","WY",
+];
