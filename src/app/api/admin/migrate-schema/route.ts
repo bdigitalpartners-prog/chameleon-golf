@@ -413,6 +413,27 @@ export async function POST(req: NextRequest) {
       "FK: course_nearby_rv_parks -> courses"
     );
 
+    // =========================================================
+    // 7. SEED REVIEW FIELDS on user_course_ratings
+    // =========================================================
+
+    await run(
+      `ALTER TABLE "user_course_ratings" ADD COLUMN IF NOT EXISTS "is_seed" BOOLEAN NOT NULL DEFAULT false`,
+      "user_course_ratings.is_seed"
+    );
+    await run(
+      `ALTER TABLE "user_course_ratings" ADD COLUMN IF NOT EXISTS "seed_source" VARCHAR(200)`,
+      "user_course_ratings.seed_source"
+    );
+    await run(
+      `ALTER TABLE "user_course_ratings" ADD COLUMN IF NOT EXISTS "seed_reviewer_name" VARCHAR(200)`,
+      "user_course_ratings.seed_reviewer_name"
+    );
+    await run(
+      `CREATE INDEX IF NOT EXISTS "idx_user_course_ratings_is_seed" ON "user_course_ratings" ("is_seed")`,
+      "Index: user_course_ratings(is_seed)"
+    );
+
     return NextResponse.json({
       success: true,
       totalOk: results.length,

@@ -67,6 +67,10 @@ export async function GET(request: NextRequest) {
     if (published === "true") where.isPublished = true;
     if (published === "false") where.isPublished = false;
 
+    const seed = searchParams.get("seed");
+    if (seed === "true") where.isSeed = true;
+    if (seed === "false") where.isSeed = false;
+
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
@@ -101,6 +105,9 @@ export async function GET(request: NextRequest) {
         value: r.value ? Number(r.value) : null,
         reviewTitle: r.reviewTitle,
         isPublished: r.isPublished,
+        isSeed: r.isSeed,
+        seedSource: r.seedSource,
+        seedReviewerName: r.seedReviewerName,
         createdAt: r.createdAt,
       })),
       total,
