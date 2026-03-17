@@ -51,7 +51,7 @@ export function WidgetToast({
     <div
       className="fixed transition-all duration-300"
       style={{
-        bottom: 188,
+        bottom: 92,
         right: 24,
         width: 320,
         zIndex: 9997,
