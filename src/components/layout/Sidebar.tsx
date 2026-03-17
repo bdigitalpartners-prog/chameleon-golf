@@ -8,7 +8,7 @@ import { useSidebar } from "@/contexts/SidebarContext";
 import {
   Home,
   Compass,
-  Trophy,
+  Medal,
   MapPin,
   PenTool,
   SlidersHorizontal,
@@ -51,7 +51,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/", label: "Home", icon: Home },
       { href: "/explore", label: "Explore Courses", icon: Compass },
-      { href: "/rankings", label: "Rankings", icon: Trophy },
+      { href: "/rankings", label: "Rankings", icon: Medal },
       { href: "/map", label: "Map", icon: MapPin },
       { href: "/architects", label: "Architects", icon: PenTool },
     ],

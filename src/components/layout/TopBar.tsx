@@ -140,8 +140,6 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
             <Search className="w-4 h-4" />
           </button>
 
-          <LeaderboardWidget />
-
           {session && <NotificationBell />}
 
           <ThemeSettings />
@@ -169,6 +167,8 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
               )}
             </div>
           )}
+
+          <LeaderboardWidget />
         </div>
       </header>
 
