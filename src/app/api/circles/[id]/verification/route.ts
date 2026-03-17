@@ -65,7 +65,7 @@ export async function POST(
   const body = await req.json();
   const { method, evidenceUrl, domainEmail } = body;
 
-  if (!["DOCUMENT", "VOUCHING", "DOMAIN", "ADMIN_MANUAL"].includes(method)) {
+  if (!["NONE", "ADMIN_APPROVAL", "CODE", "EMAIL_DOMAIN"].includes(method)) {
     return NextResponse.json(
       { error: "Invalid verification method" },
       { status: 400 }
@@ -79,15 +79,15 @@ export async function POST(
       userId,
       method,
       status: "PENDING",
-      evidenceUrl: method === "DOCUMENT" ? evidenceUrl : null,
-      domainEmail: method === "DOMAIN" ? domainEmail : null,
+      evidenceUrl: method === "CODE" ? evidenceUrl : null,
+      domainEmail: method === "EMAIL_DOMAIN" ? domainEmail : null,
       vouchedBy: [],
     },
     update: {
       method,
       status: "PENDING",
-      evidenceUrl: method === "DOCUMENT" ? evidenceUrl : null,
-      domainEmail: method === "DOMAIN" ? domainEmail : null,
+      evidenceUrl: method === "CODE" ? evidenceUrl : null,
+      domainEmail: method === "EMAIL_DOMAIN" ? domainEmail : null,
       vouchedBy: [],
       verifiedAt: null,
       reviewedBy: null,
@@ -96,7 +96,7 @@ export async function POST(
   });
 
   // Notify circle admins for ADMIN_MANUAL and DOCUMENT methods
-  if (method === "ADMIN_MANUAL" || method === "DOCUMENT") {
+  if (method === "ADMIN_APPROVAL" || method === "CODE") {
     const admins = await prisma.circleMembership.findMany({
       where: { circleId, role: { in: ["OWNER", "ADMIN"] } },
       select: { userId: true },

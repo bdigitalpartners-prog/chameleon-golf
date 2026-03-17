@@ -54,7 +54,7 @@ export async function POST(
     );
   }
 
-  if (verification.method !== "VOUCHING") {
+  if (verification.method !== "NONE") {
     return NextResponse.json(
       { error: "This verification does not use vouching" },
       { status: 400 }

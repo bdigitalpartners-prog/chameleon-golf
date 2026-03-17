@@ -15,11 +15,11 @@ enum CirclePrivacy {
 }
 
 enum CircleType {
-  FRIENDS
+  CREW
+  GAME
+  NETWORK
   CLUB
-  TRIP
-  COMPETITION
-  CUSTOM
+  LEAGUE
 }
 
 enum ConversationType {
@@ -1203,7 +1203,7 @@ model Circle {
   name               String          @db.VarChar(255)
   slug               String          @unique @db.VarChar(255)
   description        String?
-  type               CircleType      @default(FRIENDS)
+  type               CircleType      @default(CREW)
   privacy            CirclePrivacy   @default(PRIVATE)
   maxMembers         Int?            @default(50) @map("max_members")
   memberCount        Int             @default(0) @map("member_count")
@@ -2094,10 +2094,10 @@ enum ThreadCategory {
 }
 
 enum VerificationMethod {
-  DOCUMENT
-  VOUCHING
-  DOMAIN
-  ADMIN_MANUAL
+  NONE
+  ADMIN_APPROVAL
+  CODE
+  EMAIL_DOMAIN
 }
 
 enum VerificationStatus {

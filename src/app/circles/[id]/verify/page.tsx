@@ -15,10 +15,10 @@ import {
 } from "lucide-react";
 
 type VerificationMethod =
-  | "DOCUMENT"
-  | "VOUCHING"
-  | "DOMAIN"
-  | "ADMIN_MANUAL"
+  | "NONE"
+  | "ADMIN_APPROVAL"
+  | "CODE"
+  | "EMAIL_DOMAIN"
   | null;
 
 interface Circle {
@@ -95,7 +95,7 @@ export default function VerifyPage() {
         method: circle.verificationMethod,
       };
 
-      if (circle.verificationMethod === "DOCUMENT") {
+      if (circle.verificationMethod === "CODE") {
         if (!evidenceUrl.trim()) {
           setError("Please provide an evidence URL");
           setSubmitting(false);
@@ -104,7 +104,7 @@ export default function VerifyPage() {
         body.evidenceUrl = evidenceUrl.trim();
       }
 
-      if (circle.verificationMethod === "DOMAIN") {
+      if (circle.verificationMethod === "EMAIL_DOMAIN") {
         if (!domainEmail.trim()) {
           setError("Please provide your club email address");
           setSubmitting(false);
@@ -488,7 +488,7 @@ export default function VerifyPage() {
           </div>
 
           {/* Vouching progress */}
-          {verification?.method === "VOUCHING" && verification.vouchedBy && (
+          {verification?.method === "NONE" && verification.vouchedBy && (
             <div
               style={{
                 marginTop: "1.5rem",
@@ -590,7 +590,7 @@ export default function VerifyPage() {
           </p>
 
           {/* DOCUMENT method */}
-          {circle.verificationMethod === "DOCUMENT" && (
+          {circle.verificationMethod === "CODE" && (
             <div>
               <div
                 style={{
@@ -641,7 +641,7 @@ export default function VerifyPage() {
           )}
 
           {/* VOUCHING method */}
-          {circle.verificationMethod === "VOUCHING" && (
+          {circle.verificationMethod === "NONE" && (
             <div>
               <div
                 style={{
@@ -676,7 +676,7 @@ export default function VerifyPage() {
           )}
 
           {/* DOMAIN method */}
-          {circle.verificationMethod === "DOMAIN" && (
+          {circle.verificationMethod === "EMAIL_DOMAIN" && (
             <div>
               <div
                 style={{
@@ -727,7 +727,7 @@ export default function VerifyPage() {
           )}
 
           {/* ADMIN_MANUAL method */}
-          {circle.verificationMethod === "ADMIN_MANUAL" && (
+          {circle.verificationMethod === "ADMIN_APPROVAL" && (
             <div>
               <div
                 style={{
@@ -804,17 +804,17 @@ export default function VerifyPage() {
                 />
                 Submitting...
               </>
-            ) : circle.verificationMethod === "VOUCHING" ? (
+            ) : circle.verificationMethod === "NONE" ? (
               <>
                 <Users size={16} />
                 Request Vouches
               </>
-            ) : circle.verificationMethod === "ADMIN_MANUAL" ? (
+            ) : circle.verificationMethod === "ADMIN_APPROVAL" ? (
               <>
                 <Shield size={16} />
                 Request Verification
               </>
-            ) : circle.verificationMethod === "DOCUMENT" ? (
+            ) : circle.verificationMethod === "CODE" ? (
               <>
                 <Upload size={16} />
                 Submit Evidence
@@ -830,7 +830,7 @@ export default function VerifyPage() {
       )}
 
       {/* Post-submit confirmation for ADMIN_MANUAL */}
-      {submitted && circle.verificationMethod === "ADMIN_MANUAL" && (
+      {submitted && circle.verificationMethod === "ADMIN_APPROVAL" && (
         <div
           style={{
             background: "var(--cg-bg-card)",

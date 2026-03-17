@@ -27,10 +27,10 @@ const PRIVACY_OPTIONS = [
 ];
 
 const VERIFICATION_METHODS = [
-  { key: "none", label: "None" },
-  { key: "admin_approval", label: "Admin Approval" },
-  { key: "code", label: "Invite Code" },
-  { key: "email_domain", label: "Email Domain" },
+  { key: "NONE", label: "None" },
+  { key: "ADMIN_APPROVAL", label: "Admin Approval" },
+  { key: "CODE", label: "Invite Code" },
+  { key: "EMAIL_DOMAIN", label: "Email Domain" },
 ];
 
 export default function SettingsPage() {
@@ -59,7 +59,7 @@ export default function SettingsPage() {
     privacy: "",
     maxMembers: "",
     allowMemberInvites: true,
-    verificationMethod: "none",
+    verificationMethod: "NONE",
     verificationDomain: "",
   });
 
@@ -77,7 +77,7 @@ export default function SettingsPage() {
           privacy: data.privacy ?? "PUBLIC",
           maxMembers: data.maxMembers ? String(data.maxMembers) : "",
           allowMemberInvites: data.config?.allowMemberInvites ?? true,
-          verificationMethod: data.verificationMethod ?? "none",
+          verificationMethod: data.verificationMethod ?? "NONE",
           verificationDomain: data.verificationDomain ?? "",
         });
       })
@@ -132,7 +132,7 @@ export default function SettingsPage() {
           maxMembers: form.maxMembers ? parseInt(form.maxMembers) : null,
           verificationMethod: circle.type === "CLUB" ? form.verificationMethod : undefined,
           verificationDomain:
-            circle.type === "CLUB" && form.verificationMethod === "email_domain"
+            circle.type === "CLUB" && form.verificationMethod === "EMAIL_DOMAIN"
               ? form.verificationDomain
               : undefined,
           config: { allowMemberInvites: form.allowMemberInvites },
@@ -373,7 +373,7 @@ export default function SettingsPage() {
                   </label>
                 ))}
               </div>
-              {form.verificationMethod === "email_domain" && (
+              {form.verificationMethod === "EMAIL_DOMAIN" && (
                 <input
                   type="text"
                   value={form.verificationDomain}
@@ -477,10 +477,10 @@ export default function SettingsPage() {
                           {v.user?.name ?? "Unknown"}
                         </p>
                         <p className="text-xs" style={{ color: "var(--cg-text-muted)" }}>
-                          {v.method === "DOCUMENT" && "Document upload"}
-                          {v.method === "VOUCHING" && `Vouching (${v.vouchedBy?.length ?? 0}/2)`}
-                          {v.method === "DOMAIN" && "Email domain"}
-                          {v.method === "ADMIN_MANUAL" && "Admin review"}
+                          {v.method === "CODE" && "Invite code"}
+                          {v.method === "NONE" && `Vouching (${v.vouchedBy?.length ?? 0}/2)`}
+                          {v.method === "EMAIL_DOMAIN" && "Email domain"}
+                          {v.method === "ADMIN_APPROVAL" && "Admin review"}
                           {" · "}
                           {new Date(v.createdAt).toLocaleDateString()}
                         </p>

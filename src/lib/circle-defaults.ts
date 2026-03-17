@@ -12,6 +12,6 @@ export const CIRCLE_DEFAULTS: Record<
   CREW: { maxMembers: 12, privacy: "PRIVATE", allowMemberInvites: true },
   GAME: { maxMembers: null, privacy: "PRIVATE", allowMemberInvites: true },
   NETWORK: { maxMembers: null, privacy: "PUBLIC", allowMemberInvites: true },
-  CLUB: { maxMembers: null, privacy: "SECRET", allowMemberInvites: false, verificationMethod: "admin_approval" },
+  CLUB: { maxMembers: null, privacy: "SECRET", allowMemberInvites: false, verificationMethod: "ADMIN_APPROVAL" },
   LEAGUE: { maxMembers: null, privacy: "PRIVATE", allowMemberInvites: false },
 };

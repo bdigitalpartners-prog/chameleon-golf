@@ -24,7 +24,7 @@ interface Verification {
     name: string;
     image?: string | null;
   };
-  method: "DOCUMENT" | "VOUCHING" | "DOMAIN" | "ADMIN_MANUAL";
+  method: "NONE" | "ADMIN_APPROVAL" | "CODE" | "EMAIL_DOMAIN";
   status: "PENDING" | "UNDER_REVIEW" | "APPROVED" | "REJECTED";
   evidenceUrl?: string | null;
   domainEmail?: string | null;
@@ -42,10 +42,10 @@ interface VerificationQueueProps {
 }
 
 const METHOD_LABELS: Record<string, string> = {
-  DOCUMENT: "Document",
-  VOUCHING: "Vouching",
-  DOMAIN: "Domain Email",
-  ADMIN_MANUAL: "Admin Review",
+  NONE: "None",
+  ADMIN_APPROVAL: "Admin Review",
+  CODE: "Invite Code",
+  EMAIL_DOMAIN: "Domain Email",
 };
 
 export default function VerificationQueue({ circleId }: VerificationQueueProps) {
@@ -333,16 +333,16 @@ export default function VerificationQueue({ circleId }: VerificationQueueProps) 
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                {v.method === "DOCUMENT" && (
+                {v.method === "CODE" && (
                   <FileText size={14} style={{ color: "var(--cg-text-secondary)" }} />
                 )}
-                {v.method === "DOMAIN" && (
+                {v.method === "EMAIL_DOMAIN" && (
                   <Mail size={14} style={{ color: "var(--cg-text-secondary)" }} />
                 )}
-                {v.method === "VOUCHING" && (
+                {v.method === "NONE" && (
                   <Users size={14} style={{ color: "var(--cg-text-secondary)" }} />
                 )}
-                {v.method === "ADMIN_MANUAL" && (
+                {v.method === "ADMIN_APPROVAL" && (
                   <Shield size={14} style={{ color: "var(--cg-text-secondary)" }} />
                 )}
                 <span
@@ -359,8 +359,8 @@ export default function VerificationQueue({ circleId }: VerificationQueueProps) 
                 </span>
               </div>
 
-              {/* Evidence link for DOCUMENT */}
-              {v.method === "DOCUMENT" && v.evidenceUrl && (
+              {/* Evidence link for CODE */}
+              {v.method === "CODE" && v.evidenceUrl && (
                 <a
                   href={v.evidenceUrl}
                   target="_blank"
@@ -379,8 +379,8 @@ export default function VerificationQueue({ circleId }: VerificationQueueProps) 
                 </a>
               )}
 
-              {/* Domain email for DOMAIN */}
-              {v.method === "DOMAIN" && v.domainEmail && (
+              {/* Domain email for EMAIL_DOMAIN */}
+              {v.method === "EMAIL_DOMAIN" && v.domainEmail && (
                 <p
                   style={{
                     fontSize: "0.813rem",
@@ -392,8 +392,8 @@ export default function VerificationQueue({ circleId }: VerificationQueueProps) 
                 </p>
               )}
 
-              {/* Vouch count for VOUCHING */}
-              {v.method === "VOUCHING" && v.vouchedBy && (
+              {/* Vouch count for NONE */}
+              {v.method === "NONE" && v.vouchedBy && (
                 <p
                   style={{
                     fontSize: "0.813rem",

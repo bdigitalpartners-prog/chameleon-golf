@@ -35,10 +35,10 @@ const PRIVACY_OPTIONS = [
 ];
 
 const VERIFICATION_METHODS = [
-  { key: "none", label: "None" },
-  { key: "admin_approval", label: "Admin Approval" },
-  { key: "code", label: "Invite Code" },
-  { key: "email_domain", label: "Email Domain" },
+  { key: "NONE", label: "None" },
+  { key: "ADMIN_APPROVAL", label: "Admin Approval" },
+  { key: "CODE", label: "Invite Code" },
+  { key: "EMAIL_DOMAIN", label: "Email Domain" },
 ];
 
 export default function CreateCirclePage() {
@@ -55,7 +55,7 @@ export default function CreateCirclePage() {
     privacy: "",
     maxMembers: "",
     allowMemberInvites: true,
-    verificationMethod: "none",
+    verificationMethod: "NONE",
     verificationDomain: "",
   });
 
@@ -98,7 +98,7 @@ export default function CreateCirclePage() {
           description: form.description || undefined,
           maxMembers: form.maxMembers ? parseInt(form.maxMembers) : undefined,
           verificationMethod: form.type === "CLUB" ? form.verificationMethod : undefined,
-          verificationDomain: form.type === "CLUB" && form.verificationMethod === "email_domain" ? form.verificationDomain : undefined,
+          verificationDomain: form.type === "CLUB" && form.verificationMethod === "EMAIL_DOMAIN" ? form.verificationDomain : undefined,
           config: { allowMemberInvites: form.allowMemberInvites },
         }),
       });
@@ -367,7 +367,7 @@ export default function CreateCirclePage() {
                   </label>
                 ))}
               </div>
-              {form.verificationMethod === "email_domain" && (
+              {form.verificationMethod === "EMAIL_DOMAIN" && (
                 <input
                   type="text"
                   value={form.verificationDomain}
