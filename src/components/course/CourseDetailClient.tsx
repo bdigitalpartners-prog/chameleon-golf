@@ -398,7 +398,8 @@ export function CourseDetailClient({ course }: { course: any }) {
   };
 
   /* ── Derived data ── */
-  const primaryImage = course.media?.find((m: any) => m.isPrimary) ?? course.media?.[0];
+  const activeMedia = course.media?.filter((m: any) => m.isActive !== false);
+  const primaryImage = activeMedia?.find((m: any) => m.isPrimary) ?? activeMedia?.[0];
   const location = [course.city, course.state].filter(Boolean).join(", ");
   const maxTeeYardage = course.teeBoxes?.[0]?.totalYardage;
   const championshipHistory = Array.isArray(course.championshipHistory) ? course.championshipHistory : [];
@@ -450,6 +451,11 @@ export function CourseDetailClient({ course }: { course: any }) {
               />
             </div>
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
+            {primaryImage.credit && (
+              <div className="absolute bottom-3 right-3 z-10 rounded px-2 py-1 text-xs text-white/90 bg-black/50 backdrop-blur-sm">
+                Photo: {primaryImage.credit}
+              </div>
+            )}
           </>
         ) : (
           <div className="h-48 md:h-64">
