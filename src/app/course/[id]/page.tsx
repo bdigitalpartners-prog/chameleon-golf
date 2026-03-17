@@ -5,9 +5,38 @@ import { CourseDetailClient } from "@/components/course/CourseDetailClient";
 
 export const dynamic = "force-dynamic";
 
+// Ensure columns added after initial deployment exist in the database
+async function ensureMissingColumns() {
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "courses" ADD COLUMN IF NOT EXISTS "architect_id" INTEGER`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "courses" ADD COLUMN IF NOT EXISTS "instagram_url" VARCHAR(500)`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "courses" ADD COLUMN IF NOT EXISTS "twitter_url" VARCHAR(500)`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "courses" ADD COLUMN IF NOT EXISTS "facebook_url" VARCHAR(500)`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "courses" ADD COLUMN IF NOT EXISTS "tiktok_url" VARCHAR(500)`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "user_course_ratings" ADD COLUMN IF NOT EXISTS "is_seed" BOOLEAN NOT NULL DEFAULT false`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "user_course_ratings" ADD COLUMN IF NOT EXISTS "seed_source" VARCHAR(200)`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "user_course_ratings" ADD COLUMN IF NOT EXISTS "seed_reviewer_name" VARCHAR(200)`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "architects" ADD COLUMN IF NOT EXISTS "portrait_url" VARCHAR(500)`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "architects" ADD COLUMN IF NOT EXISTS "website_url" VARCHAR(500)`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "architects" ADD COLUMN IF NOT EXISTS "firm_name" VARCHAR(255)`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "architects" ADD COLUMN IF NOT EXISTS "company_url" VARCHAR(500)`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "architects" ADD COLUMN IF NOT EXISTS "hero_image_url" VARCHAR(500)`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "architects" ADD COLUMN IF NOT EXISTS "is_partnership" BOOLEAN NOT NULL DEFAULT false`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "architects" ADD COLUMN IF NOT EXISTS "instagram_url" VARCHAR(500)`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "architects" ADD COLUMN IF NOT EXISTS "twitter_url" VARCHAR(500)`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "architects" ADD COLUMN IF NOT EXISTS "facebook_url" VARCHAR(500)`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "architects" ADD COLUMN IF NOT EXISTS "tiktok_url" VARCHAR(500)`);
+  } catch (err) {
+    console.error("ensureMissingColumns error (non-fatal):", err);
+  }
+}
+
 export default async function CourseDetailPage({ params }: { params: { id: string } }) {
   const courseId = parseInt(params.id);
   if (isNaN(courseId)) notFound();
+
+  // Ensure all schema columns exist before querying
+  await ensureMissingColumns();
 
   const course = await prisma.course.findUnique({
     where: { courseId },
