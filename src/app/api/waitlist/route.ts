@@ -25,7 +25,11 @@ function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-async function createHubSpotContact(email: string): Promise<void> {
+async function createHubSpotContact(
+  email: string,
+  firstname?: string,
+  lastname?: string
+): Promise<void> {
   const accessToken = process.env.HUBSPOT_ACCESS_TOKEN;
   if (!accessToken) {
     console.log("HUBSPOT_ACCESS_TOKEN not configured, skipping HubSpot sync");
@@ -33,20 +37,20 @@ async function createHubSpotContact(email: string): Promise<void> {
   }
 
   try {
+    const properties: Record<string, string> = {
+      email,
+      company: "golfEQUALIZER Early Access",
+    };
+    if (firstname) properties.firstname = firstname;
+    if (lastname) properties.lastname = lastname;
+
     const res = await fetch("https://api.hubapi.com/crm/v3/objects/contacts", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        properties: {
-          email,
-          lifecyclestage: "subscriber",
-          hs_lead_status: "NEW",
-          company: "golfEQUALIZER Early Access",
-        },
-      }),
+      body: JSON.stringify({ properties }),
     });
 
     if (res.status === 409) {
@@ -56,7 +60,9 @@ async function createHubSpotContact(email: string): Promise<void> {
 
     if (!res.ok) {
       const body = await res.text();
-      console.error(`HubSpot API error (${res.status}): ${body}`);
+      console.error(
+        `HubSpot API error (${res.status}): ${body}`
+      );
     }
   } catch (err) {
     console.error("HubSpot API request failed:", err);
@@ -74,7 +80,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { email, name, handicap, source } = body;
+    const { email, name, firstname, lastname, handicap, source } = body;
 
     if (!email || typeof email !== "string") {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
@@ -132,7 +138,7 @@ export async function POST(req: NextRequest) {
     const position = await prisma.waitlistSignup.count();
 
     // Create contact in HubSpot (non-blocking — don't fail the request if this errors)
-    createHubSpotContact(trimmedEmail).catch((err) =>
+    createHubSpotContact(trimmedEmail, firstname?.trim(), lastname?.trim()).catch((err) =>
       console.error("Background HubSpot sync failed:", err)
     );
 
