@@ -23,7 +23,7 @@ export function WidgetPanel({ activeTab, onTabChange, onClose, children }: Widge
     <div
       className="fixed flex flex-col overflow-hidden cw-slide-up"
       style={{
-        bottom: 92,
+        bottom: 188,
         right: 24,
         width: 380,
         height: 600,

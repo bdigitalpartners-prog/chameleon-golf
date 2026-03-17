@@ -14,7 +14,7 @@ export function WidgetLauncher({ isOpen, unreadCount, onClick }: WidgetLauncherP
       onClick={onClick}
       className="fixed flex items-center justify-center rounded-full transition-all duration-300"
       style={{
-        bottom: 24,
+        bottom: 120,
         right: 24,
         width: 56,
         height: 56,
