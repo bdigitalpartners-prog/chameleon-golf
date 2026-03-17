@@ -7,6 +7,7 @@ import { useState, useMemo } from "react";
 import { SearchOverlay } from "@/components/layout/SearchOverlay";
 import { ThemeSettings } from "@/components/layout/ThemeSettings";
 import { NotificationBell } from "@/components/layout/NotificationBell";
+import { LeaderboardWidget } from "@/components/leaderboard-widget/LeaderboardWidget";
 
 /* ─── Breadcrumb mapping ──────────────────────────── */
 const BREADCRUMB_MAP: Record<string, { section: string; label: string }> = {
@@ -138,6 +139,8 @@ export function TopBar({ onMobileMenuToggle }: TopBarProps) {
           >
             <Search className="w-4 h-4" />
           </button>
+
+          <LeaderboardWidget />
 
           {session && <NotificationBell />}
 

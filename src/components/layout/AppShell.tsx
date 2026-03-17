@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { CirclesSocialWidget } from "@/components/circles-widget/CirclesSocialWidget";
-import { LeaderboardWidget } from "@/components/leaderboard-widget/LeaderboardWidget";
+
 import { PiEasterEgg } from "@/components/layout/PiEasterEgg";
 
 /**
@@ -23,7 +23,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <DashboardLayout>
       {children}
       <CirclesSocialWidget />
-      <LeaderboardWidget />
     </DashboardLayout>
   );
 }
