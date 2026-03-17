@@ -35,6 +35,7 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
   if (isNaN(courseId)) notFound();
 
   let course: any;
+  // Core query — only include relations that are guaranteed to exist in the DB
   try {
     course = await prisma.course.findUnique({
       where: { courseId },
@@ -50,15 +51,6 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
           take: 10,
         },
         chameleonScores: true,
-        ratings: {
-          where: { isPublished: true },
-          include: { user: { select: { name: true, image: true } } },
-          orderBy: { createdAt: "desc" },
-          take: 20,
-        },
-        teeBoxes: {
-          orderBy: { totalYardage: "desc" },
-        },
         nearbyDining: { orderBy: { sortOrder: "asc" }, take: 8 },
         nearbyLodging: { orderBy: { sortOrder: "asc" }, take: 6 },
         nearbyAttractions: { orderBy: { sortOrder: "asc" }, take: 8 },
@@ -67,13 +59,6 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
           include: { nearbyCourse: { include: { media: { where: { isPrimary: true }, take: 1 } } } },
           orderBy: { distanceMiles: "asc" },
           take: 8,
-        },
-        intelligenceNotes: {
-          where: { isVisible: true },
-          orderBy: { generatedAt: "desc" },
-        },
-        weatherMonths: {
-          orderBy: { month: "asc" },
         },
         architect: {
           select: {
@@ -97,6 +82,40 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
   } catch (err) {
     console.error("[CourseDetailPage] Prisma query error:", err);
     notFound();
+  }
+
+  // Safely fetch optional relations that may not have DB tables yet
+  const safeInclude = async (fn: () => Promise<any>, fallback: any = []) => {
+    try { return await fn(); } catch { return fallback; }
+  };
+
+  if (course) {
+    course.ratings = await safeInclude(() =>
+      prisma.courseRating.findMany({
+        where: { courseId, isPublished: true },
+        include: { user: { select: { name: true, image: true } } },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      })
+    );
+    course.teeBoxes = await safeInclude(() =>
+      prisma.courseTeeBox.findMany({
+        where: { courseId },
+        orderBy: { totalYardage: "desc" },
+      })
+    );
+    course.intelligenceNotes = await safeInclude(() =>
+      prisma.courseIntelligenceNote.findMany({
+        where: { courseId, isVisible: true },
+        orderBy: { generatedAt: "desc" },
+      })
+    );
+    course.weatherMonths = await safeInclude(() =>
+      prisma.courseWeather.findMany({
+        where: { courseId },
+        orderBy: { month: "asc" },
+      })
+    );
   }
 
   if (!course) notFound();

@@ -173,8 +173,9 @@ export function Navbar() {
               { href: "/explore", label: "Explore" },
               { href: "/map", label: "Map" },
               { href: "/architects", label: "Architects" },
+              { href: "/fairway", label: "The Fairway" },
               { href: "/performance", label: "Performance" },
-              { href: "/bucket-list", label: "Bucket List" },
+              { href: "/shop", label: "Pro Shop" },
               { href: "/about", label: "How It Works" },
               ...(session
                 ? [
@@ -253,8 +254,9 @@ export function Navbar() {
                 { href: "/explore", label: "Explore" },
                 { href: "/map", label: "Map" },
                 { href: "/architects", label: "Architects" },
+                { href: "/fairway", label: "The Fairway" },
                 { href: "/performance", label: "Performance" },
-                { href: "/bucket-list", label: "Bucket List" },
+                { href: "/shop", label: "Pro Shop" },
                 { href: "/about", label: "How It Works" },
                 ...(session
                   ? [
