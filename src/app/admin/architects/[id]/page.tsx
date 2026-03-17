@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Save, Loader2, ExternalLink } from "lucide-react";
+import { ArrowLeft, Save, Loader2, ExternalLink, Plus, X, Tag } from "lucide-react";
 
 function getAdminKey() {
   if (typeof window === "undefined") return "";
@@ -24,6 +24,11 @@ export default function ArchitectEditorPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Aliases state
+  const [aliases, setAliases] = useState<{ id: number; aliasName: string; aliasType: string }[]>([]);
+  const [newAliasName, setNewAliasName] = useState("");
+  const [newAliasType, setNewAliasType] = useState("alternate");
 
   const fetchArchitect = useCallback(async () => {
     try {
@@ -45,9 +50,52 @@ export default function ArchitectEditorPage() {
     }
   }, [architectId]);
 
+  const fetchAliases = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/admin/architects/${architectId}/aliases`, {
+        headers: { "x-admin-key": getAdminKey() },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAliases(data);
+      }
+    } catch {}
+  }, [architectId]);
+
   useEffect(() => {
     fetchArchitect();
-  }, [fetchArchitect]);
+    fetchAliases();
+  }, [fetchArchitect, fetchAliases]);
+
+  const addAlias = async () => {
+    if (!newAliasName.trim()) return;
+    try {
+      const res = await fetch(`/api/admin/architects/${architectId}/aliases`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-key": getAdminKey() },
+        body: JSON.stringify({ aliasName: newAliasName.trim(), aliasType: newAliasType }),
+      });
+      if (res.ok) {
+        setNewAliasName("");
+        fetchAliases();
+      } else {
+        const data = await res.json();
+        setMessage({ type: "error", text: data.error || "Failed to add alias" });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Failed to add alias" });
+    }
+  };
+
+  const deleteAlias = async (aliasId: number) => {
+    try {
+      await fetch(`/api/admin/architects/${architectId}/aliases?aliasId=${aliasId}`, {
+        method: "DELETE",
+        headers: { "x-admin-key": getAdminKey() },
+      });
+      fetchAliases();
+    } catch {}
+  };
 
   const set = (field: string, value: any) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -253,6 +301,51 @@ export default function ArchitectEditorPage() {
               className={inputClass}
             />
           </div>
+          <div>
+            <label className={labelClass}>Website URL</label>
+            <input
+              type="url"
+              value={form.websiteUrl || ""}
+              onChange={(e) => set("websiteUrl", e.target.value)}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Firm Name</label>
+            <input
+              type="text"
+              value={form.firmName || ""}
+              onChange={(e) => set("firmName", e.target.value)}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Hero Image URL</label>
+            <input
+              type="url"
+              value={form.heroImageUrl || ""}
+              onChange={(e) => set("heroImageUrl", e.target.value)}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Portrait URL</label>
+            <input
+              type="url"
+              value={form.portraitUrl || ""}
+              onChange={(e) => set("portraitUrl", e.target.value)}
+              className={inputClass}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={form.isPartnership || false}
+              onChange={(e) => set("isPartnership", e.target.checked)}
+              className="accent-[#22c55e]"
+            />
+            <label className="text-sm text-gray-400">Partnership (design firm)</label>
+          </div>
         </div>
       </div>
 
@@ -314,6 +407,73 @@ export default function ArchitectEditorPage() {
             onChange={(e) => set("notableFeatures", e.target.value)}
             className={inputClass}
           />
+        </div>
+      </div>
+
+      {/* Aliases */}
+      <div className="bg-[#111] border border-[#222] rounded-xl p-6 space-y-4">
+        <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+          <Tag size={18} className="text-[#22c55e]" />
+          Aliases
+          <span className="text-sm font-normal text-gray-400">({aliases.length})</span>
+        </h2>
+
+        {/* Existing aliases */}
+        {aliases.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {aliases.map((alias) => (
+              <div
+                key={alias.id}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#1a1a1a] border border-[#333]"
+              >
+                <span className="text-sm text-white">{alias.aliasName}</span>
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-green-900/40 text-green-400">
+                  {alias.aliasType}
+                </span>
+                <button
+                  onClick={() => deleteAlias(alias.id)}
+                  className="text-gray-500 hover:text-red-400 transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Add alias form */}
+        <div className="flex items-end gap-3">
+          <div className="flex-1">
+            <label className={labelClass}>Alias Name</label>
+            <input
+              type="text"
+              value={newAliasName}
+              onChange={(e) => setNewAliasName(e.target.value)}
+              placeholder="e.g. Bobby Jones, Jones & Associates"
+              className={inputClass}
+              onKeyDown={(e) => e.key === "Enter" && addAlias()}
+            />
+          </div>
+          <div className="w-40">
+            <label className={labelClass}>Type</label>
+            <select
+              value={newAliasType}
+              onChange={(e) => setNewAliasType(e.target.value)}
+              className={inputClass}
+            >
+              <option value="alternate">Alternate</option>
+              <option value="partnership">Partnership</option>
+              <option value="abbreviation">Abbreviation</option>
+              <option value="maiden">Maiden</option>
+            </select>
+          </div>
+          <button
+            onClick={addAlias}
+            className="flex items-center gap-1 px-4 py-2 rounded-lg bg-[#22c55e] text-black font-medium hover:bg-[#16a34a] transition-colors"
+          >
+            <Plus size={16} />
+            Add
+          </button>
         </div>
       </div>
     </div>

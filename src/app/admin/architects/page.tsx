@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Search, Plus, ChevronLeft, ChevronRight, Trash2, ExternalLink } from "lucide-react";
+import { Search, Plus, ChevronLeft, ChevronRight, Trash2, ExternalLink, AlertTriangle, Merge, ChevronDown, ChevronUp } from "lucide-react";
 
 interface ArchitectRow {
   id: number;
@@ -15,6 +15,13 @@ interface ArchitectRow {
   bornYear: number | null;
   diedYear: number | null;
   totalCoursesDesigned: number | null;
+}
+
+interface DuplicatePair {
+  architectA: { id: number; name: string; nationality: string | null; era: string | null };
+  architectB: { id: number; name: string; nationality: string | null; era: string | null };
+  score: number;
+  reason: string;
 }
 
 function getAdminKey() {
@@ -29,6 +36,10 @@ export default function AdminArchitectsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [duplicates, setDuplicates] = useState<DuplicatePair[]>([]);
+  const [showDuplicates, setShowDuplicates] = useState(false);
+  const [merging, setMerging] = useState(false);
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
   const fetchArchitects = useCallback(async () => {
     setLoading(true);
@@ -50,15 +61,54 @@ export default function AdminArchitectsPage() {
     }
   }, [page, search]);
 
+  const fetchDuplicates = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/architects/duplicates", {
+        headers: { "x-admin-key": getAdminKey() },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDuplicates(data);
+      }
+    } catch {}
+  }, []);
+
   useEffect(() => {
     fetchArchitects();
-  }, [fetchArchitects]);
+    fetchDuplicates();
+  }, [fetchArchitects, fetchDuplicates]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
     fetchArchitects();
   };
+
+  const handleMerge = async (primaryId: number, secondaryId: number, primaryName: string, secondaryName: string) => {
+    if (!confirm(`Merge "${secondaryName}" into "${primaryName}"? This will delete "${secondaryName}" and move all its data to "${primaryName}".`)) return;
+    setMerging(true);
+    try {
+      await fetch("/api/admin/architects/merge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-key": getAdminKey() },
+        body: JSON.stringify({ primaryId, secondaryId }),
+      });
+      fetchArchitects();
+      fetchDuplicates();
+    } catch {
+      alert("Failed to merge architects");
+    } finally {
+      setMerging(false);
+    }
+  };
+
+  const dismissDuplicate = (aId: number, bId: number) => {
+    setDismissed((prev) => new Set(prev).add(`${aId}-${bId}`));
+  };
+
+  const visibleDuplicates = duplicates.filter(
+    (d) => !dismissed.has(`${d.architectA.id}-${d.architectB.id}`)
+  );
 
   const handleDelete = async (id: number, name: string) => {
     if (!confirm(`Delete architect "${name}"? This cannot be undone.`)) return;
@@ -103,6 +153,64 @@ export default function AdminArchitectsPage() {
           />
         </div>
       </form>
+
+      {/* Duplicate Detection */}
+      {visibleDuplicates.length > 0 && (
+        <div className="bg-[#111] border border-[#222] rounded-xl overflow-hidden">
+          <button
+            onClick={() => setShowDuplicates(!showDuplicates)}
+            className="flex items-center justify-between w-full px-4 py-3 text-left"
+          >
+            <div className="flex items-center gap-2">
+              <AlertTriangle size={16} className="text-yellow-400" />
+              <span className="text-white font-medium text-sm">
+                Potential Duplicates
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-900/40 text-yellow-400">
+                {visibleDuplicates.length}
+              </span>
+            </div>
+            {showDuplicates ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+          </button>
+          {showDuplicates && (
+            <div className="border-t border-[#222] divide-y divide-[#1a1a1a]">
+              {visibleDuplicates.map((pair, i) => (
+                <div key={i} className="px-4 py-3 flex items-center gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-white font-medium">{pair.architectA.name}</span>
+                      <span className="text-gray-500">vs</span>
+                      <span className="text-white font-medium">{pair.architectB.name}</span>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-0.5">
+                      Score: {pair.score}% — {pair.reason}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-0.5">
+                      {pair.architectA.nationality || "?"} · {pair.architectA.era || "?"} | {pair.architectB.nationality || "?"} · {pair.architectB.era || "?"}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => handleMerge(pair.architectA.id, pair.architectB.id, pair.architectA.name, pair.architectB.name)}
+                      disabled={merging}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#22c55e]/10 text-[#22c55e] border border-[#22c55e]/30 hover:bg-[#22c55e]/20 disabled:opacity-50"
+                    >
+                      <Merge size={12} />
+                      Merge
+                    </button>
+                    <button
+                      onClick={() => dismissDuplicate(pair.architectA.id, pair.architectB.id)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-400 border border-[#333] hover:bg-[#1a1a1a]"
+                    >
+                      Not a Duplicate
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Table */}
       <div className="bg-[#111] border border-[#222] rounded-xl overflow-hidden">
