@@ -61,8 +61,33 @@ export async function PUT(
   try {
     const body = await request.json();
 
-    // Separate relation data from course fields
-    const { dining, lodging, attractions, media, holes, teeBoxes, rankings, chameleonScores, ...courseData } = body;
+    // Only pass known scalar fields to Prisma — the frontend sends the
+    // full course object including nested relations, which Prisma rejects.
+    const ALLOWED_COURSE_FIELDS = new Set([
+      'courseName', 'facilityName', 'streetAddress', 'city', 'state', 'zipCode', 'country',
+      'latitude', 'longitude', 'courseType', 'accessType', 'numHoles', 'par', 'yearOpened',
+      'courseStyle', 'originalArchitect', 'renovationArchitect', 'renovationYear', 'renovationNotes',
+      'websiteUrl', 'phone', 'greenFeeLow', 'greenFeeHigh', 'greenFeeCurrency', 'walkingPolicy',
+      'numListsAppeared', 'dataSources', 'isVerified', 'isEnriched', 'description', 'email',
+      'tagline', 'priceTier', 'dressCode', 'caddieAvailability', 'caddieFee', 'cartPolicy',
+      'cartFee', 'cellPhonePolicy', 'practiceFacilities', 'clubRentalAvailable', 'bookingUrl',
+      'howToGetOn', 'resortAffiliateAccess', 'guestPolicy', 'signatureHoleNumber',
+      'signatureHoleDescription', 'bestPar3', 'bestPar4', 'bestPar5', 'insiderTips',
+      'courseStrategy', 'whatToExpect', 'bestTimeToPlay', 'paceOfPlayNotes', 'fairwayGrass',
+      'greenGrass', 'greenSpeed', 'aerationSchedule', 'bestConditionMonths', 'golfSeason',
+      'championshipHistory', 'famousMoments', 'upcomingEvents', 'weatherData', 'bestMonths',
+      'worstMonths', 'architectBio', 'designPhilosophy', 'templateHoles', 'renovationHistory',
+      'onSiteLodging', 'resortNameField', 'resortBookingUrl', 'stayAndPlayPackages',
+      'averageRoundTime', 'greenFeePeak', 'greenFeeOffPeak', 'greenFeeTwilight', 'includesCart',
+      'instagramUrl', 'twitterUrl', 'facebookUrl', 'tiktokUrl', 'architectId',
+    ]);
+
+    const courseData: Record<string, unknown> = {};
+    for (const key of Object.keys(body)) {
+      if (ALLOWED_COURSE_FIELDS.has(key)) {
+        courseData[key] = body[key];
+      }
+    }
 
     const course = await prisma.course.update({
       where: { courseId },
@@ -70,31 +95,31 @@ export async function PUT(
     });
 
     // Handle nearby dining updates
-    if (dining !== undefined) {
+    if (body.dining !== undefined) {
       await prisma.courseNearbyDining.deleteMany({ where: { courseId } });
-      if (dining.length > 0) {
+      if (body.dining.length > 0) {
         await prisma.courseNearbyDining.createMany({
-          data: dining.map((d: Record<string, unknown>) => ({ ...d, courseId })),
+          data: body.dining.map((d: Record<string, unknown>) => ({ ...d, courseId })),
         });
       }
     }
 
     // Handle nearby lodging updates
-    if (lodging !== undefined) {
+    if (body.lodging !== undefined) {
       await prisma.courseNearbyLodging.deleteMany({ where: { courseId } });
-      if (lodging.length > 0) {
+      if (body.lodging.length > 0) {
         await prisma.courseNearbyLodging.createMany({
-          data: lodging.map((l: Record<string, unknown>) => ({ ...l, courseId })),
+          data: body.lodging.map((l: Record<string, unknown>) => ({ ...l, courseId })),
         });
       }
     }
 
     // Handle nearby attractions updates
-    if (attractions !== undefined) {
+    if (body.attractions !== undefined) {
       await prisma.courseNearbyAttractions.deleteMany({ where: { courseId } });
-      if (attractions.length > 0) {
+      if (body.attractions.length > 0) {
         await prisma.courseNearbyAttractions.createMany({
-          data: attractions.map((a: Record<string, unknown>) => ({ ...a, courseId })),
+          data: body.attractions.map((a: Record<string, unknown>) => ({ ...a, courseId })),
         });
       }
     }
