@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { withCircleAuth } from "@/lib/circle-auth";
+import { GameFormat } from "@prisma/client";
 
 export const dynamic = 'force-dynamic';
 
@@ -58,6 +59,23 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const { format, courseId, name, startDate, holesPlayed, config, status: gameStatus } = body;
 
   if (!format) return NextResponse.json({ error: "Format is required" }, { status: 400 });
+
+  // Validate format against GameFormat enum
+  const validFormats = Object.values(GameFormat);
+  if (!validFormats.includes(format)) {
+    return NextResponse.json(
+      { error: `Invalid game format. Must be one of: ${validFormats.join(", ")}` },
+      { status: 400 }
+    );
+  }
+
+  // Validate startDate if provided
+  if (startDate !== undefined && startDate !== null) {
+    const parsedDate = new Date(startDate);
+    if (isNaN(parsedDate.getTime())) {
+      return NextResponse.json({ error: "startDate must be a valid date" }, { status: 400 });
+    }
+  }
 
   const game = await prisma.game.create({
     data: {

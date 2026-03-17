@@ -40,6 +40,31 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       );
     }
 
+    // Validate startDate is a valid date
+    const parsedStartDate = new Date(startDate);
+    if (isNaN(parsedStartDate.getTime())) {
+      return NextResponse.json({ error: "startDate must be a valid date" }, { status: 400 });
+    }
+
+    // Validate endDate if provided
+    if (endDate) {
+      const parsedEndDate = new Date(endDate);
+      if (isNaN(parsedEndDate.getTime())) {
+        return NextResponse.json({ error: "endDate must be a valid date" }, { status: 400 });
+      }
+      if (parsedEndDate <= parsedStartDate) {
+        return NextResponse.json({ error: "endDate must be after startDate" }, { status: 400 });
+      }
+    }
+
+    // Validate maxAttendees if provided
+    if (maxAttendees !== undefined && maxAttendees !== null) {
+      const maxAttendeesNum = Number(maxAttendees);
+      if (!Number.isInteger(maxAttendeesNum) || maxAttendeesNum < 1) {
+        return NextResponse.json({ error: "maxAttendees must be an integer >= 1" }, { status: 400 });
+      }
+    }
+
     const event = await prisma.circleEvent.create({
       data: {
         circleId,

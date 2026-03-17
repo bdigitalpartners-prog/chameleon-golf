@@ -120,6 +120,27 @@ export async function POST(
     );
   }
 
+  // Validate numeric condition scales (1-10)
+  const scaleFields = [
+    { name: "greensSpeed", value: greensSpeed },
+    { name: "fairwayFirmness", value: fairwayFirmness },
+    { name: "roughHeight", value: roughHeight },
+    { name: "bunkerCondition", value: bunkerCondition },
+    { name: "overallCondition", value: overallCondition },
+  ];
+
+  for (const field of scaleFields) {
+    if (field.value !== undefined && field.value !== null) {
+      const num = Number(field.value);
+      if (isNaN(num) || num < 1 || num > 10) {
+        return NextResponse.json(
+          { error: `${field.name} must be a number between 1 and 10` },
+          { status: 400 }
+        );
+      }
+    }
+  }
+
   const report = await prisma.conditionReport.create({
     data: {
       circleId,

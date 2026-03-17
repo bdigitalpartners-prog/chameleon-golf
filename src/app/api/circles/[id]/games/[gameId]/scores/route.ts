@@ -40,6 +40,22 @@ export async function POST(req: NextRequest, { params }: { params: { id: string;
     return NextResponse.json({ error: "Scores array is required" }, { status: 400 });
   }
 
+  // Validate score values
+  for (const s of scores) {
+    if (s.holeNumber !== undefined && (!Number.isInteger(s.holeNumber) || s.holeNumber < 1 || s.holeNumber > 18)) {
+      return NextResponse.json({ error: `Invalid hole number: ${s.holeNumber}. Must be 1-18` }, { status: 400 });
+    }
+    if (s.strokes !== undefined && (!Number.isInteger(s.strokes) || s.strokes < 1 || s.strokes > 20)) {
+      return NextResponse.json({ error: `Invalid strokes value: ${s.strokes}. Must be 1-20` }, { status: 400 });
+    }
+    if (s.putts !== undefined && s.putts !== null && (!Number.isInteger(s.putts) || s.putts < 0 || s.putts > 20)) {
+      return NextResponse.json({ error: `Invalid putts value: ${s.putts}. Must be 0-20` }, { status: 400 });
+    }
+    if (s.penalties !== undefined && s.penalties !== null && (!Number.isInteger(s.penalties) || s.penalties < 0 || s.penalties > 10)) {
+      return NextResponse.json({ error: `Invalid penalties value: ${s.penalties}. Must be 0-10` }, { status: 400 });
+    }
+  }
+
   // Auto-transition to IN_PROGRESS if first scores submitted
   if (game.status === "SETUP" || game.status === "OPEN") {
     await prisma.game.update({

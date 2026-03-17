@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { withCircleAuth } from "@/lib/circle-auth";
+import { CirclePrivacy } from "@prisma/client";
 
 export const dynamic = 'force-dynamic';
 
@@ -83,6 +84,48 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
 
     const body = await req.json();
+
+    // Validate name
+    if (body.name !== undefined) {
+      const trimmedName = typeof body.name === "string" ? body.name.trim() : "";
+      if (trimmedName.length === 0) {
+        return NextResponse.json({ error: "Circle name cannot be empty or whitespace-only" }, { status: 400 });
+      }
+      if (trimmedName.length > 255) {
+        return NextResponse.json({ error: "Circle name must be 255 characters or fewer" }, { status: 400 });
+      }
+      body.name = trimmedName;
+    }
+
+    // Validate description
+    if (body.description !== undefined && body.description !== null && typeof body.description === "string" && body.description.length > 2000) {
+      return NextResponse.json({ error: "Description must be 2000 characters or fewer" }, { status: 400 });
+    }
+
+    // Validate privacy
+    if (body.privacy !== undefined) {
+      const validPrivacy = Object.values(CirclePrivacy);
+      if (!validPrivacy.includes(body.privacy)) {
+        return NextResponse.json({ error: `Invalid privacy value. Must be one of: ${validPrivacy.join(", ")}` }, { status: 400 });
+      }
+    }
+
+    // Validate maxMembers
+    if (body.maxMembers !== undefined && body.maxMembers !== null) {
+      const maxMembersNum = Number(body.maxMembers);
+      if (!Number.isInteger(maxMembersNum) || maxMembersNum < 1) {
+        return NextResponse.json({ error: "maxMembers must be an integer >= 1" }, { status: 400 });
+      }
+      // Can't set lower than current member count
+      const currentCircle = await prisma.circle.findUnique({ where: { id }, select: { memberCount: true } });
+      if (currentCircle && maxMembersNum < currentCircle.memberCount) {
+        return NextResponse.json(
+          { error: `maxMembers cannot be less than current member count (${currentCircle.memberCount})` },
+          { status: 400 }
+        );
+      }
+    }
+
     const allowedFields = ["name", "description", "privacy", "imageUrl", "maxMembers", "config", "verificationMethod", "verificationDomain"];
     const data: any = {};
     for (const field of allowedFields) {

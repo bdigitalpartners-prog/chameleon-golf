@@ -23,16 +23,38 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "name and type are required" }, { status: 400 });
     }
 
+    // Validate name
+    const trimmedName = typeof name === "string" ? name.trim() : "";
+    if (trimmedName.length === 0) {
+      return NextResponse.json({ error: "Circle name cannot be empty or whitespace-only" }, { status: 400 });
+    }
+    if (trimmedName.length > 255) {
+      return NextResponse.json({ error: "Circle name must be 255 characters or fewer" }, { status: 400 });
+    }
+
+    // Validate description
+    if (description !== undefined && description !== null && typeof description === "string" && description.length > 2000) {
+      return NextResponse.json({ error: "Description must be 2000 characters or fewer" }, { status: 400 });
+    }
+
+    // Validate maxMembers
+    if (maxMembers !== undefined && maxMembers !== null) {
+      const maxMembersNum = Number(maxMembers);
+      if (!Number.isInteger(maxMembersNum) || maxMembersNum < 1) {
+        return NextResponse.json({ error: "maxMembers must be an integer >= 1" }, { status: 400 });
+      }
+    }
+
     if (!Object.keys(CIRCLE_DEFAULTS).includes(type)) {
       return NextResponse.json({ error: "Invalid circle type" }, { status: 400 });
     }
 
     const defaults = CIRCLE_DEFAULTS[type as CircleType];
-    const slug = await uniqueSlug(name);
+    const slug = await uniqueSlug(trimmedName);
 
     const circle = await prisma.circle.create({
       data: {
-        name,
+        name: trimmedName,
         slug,
         description: description ?? null,
         type: type as CircleType,

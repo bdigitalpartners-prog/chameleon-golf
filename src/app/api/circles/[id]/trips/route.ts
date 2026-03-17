@@ -30,6 +30,25 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
 
+    // Validate dates if provided
+    if (startDate) {
+      const parsedStart = new Date(startDate);
+      if (isNaN(parsedStart.getTime())) {
+        return NextResponse.json({ error: "startDate must be a valid date" }, { status: 400 });
+      }
+    }
+    if (endDate) {
+      const parsedEnd = new Date(endDate);
+      if (isNaN(parsedEnd.getTime())) {
+        return NextResponse.json({ error: "endDate must be a valid date" }, { status: 400 });
+      }
+    }
+    if (startDate && endDate) {
+      if (new Date(endDate) <= new Date(startDate)) {
+        return NextResponse.json({ error: "endDate must be after startDate" }, { status: 400 });
+      }
+    }
+
     const trip = await prisma.tripPlan.create({
       data: {
         creatorId: userId,
