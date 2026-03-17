@@ -127,6 +127,13 @@ model Course {
   nearbyRvParks     CourseNearbyRvParks[]
   intelligenceNotes CourseIntelligenceNotes[]
 
+  // Architect enrichment
+  architectId       Int?      @map("architect_id")
+  architect         Architect? @relation(fields: [architectId], references: [id])
+  courseArchitects   CourseArchitect[]
+  externalContent   ContentCourseLink[]
+  books             BookCourseLink[]
+
   @@map("courses")
 }
 
@@ -644,10 +651,166 @@ model Architect {
   era                 String?  @db.VarChar(50)
   totalCoursesDesigned Int?    @map("total_courses_designed")
   imageUrl            String?  @map("image_url") @db.VarChar(500)
+  websiteUrl          String?  @map("website_url") @db.VarChar(500)
+  firmName            String?  @map("firm_name") @db.VarChar(255)
+  heroImageUrl        String?  @map("hero_image_url") @db.VarChar(500)
+  portraitUrl         String?  @map("portrait_url") @db.VarChar(500)
+  isPartnership       Boolean  @default(false) @map("is_partnership")
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @default(now()) @map("updated_at")
 
+  aliases             ArchitectAlias[]
+  media               ArchitectMedia[]
+  externalContent     ContentArchitectLink[]
+  books               BookArchitectLink[]
+  courseArchitects     CourseArchitect[]
+  courses             Course[]
+
   @@map("architects")
+}
+
+model ArchitectAlias {
+  id           Int      @id @default(autoincrement())
+  architectId  Int      @map("architect_id")
+  aliasName    String   @map("alias_name") @db.VarChar(255)
+  aliasType    String   @default("alternate") @map("alias_type") @db.VarChar(50)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  architect    Architect @relation(fields: [architectId], references: [id], onDelete: Cascade)
+
+  @@unique([aliasName])
+  @@map("architect_aliases")
+}
+
+model ArchitectMedia {
+  id           Int      @id @default(autoincrement())
+  architectId  Int      @map("architect_id")
+  mediaType    String   @map("media_type") @db.VarChar(30)
+  url          String   @db.VarChar(500)
+  caption      String?  @db.VarChar(500)
+  credit       String?  @db.VarChar(200)
+  isPrimary    Boolean  @default(false) @map("is_primary")
+  sortOrder    Int      @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  architect    Architect @relation(fields: [architectId], references: [id], onDelete: Cascade)
+
+  @@map("architect_media")
+}
+
+model CourseArchitect {
+  id           Int      @id @default(autoincrement())
+  courseId      Int      @map("course_id")
+  architectId  Int      @map("architect_id")
+  role         String   @db.VarChar(50)
+  year         Int?
+  notes        String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  course       Course   @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+  architect    Architect @relation(fields: [architectId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, architectId, role])
+  @@map("course_architects")
+}
+
+model ExternalContent {
+  id            Int       @id @default(autoincrement())
+  contentType   String    @map("content_type") @db.VarChar(30)
+  title         String    @db.VarChar(500)
+  url           String    @db.VarChar(1000)
+  thumbnailUrl  String?   @map("thumbnail_url") @db.VarChar(1000)
+  summary       String?
+  sourceName    String?   @map("source_name") @db.VarChar(200)
+  sourceIcon    String?   @map("source_icon") @db.VarChar(500)
+  authorName    String?   @map("author_name") @db.VarChar(200)
+  publishedAt   DateTime? @map("published_at")
+  duration      String?   @db.VarChar(50)
+  qualityScore  Int?      @default(0) @map("quality_score")
+  isFeatured    Boolean   @default(false) @map("is_featured")
+  isApproved    Boolean   @default(false) @map("is_approved")
+  submittedBy   String?   @map("submitted_by") @db.VarChar(200)
+  tags          String[]
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  architects    ContentArchitectLink[]
+  courses       ContentCourseLink[]
+
+  @@map("external_content")
+}
+
+model ContentArchitectLink {
+  id           Int      @id @default(autoincrement())
+  contentId    Int      @map("content_id")
+  architectId  Int      @map("architect_id")
+  relevance    String?  @db.VarChar(30)
+
+  content      ExternalContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  architect    Architect       @relation(fields: [architectId], references: [id], onDelete: Cascade)
+
+  @@unique([contentId, architectId])
+  @@map("content_architect_links")
+}
+
+model ContentCourseLink {
+  id           Int      @id @default(autoincrement())
+  contentId    Int      @map("content_id")
+  courseId     Int      @map("course_id")
+  relevance    String?  @db.VarChar(30)
+
+  content      ExternalContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  course       Course          @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+
+  @@unique([contentId, courseId])
+  @@map("content_course_links")
+}
+
+model Book {
+  id            Int      @id @default(autoincrement())
+  title         String   @db.VarChar(500)
+  subtitle      String?  @db.VarChar(500)
+  authors       String[]
+  isbn          String?  @db.VarChar(20)
+  publisher     String?  @db.VarChar(200)
+  yearPublished Int?     @map("year_published")
+  coverImageUrl String?  @map("cover_image_url") @db.VarChar(1000)
+  description   String?
+  amazonUrl     String?  @map("amazon_url") @db.VarChar(1000)
+  bookshopUrl   String?  @map("bookshop_url") @db.VarChar(1000)
+  tags          String[]
+  isFeatured    Boolean  @default(false) @map("is_featured")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  architects    BookArchitectLink[]
+  courses       BookCourseLink[]
+
+  @@map("books")
+}
+
+model BookArchitectLink {
+  id               Int      @id @default(autoincrement())
+  bookId           Int      @map("book_id")
+  architectId      Int      @map("architect_id")
+  chapterReference String?  @map("chapter_reference") @db.VarChar(200)
+
+  book             Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  architect        Architect @relation(fields: [architectId], references: [id], onDelete: Cascade)
+
+  @@unique([bookId, architectId])
+  @@map("book_architect_links")
+}
+
+model BookCourseLink {
+  id               Int      @id @default(autoincrement())
+  bookId           Int      @map("book_id")
+  courseId         Int      @map("course_id")
+  chapterReference String?  @map("chapter_reference") @db.VarChar(200)
+
+  book             Book    @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  course           Course  @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+
+  @@unique([bookId, courseId])
+  @@map("book_course_links")
 }
 
 model PerformanceArticle {

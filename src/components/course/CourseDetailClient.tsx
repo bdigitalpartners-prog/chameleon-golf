@@ -7,12 +7,13 @@ import {
   Lightbulb, Utensils, Bed, Compass, Flag, ChevronRight,
   Clock, Sun, CloudRain, Wind, Leaf, SlidersHorizontal,
   Building2, Map, Mail, ExternalLink, DollarSign,
-  Home, Camera, Image, MessageSquare, Brain, Briefcase, Truck,
+  Home, Camera, Image, MessageSquare, Brain, Briefcase, Truck, Pencil,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { CoursePlaceholder } from "./CoursePlaceholder";
 import { CircleRatingsSection } from "./CircleRatingsSection";
 import { PoweredByBadge } from "@/components/brand/PoweredByBadge";
+import { CourseContentSections } from "./CourseContentSections";
 
 /* ─── Safe Text Helper ─── */
 
@@ -802,6 +803,50 @@ export function CourseDetailClient({ course }: { course: any }) {
                   </p>
                 </section>
               )}
+
+              {/* About the Architect */}
+              {safeText(course.originalArchitect) && (
+                <section style={cardStyle}>
+                  <SectionHeading icon={<Pencil className="h-5 w-5" style={{ color: "var(--cg-accent)" }} />}>
+                    About the Architect
+                  </SectionHeading>
+                  <div className="flex items-center gap-4">
+                    {course.architect?.portraitUrl || course.architect?.imageUrl ? (
+                      <img
+                        src={course.architect.portraitUrl || course.architect.imageUrl}
+                        alt={course.originalArchitect}
+                        className="h-16 w-16 rounded-lg object-cover flex-shrink-0"
+                        style={{ border: "1px solid var(--cg-border)" }}
+                      />
+                    ) : (
+                      <div
+                        className="h-16 w-16 rounded-lg flex items-center justify-center flex-shrink-0 text-lg font-bold"
+                        style={{ backgroundColor: "var(--cg-bg-tertiary)", color: "var(--cg-accent)" }}
+                      >
+                        {course.originalArchitect.split(" ").map((w: string) => w[0]).join("").slice(0, 2)}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <Link
+                        href={`/architects/${course.architect?.slug || course.originalArchitect.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`}
+                        className="font-semibold text-sm transition-colors hover:underline"
+                        style={{ color: "var(--cg-text-primary)" }}
+                      >
+                        {course.originalArchitect}
+                      </Link>
+                      {course.architect?.era && (
+                        <p className="text-xs mt-0.5" style={mutedText}>{course.architect.era} Era</p>
+                      )}
+                      {course.architect?.bio && (
+                        <p className="text-xs mt-1 line-clamp-2" style={secondaryText}>{course.architect.bio}</p>
+                      )}
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {/* Articles, Media & Books for this Course */}
+              <CourseContentSections courseId={course.courseId} />
             </div>
 
             {/* Sidebar */}

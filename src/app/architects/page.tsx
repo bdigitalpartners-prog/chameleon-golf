@@ -25,6 +25,7 @@ interface Architect {
   nationality: string | null;
   bio: string | null;
   era: string | null;
+  imageUrl: string | null;
   notableFeatures: string[];
   courseCount: number;
 }
@@ -454,7 +455,24 @@ export default function ArchitectsPage() {
                 }}
               >
                 <div className="flex items-start justify-between">
-                  <div className="min-w-0 flex-1">
+                  <div className="flex items-start gap-3 min-w-0 flex-1">
+                    {/* Architect photo or initials */}
+                    {architect.imageUrl ? (
+                      <img
+                        src={architect.imageUrl}
+                        alt={architect.name}
+                        className="h-10 w-10 rounded-full object-cover flex-shrink-0"
+                        style={{ border: "1px solid var(--cg-border)" }}
+                      />
+                    ) : (
+                      <div
+                        className="h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold"
+                        style={{ backgroundColor: "var(--cg-accent)", color: "#000" }}
+                      >
+                        {architect.name.split(" ").map((n) => n[0]).filter(Boolean).slice(0, 2).join("")}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
                     <h3
                       className="truncate font-semibold"
                       style={{ color: "var(--cg-text-primary)" }}
@@ -480,6 +498,7 @@ export default function ArchitectsPage() {
                         </span>
                       )}
                     </div>
+                  </div>
                   </div>
                   <div className="ml-3 flex flex-shrink-0 flex-col items-end gap-1.5">
                     {architect.era && (
