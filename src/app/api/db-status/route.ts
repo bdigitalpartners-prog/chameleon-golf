@@ -46,11 +46,33 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Check auth_users specifically
+    let authUsers: any[] = [];
+    try {
+      authUsers = await prisma.$queryRawUnsafe(
+        `SELECT id, email, first_name, created_at FROM "auth_users" LIMIT 10`
+      );
+    } catch (e: any) {
+      authUsers = [{ error: e.message }];
+    }
+
+    // Check users table
+    let usersTable: any[] = [];
+    try {
+      usersTable = await prisma.$queryRawUnsafe(
+        `SELECT id, email, name, role FROM "users" LIMIT 10`
+      );
+    } catch (e: any) {
+      usersTable = [{ error: e.message }];
+    }
+
     return NextResponse.json({
       tables: tables.map((t) => t.tablename),
       tableCount: tables.length,
       rowCounts: counts,
       courseColumns: courseColumns.map((c) => `${c.column_name} (${c.data_type})`),
+      authUsers,
+      usersTable,
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
