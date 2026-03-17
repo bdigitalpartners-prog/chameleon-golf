@@ -59,6 +59,14 @@ export default async function CourseDetailPage({ params }: { params: { id: strin
         teeBoxes: {
           orderBy: { totalYardage: "desc" },
         },
+        holes: {
+          orderBy: { holeNumber: "asc" },
+          include: {
+            teeYardages: {
+              include: { tee: { select: { teeName: true, color: true } } },
+            },
+          },
+        },
         nearbyDining: { orderBy: { sortOrder: "asc" }, take: 8 },
         nearbyLodging: { orderBy: { sortOrder: "asc" }, take: 6 },
         nearbyAttractions: { orderBy: { sortOrder: "asc" }, take: 8 },
