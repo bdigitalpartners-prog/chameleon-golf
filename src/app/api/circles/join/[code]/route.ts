@@ -51,7 +51,7 @@ export async function GET(req: NextRequest, { params }: { params: { code: string
     });
   } catch (error: any) {
     console.error("GET /api/circles/join/[code] error:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -119,6 +119,6 @@ export async function POST(req: NextRequest, { params }: { params: { code: strin
       return NextResponse.json({ error: "Circle is full" }, { status: 400 });
     }
     console.error("POST /api/circles/join/[code] error:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(circle, { status: 201 });
   } catch (error: any) {
     console.error("POST /api/circles error:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -128,6 +128,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(result);
   } catch (error: any) {
     console.error("GET /api/circles error:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

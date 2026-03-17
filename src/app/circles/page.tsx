@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -186,21 +186,33 @@ function DiscoverTab({ typeFilter }: { typeFilter: string }) {
   const [circles, setCircles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [sort, setSort] = useState("members");
   const [joiningId, setJoiningId] = useState<string | null>(null);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearch(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setDebouncedSearch(value), 300);
+  }, []);
+
+  useEffect(() => {
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, []);
 
   useEffect(() => {
     setLoading(true);
     const params = new URLSearchParams();
     if (typeFilter) params.set("type", typeFilter);
-    if (search) params.set("search", search);
+    if (debouncedSearch) params.set("search", debouncedSearch);
     params.set("sort", sort);
     fetch(`/api/circles/discover?${params}`)
       .then((r) => r.json())
       .then((data) => setCircles(data.circles ?? []))
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [typeFilter, search, sort]);
+  }, [typeFilter, debouncedSearch, sort]);
 
   const handleJoin = async (circleId: string) => {
     setJoiningId(circleId);
@@ -225,7 +237,7 @@ function DiscoverTab({ typeFilter }: { typeFilter: string }) {
             type="text"
             placeholder="Search circles..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="w-full rounded-lg pl-10 pr-4 py-2 text-sm"
             style={{
               backgroundColor: "var(--cg-bg-tertiary)",

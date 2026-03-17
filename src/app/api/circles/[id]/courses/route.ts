@@ -21,7 +21,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const { searchParams } = new URL(req.url);
     const sort = searchParams.get("sort") ?? "score";
     const page = Math.max(1, Number(searchParams.get("page") ?? 1));
-    const limit = Math.min(50, Number(searchParams.get("limit") ?? 20));
+    const limit = Math.min(Number(searchParams.get("limit") ?? 20), 100);
 
     const orderBy: any = sort === "recent" ? { lastUpdated: "desc" } : { avgScore: "desc" };
 
@@ -73,6 +73,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     });
   } catch (error: any) {
     console.error("GET /api/circles/[id]/courses error:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -50,6 +50,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ standings: ranked, season });
   } catch (error: any) {
     console.error("GET /api/circles/[id]/league/standings error:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

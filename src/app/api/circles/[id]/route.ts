@@ -64,7 +64,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     });
   } catch (error: any) {
     console.error("GET /api/circles/[id] error:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -142,7 +142,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json(circle);
   } catch (error: any) {
     console.error("PATCH /api/circles/[id] error:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -166,6 +166,6 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("DELETE /api/circles/[id] error:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

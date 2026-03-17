@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get("search");
     const sort = searchParams.get("sort") ?? "members";
     const page = parseInt(searchParams.get("page") ?? "1", 10);
-    const limit = parseInt(searchParams.get("limit") ?? "20", 10);
+    const limit = Math.min(parseInt(searchParams.get("limit") ?? "20", 10), 100);
 
     const where: any = {
       privacy: "PUBLIC",
@@ -69,6 +69,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("GET /api/circles/discover error:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

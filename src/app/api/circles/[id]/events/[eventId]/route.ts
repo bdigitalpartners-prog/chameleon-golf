@@ -52,7 +52,7 @@ export async function GET(
     });
   } catch (error: any) {
     console.error("GET /api/circles/[id]/events/[eventId] error:", error);
-    return NextResponse.json({ error: error.message || "Failed to fetch event" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -120,7 +120,7 @@ export async function PATCH(
     return NextResponse.json(updated);
   } catch (error: any) {
     console.error("PATCH /api/circles/[id]/events/[eventId] error:", error);
-    return NextResponse.json({ error: error.message || "Failed to update event" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -156,6 +156,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("DELETE /api/circles/[id]/events/[eventId] error:", error);
-    return NextResponse.json({ error: error.message || "Failed to delete event" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

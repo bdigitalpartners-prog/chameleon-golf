@@ -23,45 +23,48 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, Number(searchParams.get("page") ?? 1));
-    const limit = Math.min(50, Number(searchParams.get("limit") ?? 20));
+    const limit = Math.min(Number(searchParams.get("limit") ?? 20), 100);
 
-    // Get circle aggregates with high scores
-    const highRated = await prisma.circleCourseAggregate.findMany({
-      where: { circleId, avgScore: { gte: 7.5 } },
-      orderBy: { avgScore: "desc" },
-      include: {
-        course: {
-          select: {
-            courseId: true,
-            courseName: true,
-            city: true,
-            state: true,
-            accessType: true,
-            media: { where: { isPrimary: true }, take: 1 },
+    // Get courseIds that appear in national top-100 lists
+    const rankedCourseIds = (
+      await prisma.rankingEntry.findMany({
+        where: { rankPosition: { lte: 100, gt: 0 } },
+        select: { courseId: true },
+        distinct: ["courseId"],
+      })
+    ).map((r) => r.courseId);
+
+    // Query high-rated courses that are NOT in national rankings, with DB-level pagination
+    const where = {
+      circleId,
+      avgScore: { gte: 7.5 },
+      ...(rankedCourseIds.length > 0 ? { courseId: { notIn: rankedCourseIds } } : {}),
+    };
+
+    const [gems, total] = await Promise.all([
+      prisma.circleCourseAggregate.findMany({
+        where,
+        orderBy: { avgScore: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          course: {
+            select: {
+              courseId: true,
+              courseName: true,
+              city: true,
+              state: true,
+              accessType: true,
+              media: { where: { isPrimary: true }, take: 1 },
+            },
           },
         },
-      },
-    });
-
-    // Filter out courses that appear in national top-100 lists
-    const courseIds = highRated.map((a) => a.courseId);
-
-    const rankedCourseIds = new Set(
-      (
-        await prisma.rankingEntry.findMany({
-          where: { courseId: { in: courseIds }, rankPosition: { lte: 100, gt: 0 } },
-          select: { courseId: true },
-          distinct: ["courseId"],
-        })
-      ).map((r) => r.courseId)
-    );
-
-    const gems = highRated.filter((a) => !rankedCourseIds.has(a.courseId));
-    const total = gems.length;
-    const paginated = gems.slice((page - 1) * limit, page * limit);
+      }),
+      prisma.circleCourseAggregate.count({ where }),
+    ]);
 
     return NextResponse.json({
-      hiddenGems: paginated.map((agg) => ({
+      hiddenGems: gems.map((agg) => ({
         courseId: agg.courseId,
         course: agg.course,
         circleAvgScore: agg.avgScore,
@@ -73,6 +76,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     });
   } catch (error: any) {
     console.error("GET /api/circles/[id]/consensus/hidden-gems error:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

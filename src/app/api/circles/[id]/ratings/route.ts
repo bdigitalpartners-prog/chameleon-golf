@@ -98,7 +98,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json(rating, { status: 201 });
   } catch (error: any) {
     console.error("POST /api/circles/[id]/ratings error:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -118,7 +118,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const courseId = searchParams.get("courseId");
     const sort = searchParams.get("sort") ?? "newest";
     const page = Math.max(1, Number(searchParams.get("page") ?? 1));
-    const limit = Math.min(50, Number(searchParams.get("limit") ?? 20));
+    const limit = Math.min(Number(searchParams.get("limit") ?? 20), 100);
 
     const where: any = { circleId };
     if (courseId) where.courseId = Number(courseId);
@@ -147,6 +147,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     });
   } catch (error: any) {
     console.error("GET /api/circles/[id]/ratings error:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

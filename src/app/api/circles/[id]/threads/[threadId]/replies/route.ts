@@ -74,7 +74,7 @@ export async function POST(
     return NextResponse.json(reply, { status: 201 });
   } catch (error: any) {
     console.error("POST /api/circles/[id]/threads/[threadId]/replies error:", error);
-    return NextResponse.json({ error: error.message || "Failed to create reply" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -96,7 +96,7 @@ export async function GET(
 
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "20", 10);
+    const limit = Math.min(parseInt(searchParams.get("limit") || "20", 10), 100);
     const skip = (page - 1) * limit;
 
     const [replies, total] = await Promise.all([
@@ -122,6 +122,6 @@ export async function GET(
     });
   } catch (error: any) {
     console.error("GET /api/circles/[id]/threads/[threadId]/replies error:", error);
-    return NextResponse.json({ error: error.message || "Failed to list replies" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

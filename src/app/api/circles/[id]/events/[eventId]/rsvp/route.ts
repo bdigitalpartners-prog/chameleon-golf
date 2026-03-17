@@ -87,6 +87,6 @@ export async function POST(
     return NextResponse.json(rsvp);
   } catch (error: any) {
     console.error("POST /api/circles/[id]/events/[eventId]/rsvp error:", error);
-    return NextResponse.json({ error: error.message || "Failed to RSVP" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

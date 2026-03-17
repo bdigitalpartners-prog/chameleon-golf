@@ -19,7 +19,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const searchParams = req.nextUrl.searchParams;
   const status = searchParams.get("status");
   const page = Math.max(1, Number(searchParams.get("page") ?? 1));
-  const limit = Math.min(50, Number(searchParams.get("limit") ?? 20));
+  const limit = Math.min(Number(searchParams.get("limit") ?? 20), 100);
 
   const where: any = { circleId };
   if (status) {

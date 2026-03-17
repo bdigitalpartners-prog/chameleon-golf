@@ -58,6 +58,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ wishlists: grouped });
   } catch (error: any) {
     console.error("GET /api/circles/[id]/wishlists error:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

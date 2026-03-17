@@ -80,6 +80,6 @@ export async function POST(
     return NextResponse.json({ action: existing ? "changed" : "voted", vote: result });
   } catch (error: any) {
     console.error("POST /api/circles/[id]/trips/[tripId]/vote error:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

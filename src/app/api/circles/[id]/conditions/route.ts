@@ -35,7 +35,7 @@ export async function GET(
   const courseId = searchParams.get("courseId");
   const days = Number(searchParams.get("days") ?? 30);
   const page = Math.max(1, Number(searchParams.get("page") ?? 1));
-  const limit = Math.min(50, Number(searchParams.get("limit") ?? 20));
+  const limit = Math.min(Number(searchParams.get("limit") ?? 20), 100);
 
   const since = new Date();
   since.setDate(since.getDate() - days);

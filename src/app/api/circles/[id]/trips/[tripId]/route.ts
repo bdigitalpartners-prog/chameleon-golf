@@ -94,7 +94,7 @@ export async function GET(
     });
   } catch (error: any) {
     console.error("GET /api/circles/[id]/trips/[tripId] error:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -144,6 +144,6 @@ export async function PATCH(
     return NextResponse.json(updated);
   } catch (error: any) {
     console.error("PATCH /api/circles/[id]/trips/[tripId] error:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

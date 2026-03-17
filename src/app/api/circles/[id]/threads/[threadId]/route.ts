@@ -22,7 +22,7 @@ export async function GET(
 
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "20", 10);
+    const limit = Math.min(parseInt(searchParams.get("limit") || "20", 10), 100);
     const skip = (page - 1) * limit;
 
     const thread = await prisma.discussionThread.findUnique({
@@ -65,7 +65,7 @@ export async function GET(
     });
   } catch (error: any) {
     console.error("GET /api/circles/[id]/threads/[threadId] error:", error);
-    return NextResponse.json({ error: error.message || "Failed to get thread" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -103,7 +103,7 @@ export async function PATCH(
     return NextResponse.json(thread);
   } catch (error: any) {
     console.error("PATCH /api/circles/[id]/threads/[threadId] error:", error);
-    return NextResponse.json({ error: error.message || "Failed to update thread" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -147,6 +147,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("DELETE /api/circles/[id]/threads/[threadId] error:", error);
-    return NextResponse.json({ error: error.message || "Failed to delete thread" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

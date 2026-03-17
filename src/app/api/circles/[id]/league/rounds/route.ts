@@ -82,7 +82,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ round, eqPoints }, { status: 201 });
   } catch (error: any) {
     console.error("POST /api/circles/[id]/league/rounds error:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -113,6 +113,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ rounds });
   } catch (error: any) {
     console.error("GET /api/circles/[id]/league/rounds error:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

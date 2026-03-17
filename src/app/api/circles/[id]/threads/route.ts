@@ -61,7 +61,7 @@ export async function POST(
     return NextResponse.json(thread, { status: 201 });
   } catch (error: any) {
     console.error("POST /api/circles/[id]/threads error:", error);
-    return NextResponse.json({ error: error.message || "Failed to create thread" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -84,7 +84,7 @@ export async function GET(
     const { searchParams } = new URL(req.url);
     const category = searchParams.get("category");
     const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "20", 10);
+    const limit = Math.min(parseInt(searchParams.get("limit") || "20", 10), 100);
     const skip = (page - 1) * limit;
 
     const where: any = { circleId };
@@ -115,6 +115,6 @@ export async function GET(
     });
   } catch (error: any) {
     console.error("GET /api/circles/[id]/threads error:", error);
-    return NextResponse.json({ error: error.message || "Failed to list threads" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

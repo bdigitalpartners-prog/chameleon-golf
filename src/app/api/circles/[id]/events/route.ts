@@ -116,7 +116,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json(event, { status: 201 });
   } catch (error: any) {
     console.error("POST /api/circles/[id]/events error:", error);
-    return NextResponse.json({ error: error.message || "Failed to create event" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -192,6 +192,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     });
   } catch (error: any) {
     console.error("GET /api/circles/[id]/events error:", error);
-    return NextResponse.json({ error: error.message || "Failed to list events" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

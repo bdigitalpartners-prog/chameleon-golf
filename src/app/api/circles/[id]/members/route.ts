@@ -17,7 +17,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const roleFilter = searchParams.get("role");
     const search = searchParams.get("search");
     const page = parseInt(searchParams.get("page") ?? "1", 10);
-    const limit = parseInt(searchParams.get("limit") ?? "20", 10);
+    const limit = Math.min(parseInt(searchParams.get("limit") ?? "20", 10), 100);
 
     const circle = await prisma.circle.findUnique({ where: { id: circleId } });
     if (!circle) {
@@ -87,6 +87,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     });
   } catch (error: any) {
     console.error("GET /api/circles/[id]/members error:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

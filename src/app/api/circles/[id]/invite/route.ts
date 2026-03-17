@@ -103,6 +103,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ invites, count: invites.length }, { status: 201 });
   } catch (error: any) {
     console.error("POST /api/circles/[id]/invite error:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

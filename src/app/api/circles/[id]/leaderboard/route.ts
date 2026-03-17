@@ -7,6 +7,7 @@ import { withCircleAuth } from "@/lib/circle-auth";
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  try {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const userId = (session.user as any).id;
@@ -16,16 +17,21 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   const searchParams = req.nextUrl.searchParams;
   const mode = searchParams.get("mode") ?? "most_games";
+  const page = Math.max(1, Number(searchParams.get("page") ?? 1));
+  const limit = Math.min(Number(searchParams.get("limit") ?? 50), 100);
 
   // Get all completed games in this circle
   const completedGames = await prisma.game.findMany({
     where: { circleId: params.id, status: "COMPLETED" },
-    include: {
+    select: {
+      courseId: true,
       players: {
         where: { status: "CONFIRMED" },
         select: { userId: true, position: true },
       },
-      scores: true,
+      scores: {
+        select: { userId: true, strokes: true },
+      },
     },
   });
 
@@ -102,5 +108,18 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       leaderboard.sort((a, b) => b.gamesPlayed - a.gamesPlayed);
   }
 
-  return NextResponse.json({ leaderboard, mode });
+  const total = leaderboard.length;
+  const paginated = leaderboard.slice((page - 1) * limit, page * limit);
+
+  return NextResponse.json({
+    leaderboard: paginated,
+    mode,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  });
+  } catch (error: any) {
+    console.error("GET /api/circles/[id]/leaderboard error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
 }
