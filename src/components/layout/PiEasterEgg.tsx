@@ -39,24 +39,26 @@ export function PiEasterEgg() {
         aria-label="Founding Advisory"
         className="transition-all duration-200 cursor-pointer select-none"
         style={{
-          color: GREEN,
-          fontSize: "14px",
-          lineHeight: 1,
           opacity: 0.6,
           background: "none",
           border: "none",
           padding: "2px 4px",
+          lineHeight: 1,
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.opacity = "1";
-          e.currentTarget.style.textShadow = `0 0 8px ${GREEN}, 0 0 16px rgba(74, 222, 128, 0.4)`;
+          e.currentTarget.style.filter = `drop-shadow(0 0 6px ${GREEN}) drop-shadow(0 0 12px rgba(74, 222, 128, 0.4))`;
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.opacity = "0.6";
-          e.currentTarget.style.textShadow = "none";
+          e.currentTarget.style.filter = "none";
         }}
       >
-        π
+        <img
+          src="/looper-guild-lambda.png"
+          alt="Looper Guild"
+          style={{ width: "20px", height: "20px", objectFit: "contain" }}
+        />
       </button>
 
       {/* Modal overlay */}
@@ -103,8 +105,12 @@ export function PiEasterEgg() {
             </button>
 
             {/* Header */}
-            <h2 className="text-xl font-bold mb-4" style={{ color: "var(--cg-text-primary, #f5f5f5)" }}>
-              <span style={{ color: GREEN, fontSize: "24px", fontWeight: 700 }}>π</span>
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2" style={{ color: "var(--cg-text-primary, #f5f5f5)" }}>
+              <img
+                src="/looper-guild-lambda.png"
+                alt="Looper Guild"
+                style={{ width: "28px", height: "28px", objectFit: "contain" }}
+              />
               <span style={{ color: "var(--cg-text-muted, #666666)", fontWeight: 300 }}> | </span>
               You Found It.
             </h2>
