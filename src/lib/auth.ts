@@ -76,12 +76,12 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        // Look up role from the users table by email
+        // Look up the Prisma User record by email so we use the correct users.id
+        // (auth_users.id and users.id are different — FK references point to users.id)
         try {
           let dbUser = await prisma.user.findUnique({
             where: { email: token.email! },
-            select: { role: true },
+            select: { id: true, role: true },
           });
           // If no users entry exists yet, create one so admin role can be set via SQL
           if (!dbUser && token.email) {
@@ -90,11 +90,14 @@ export const authOptions: NextAuthOptions = {
                 email: token.email,
                 name: user.name ?? null,
               },
-              select: { role: true },
+              select: { id: true, role: true },
             });
           }
+          // Use the Prisma User id (not auth_users.id) so foreign keys resolve
+          token.id = dbUser?.id ?? user.id;
           token.role = dbUser?.role ?? "user";
         } catch {
+          token.id = user.id;
           token.role = "user";
         }
       }
