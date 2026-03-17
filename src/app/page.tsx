@@ -316,6 +316,34 @@ export default function LandingPage() {
               </Link>
             </div>
 
+            {/* Quick links */}
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Link
+                href="/architects"
+                className="inline-flex items-center gap-1.5 text-sm font-medium transition-colors hover:opacity-80"
+                style={{ color: "var(--cg-accent)" }}
+              >
+                100 Architects
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Link>
+              <Link
+                href="/fairway"
+                className="inline-flex items-center gap-1.5 text-sm font-medium transition-colors hover:opacity-80"
+                style={{ color: "var(--cg-accent)" }}
+              >
+                The Fairway — Articles & Media
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Link>
+              <Link
+                href="/performance"
+                className="inline-flex items-center gap-1.5 text-sm font-medium transition-colors hover:opacity-80"
+                style={{ color: "var(--cg-accent)" }}
+              >
+                Performance Center
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+
             {/* Stats bar */}
             <div
               className="mt-10 flex flex-wrap gap-6 text-sm"
@@ -332,6 +360,9 @@ export default function LandingPage() {
               </span>
               <span>
                 <strong style={{ color: "var(--cg-accent)" }}>1,499</strong> courses
+              </span>
+              <span>
+                <strong style={{ color: "var(--cg-accent)" }}>100</strong> architects
               </span>
             </div>
           </div>
