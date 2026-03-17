@@ -34,10 +34,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       where: { circleId_userId: { circleId, userId } },
     });
 
-    await prisma.circle.update({
-      where: { id: circleId },
-      data: { memberCount: { decrement: 1 } },
-    });
+    // Only decrement memberCount for non-PENDING members (PENDING were never counted)
+    if (membership.role !== "PENDING") {
+      await prisma.circle.update({
+        where: { id: circleId },
+        data: { memberCount: { decrement: 1 } },
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

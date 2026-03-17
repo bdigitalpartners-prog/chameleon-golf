@@ -33,23 +33,29 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return NextResponse.json({ error: "Already a member or pending" }, { status: 409 });
     }
 
-    if (circle.maxMembers && circle.memberCount >= circle.maxMembers) {
-      return NextResponse.json({ error: "Circle is full" }, { status: 400 });
-    }
-
     const isPublic = circle.privacy === "PUBLIC";
     const role = isPublic ? "MEMBER" : "PENDING";
 
-    const membership = await prisma.circleMembership.create({
-      data: { circleId, userId, role },
-    });
+    const membership = await prisma.$transaction(async (tx) => {
+      // Re-check capacity inside transaction to prevent race conditions
+      const freshCircle = await tx.circle.findUnique({ where: { id: circleId } });
+      if (freshCircle!.maxMembers && freshCircle!.memberCount >= freshCircle!.maxMembers) {
+        throw new Error("CIRCLE_FULL");
+      }
 
-    if (isPublic) {
-      await prisma.circle.update({
-        where: { id: circleId },
-        data: { memberCount: { increment: 1 } },
+      const created = await tx.circleMembership.create({
+        data: { circleId, userId, role },
       });
-    }
+
+      if (isPublic) {
+        await tx.circle.update({
+          where: { id: circleId },
+          data: { memberCount: { increment: 1 } },
+        });
+      }
+
+      return created;
+    });
 
     // Notify admins of the join/request
     const admins = await prisma.circleMembership.findMany({
@@ -74,6 +80,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     return NextResponse.json(membership, { status: 201 });
   } catch (error: any) {
+    if (error.message === "CIRCLE_FULL") {
+      return NextResponse.json({ error: "Circle is full" }, { status: 400 });
+    }
     console.error("POST /api/circles/[id]/join error:", error);
     return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
   }

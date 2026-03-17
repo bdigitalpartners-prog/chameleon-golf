@@ -41,6 +41,10 @@ export async function PATCH(
         if (targetMembership.role !== "PENDING") {
           return NextResponse.json({ error: "User is not pending" }, { status: 400 });
         }
+        // Check capacity before approving
+        if (auth.circle!.maxMembers && auth.circle!.memberCount >= auth.circle!.maxMembers) {
+          return NextResponse.json({ error: "Circle is full" }, { status: 400 });
+        }
         await prisma.circleMembership.update({
           where: { id: targetMembership.id },
           data: { role: "MEMBER" },

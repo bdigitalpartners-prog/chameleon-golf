@@ -86,29 +86,38 @@ export async function POST(req: NextRequest, { params }: { params: { code: strin
       return NextResponse.json({ error: "Already a member" }, { status: 409 });
     }
 
-    if (invite.circle.maxMembers && invite.circle.memberCount >= invite.circle.maxMembers) {
-      return NextResponse.json({ error: "Circle is full" }, { status: 400 });
-    }
+    const result = await prisma.$transaction(async (tx) => {
+      // Re-check capacity inside transaction to prevent race conditions
+      const freshCircle = await tx.circle.findUnique({ where: { id: invite.circleId } });
+      if (freshCircle!.maxMembers && freshCircle!.memberCount >= freshCircle!.maxMembers) {
+        throw new Error("CIRCLE_FULL");
+      }
 
-    const membership = await prisma.circleMembership.create({
-      data: {
-        circleId: invite.circleId,
-        userId,
-        role: "MEMBER",
-      },
-    });
+      const membership = await tx.circleMembership.create({
+        data: {
+          circleId: invite.circleId,
+          userId,
+          role: "MEMBER",
+        },
+      });
 
-    await prisma.circle.update({
-      where: { id: invite.circleId },
-      data: { memberCount: { increment: 1 } },
+      await tx.circle.update({
+        where: { id: invite.circleId },
+        data: { memberCount: { increment: 1 } },
+      });
+
+      return membership;
     });
 
     return NextResponse.json({
-      membership,
+      membership: result,
       circleId: invite.circleId,
       circleSlug: invite.circle.slug,
     }, { status: 201 });
   } catch (error: any) {
+    if (error.message === "CIRCLE_FULL") {
+      return NextResponse.json({ error: "Circle is full" }, { status: 400 });
+    }
     console.error("POST /api/circles/join/[code] error:", error);
     return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
   }

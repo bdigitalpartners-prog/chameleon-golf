@@ -36,22 +36,30 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const { action } = await req.json();
 
     if (action === "accept") {
-      await prisma.circleInvite.update({
-        where: { id },
-        data: { status: "ACCEPTED" },
-      });
+      await prisma.$transaction(async (tx) => {
+        // Check capacity before accepting
+        const freshCircle = await tx.circle.findUnique({ where: { id: invite.circleId } });
+        if (freshCircle!.maxMembers && freshCircle!.memberCount >= freshCircle!.maxMembers) {
+          throw new Error("CIRCLE_FULL");
+        }
 
-      await prisma.circleMembership.create({
-        data: {
-          circleId: invite.circleId,
-          userId,
-          role: "MEMBER",
-        },
-      });
+        await tx.circleInvite.update({
+          where: { id },
+          data: { status: "ACCEPTED" },
+        });
 
-      await prisma.circle.update({
-        where: { id: invite.circleId },
-        data: { memberCount: { increment: 1 } },
+        await tx.circleMembership.create({
+          data: {
+            circleId: invite.circleId,
+            userId,
+            role: "MEMBER",
+          },
+        });
+
+        await tx.circle.update({
+          where: { id: invite.circleId },
+          data: { memberCount: { increment: 1 } },
+        });
       });
 
       await createNotification({
@@ -74,6 +82,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   } catch (error: any) {
+    if (error.message === "CIRCLE_FULL") {
+      return NextResponse.json({ error: "Circle is full" }, { status: 400 });
+    }
     console.error("PATCH /api/circles/invitations/[id] error:", error);
     return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
   }

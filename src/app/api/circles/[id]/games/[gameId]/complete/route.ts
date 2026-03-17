@@ -50,15 +50,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string;
   // Calculate final results
   const leaderboard = calculateLeaderboard(game, game.scores, game.players, holePars);
 
-  // Update player positions
-  for (const entry of leaderboard) {
-    await prisma.gamePlayer.updateMany({
-      where: { gameId: params.gameId, userId: entry.userId },
-      data: { position: entry.position },
-    });
-  }
-
-  // Mark game as completed with results
   const resultsSummary = leaderboard.map((e) => ({
     userId: e.userId,
     position: e.position,
@@ -68,16 +59,28 @@ export async function POST(req: NextRequest, { params }: { params: { id: string;
     skins: e.skins,
   }));
 
-  await prisma.game.update({
-    where: { id: params.gameId },
-    data: {
-      status: "COMPLETED",
-      endDate: new Date(),
-      results: resultsSummary,
-    },
+  // Wrap all game completion writes in a transaction
+  await prisma.$transaction(async (tx) => {
+    // Update player positions
+    for (const entry of leaderboard) {
+      await tx.gamePlayer.updateMany({
+        where: { gameId: params.gameId, userId: entry.userId },
+        data: { position: entry.position },
+      });
+    }
+
+    // Mark game as completed with results
+    await tx.game.update({
+      where: { id: params.gameId },
+      data: {
+        status: "COMPLETED",
+        endDate: new Date(),
+        results: resultsSummary,
+      },
+    });
   });
 
-  // Update H2H records
+  // Update H2H records (outside transaction — uses its own queries)
   await updateHeadToHead(params.gameId, params.id);
 
   // Auto-post results to circle feed
