@@ -681,3 +681,23 @@ model WaitlistSignup {
 
   @@map("waitlist_signups")
 }
+
+model FoundingAdvisoryFeedback {
+  id                    Int      @id @default(autoincrement())
+  fullName              String   @map("full_name") @db.VarChar(255)
+  email                 String   @db.VarChar(255)
+  handicapIndex         String?  @map("handicap_index") @db.VarChar(20)
+  homeCourse            String?  @map("home_course") @db.VarChar(255)
+  howFound              String?  @map("how_found") @db.VarChar(100)
+  contentIdeas          String?  @map("content_ideas")
+  contentChecklist      String?  @map("content_checklist")
+  toolIdeas             String?  @map("tool_ideas")
+  toolChecklist         String?  @map("tool_checklist")
+  courseIntelligence    String?  @map("course_intelligence")
+  courseIntelChecklist  String?  @map("course_intel_checklist")
+  generalFeedback       String?  @map("general_feedback")
+  interestLevel         String?  @map("interest_level") @db.VarChar(50)
+  submittedAt           DateTime @default(now()) @map("submitted_at")
+
+  @@map("founding_advisory_feedback")
+}
