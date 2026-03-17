@@ -417,7 +417,7 @@ model Course {
   nearbyCourses     CourseNearbyCourses[] @relation("SourceCourse")
   nearbyFrom        CourseNearbyCourses[] @relation("NearbyCourse")
   nearbyRvParks     CourseNearbyRvParks[]
-  intelligenceNotes CourseIntelligenceNotes[]
+  intelligenceNotes CourseIntelligenceNote[]
   weatherMonths     CourseWeather[]
 
   // Social Links
@@ -499,7 +499,7 @@ model CourseArchitect {
 
 }
 
-model CourseIntelligenceNotes {
+model CourseIntelligenceNote {
   id          Int      @id @default(autoincrement())
   courseId    Int      @map("course_id")
   category    String   @db.VarChar(50)
@@ -512,8 +512,8 @@ model CourseIntelligenceNotes {
 
   course      Course   @relation(fields: [courseId], references: [courseId])
 
+  @@unique([courseId, category])
   @@map("course_intelligence_notes")
-
 }
 
 model CourseMedia {
