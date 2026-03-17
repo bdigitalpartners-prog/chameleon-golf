@@ -183,26 +183,9 @@ export function Sidebar({ forceExpanded }: SidebarProps) {
     >
       {/* ─── Logo + Collapse Toggle ─── */}
       <div
-        className="flex items-center justify-between px-4 h-16 flex-shrink-0"
+        className="flex items-center justify-between pl-4 pr-[10px] h-16 flex-shrink-0"
         style={{ borderBottom: "1px solid var(--cg-border)" }}
       >
-        {!isCollapsed && (
-          <Link href="/" className="flex items-center gap-2 min-w-0">
-            <img
-              src="/golfEQUALIZER_wordmark.svg"
-              alt="golfEQUALIZER"
-              className="h-6 w-auto flex-shrink-0"
-            />
-            <span
-              className="hidden xl:inline-flex items-center gap-0.5 text-[8px] tracking-wide opacity-50 flex-shrink-0"
-              style={{ fontFamily: "Inter, sans-serif" }}
-            >
-              <span style={{ color: "var(--cg-text-muted)", fontWeight: 300 }}>powered by</span>
-              <span style={{ color: "var(--cg-text-secondary)", fontWeight: 800 }}>COURSE</span>
-              <span style={{ color: "var(--cg-text-muted)", fontWeight: 300 }}>factor.ai</span>
-            </span>
-          </Link>
-        )}
         {!forceExpanded && (
           <button
             onClick={toggle}
@@ -220,6 +203,15 @@ export function Sidebar({ forceExpanded }: SidebarProps) {
           >
             {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
+        )}
+        {!isCollapsed && (
+          <Link href="/" className="flex items-center min-w-0 ml-auto">
+            <img
+              src="/golfEQUALIZER_wordmark.svg"
+              alt="golfEQUALIZER"
+              className="h-6 w-auto flex-shrink-0"
+            />
+          </Link>
         )}
       </div>
 
