@@ -74,7 +74,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
 
     const body = await req.json();
-    const allowedFields = ["name", "description", "privacy", "avatarUrl", "coverUrl", "maxMembers", "config", "verificationMethod", "verificationDomain"];
+    const allowedFields = ["name", "description", "privacy", "imageUrl", "maxMembers", "config", "verificationMethod", "verificationDomain"];
     const data: any = {};
     for (const field of allowedFields) {
       if (body[field] !== undefined) {

@@ -38,7 +38,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         circleId: { in: circleIds },
       },
       include: {
-        circle: { select: { id: true, name: true, avatarUrl: true } },
+        circle: { select: { id: true, name: true, imageUrl: true } },
       },
       orderBy: { avgScore: "desc" },
     });
@@ -58,7 +58,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     // Include circles without ratings too (so user can rate)
     const circlesWithData = await prisma.circle.findMany({
       where: { id: { in: circleIds } },
-      select: { id: true, name: true, avatarUrl: true },
+      select: { id: true, name: true, imageUrl: true },
     });
 
     const aggMap = new Map(aggregates.map((a) => [a.circleId, a]));

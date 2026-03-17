@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
           slug: true,
           description: true,
           type: true,
-          avatarUrl: true,
+          imageUrl: true,
           memberCount: true,
           createdAt: true,
         },

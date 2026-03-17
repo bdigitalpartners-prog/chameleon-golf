@@ -71,7 +71,7 @@ export async function GET() {
         slug: c.slug,
         type: c.type,
         privacy: c.privacy,
-        avatarUrl: c.avatarUrl,
+        imageUrl: c.imageUrl,
         description: c.description,
         memberCount: c._count.members,
       })),

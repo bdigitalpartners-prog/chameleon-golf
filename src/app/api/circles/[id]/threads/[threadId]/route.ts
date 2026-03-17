@@ -9,14 +9,24 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { id: string; threadId: string } }
 ) {
-  return withCircleAuth(params.id, ["OWNER", "ADMIN", "MEMBER"], async () => {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const userId = (session.user as any).id;
+    const { id: circleId, threadId } = params;
+
+    const auth = await withCircleAuth(circleId, userId, ["OWNER", "ADMIN", "MEMBER"]);
+    if (!auth.authorized) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "20", 10);
     const skip = (page - 1) * limit;
 
     const thread = await prisma.discussionThread.findUnique({
-      where: { id: params.threadId, circleId: params.id },
+      where: { id: threadId, circleId },
       include: {
         author: {
           select: { id: true, name: true, image: true },
@@ -33,7 +43,7 @@ export async function GET(
 
     const [replies, total] = await Promise.all([
       prisma.threadReply.findMany({
-        where: { threadId: params.threadId },
+        where: { threadId },
         orderBy: { createdAt: "asc" },
         skip,
         take: limit,
@@ -43,7 +53,7 @@ export async function GET(
           },
         },
       }),
-      prisma.threadReply.count({ where: { threadId: params.threadId } }),
+      prisma.threadReply.count({ where: { threadId } }),
     ]);
 
     return NextResponse.json({
@@ -53,7 +63,10 @@ export async function GET(
       totalPages: Math.ceil(total / limit),
       total,
     });
-  });
+  } catch (error: any) {
+    console.error("GET /api/circles/[id]/threads/[threadId] error:", error);
+    return NextResponse.json({ error: error.message || "Failed to get thread" }, { status: 500 });
+  }
 }
 
 // PATCH /api/circles/[id]/threads/[threadId] - Pin or lock a thread
@@ -61,7 +74,17 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string; threadId: string } }
 ) {
-  return withCircleAuth(params.id, ["OWNER", "ADMIN"], async () => {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const userId = (session.user as any).id;
+    const { id: circleId, threadId } = params;
+
+    const auth = await withCircleAuth(circleId, userId, ["OWNER", "ADMIN"]);
+    if (!auth.authorized) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const body = await req.json();
     const data: any = {};
 
@@ -73,12 +96,15 @@ export async function PATCH(
     }
 
     const thread = await prisma.discussionThread.update({
-      where: { id: params.threadId, circleId: params.id },
+      where: { id: threadId, circleId },
       data,
     });
 
     return NextResponse.json(thread);
-  });
+  } catch (error: any) {
+    console.error("PATCH /api/circles/[id]/threads/[threadId] error:", error);
+    return NextResponse.json({ error: error.message || "Failed to update thread" }, { status: 500 });
+  }
 }
 
 // DELETE /api/circles/[id]/threads/[threadId] - Delete a thread
@@ -86,35 +112,41 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string; threadId: string } }
 ) {
-  const session = await getServerSession(authOptions);
-  const userId = (session?.user as any)?.id;
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const userId = (session.user as any).id;
+    const { id: circleId, threadId } = params;
 
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+    // First check if the user is the thread author
+    const thread = await prisma.discussionThread.findUnique({
+      where: { id: threadId, circleId },
+    });
 
-  // First check if the user is the thread author
-  const thread = await prisma.discussionThread.findUnique({
-    where: { id: params.threadId, circleId: params.id },
-  });
+    if (!thread) {
+      return NextResponse.json({ error: "Thread not found" }, { status: 404 });
+    }
 
-  if (!thread) {
-    return NextResponse.json({ error: "Thread not found" }, { status: 404 });
-  }
+    if (thread.authorId === userId) {
+      // Author can delete their own thread
+      await prisma.discussionThread.delete({
+        where: { id: threadId },
+      });
+      return NextResponse.json({ success: true });
+    }
 
-  if (thread.authorId === userId) {
-    // Author can delete their own thread
+    // If not the author, must be ADMIN or OWNER
+    const auth = await withCircleAuth(circleId, userId, ["OWNER", "ADMIN"]);
+    if (!auth.authorized) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     await prisma.discussionThread.delete({
-      where: { id: params.threadId },
+      where: { id: threadId },
     });
     return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("DELETE /api/circles/[id]/threads/[threadId] error:", error);
+    return NextResponse.json({ error: error.message || "Failed to delete thread" }, { status: 500 });
   }
-
-  // If not the author, must be ADMIN or OWNER
-  return withCircleAuth(params.id, ["OWNER", "ADMIN"], async () => {
-    await prisma.discussionThread.delete({
-      where: { id: params.threadId },
-    });
-    return NextResponse.json({ success: true });
-  });
 }

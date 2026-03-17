@@ -177,8 +177,8 @@ export default function JoinByCodePage() {
               className="mx-auto h-16 w-16 rounded-full flex items-center justify-center"
               style={{ backgroundColor: "var(--cg-accent-bg)" }}
             >
-              {circle.avatarUrl ? (
-                <img src={circle.avatarUrl} alt="" className="h-16 w-16 rounded-full object-cover" />
+              {circle.imageUrl ? (
+                <img src={circle.imageUrl} alt="" className="h-16 w-16 rounded-full object-cover" />
               ) : (
                 <TypeIcon className="h-8 w-8" style={{ color: "var(--cg-accent)" }} />
               )}
@@ -201,9 +201,18 @@ export default function JoinByCodePage() {
             )}
 
             {!session ? (
-              <p className="mt-6 text-sm" style={{ color: "var(--cg-text-muted)" }}>
-                Sign in to join this circle
-              </p>
+              <div className="mt-6">
+                <p className="text-sm mb-3" style={{ color: "var(--cg-text-muted)" }}>
+                  Sign in to join this circle
+                </p>
+                <Link
+                  href={`/api/auth/signin?callbackUrl=/circles/join/${code}`}
+                  className="inline-block rounded-lg px-6 py-2.5 text-sm font-medium"
+                  style={{ backgroundColor: "var(--cg-accent)", color: "var(--cg-text-inverse)" }}
+                >
+                  Sign In
+                </Link>
+              </div>
             ) : (
               <button
                 onClick={handleJoin}

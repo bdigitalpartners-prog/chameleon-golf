@@ -9,8 +9,17 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  return withCircleAuth(params.id, ["OWNER", "ADMIN", "MEMBER"], async (session) => {
-    const userId = (session?.user as any)?.id;
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const userId = (session.user as any).id;
+    const { id: circleId } = params;
+
+    const auth = await withCircleAuth(circleId, userId, ["OWNER", "ADMIN", "MEMBER"]);
+    if (!auth.authorized) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const { title, category, content } = await req.json();
 
     if (!title || !content) {
@@ -22,7 +31,7 @@ export async function POST(
 
     const thread = await prisma.discussionThread.create({
       data: {
-        circleId: params.id,
+        circleId,
         authorId: userId,
         title,
         category: category || "GENERAL",
@@ -50,7 +59,10 @@ export async function POST(
     });
 
     return NextResponse.json(thread, { status: 201 });
-  });
+  } catch (error: any) {
+    console.error("POST /api/circles/[id]/threads error:", error);
+    return NextResponse.json({ error: error.message || "Failed to create thread" }, { status: 500 });
+  }
 }
 
 // GET /api/circles/[id]/threads - List discussion threads
@@ -58,14 +70,24 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  return withCircleAuth(params.id, ["OWNER", "ADMIN", "MEMBER"], async () => {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const userId = (session.user as any).id;
+    const { id: circleId } = params;
+
+    const auth = await withCircleAuth(circleId, userId, ["OWNER", "ADMIN", "MEMBER"]);
+    if (!auth.authorized) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status });
+    }
+
     const { searchParams } = new URL(req.url);
     const category = searchParams.get("category");
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "20", 10);
     const skip = (page - 1) * limit;
 
-    const where: any = { circleId: params.id };
+    const where: any = { circleId };
     if (category) {
       where.category = category;
     }
@@ -91,5 +113,8 @@ export async function GET(
       totalPages: Math.ceil(total / limit),
       total,
     });
-  });
+  } catch (error: any) {
+    console.error("GET /api/circles/[id]/threads error:", error);
+    return NextResponse.json({ error: error.message || "Failed to list threads" }, { status: 500 });
+  }
 }

@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
             name: true,
             slug: true,
             type: true,
-            avatarUrl: true,
+            imageUrl: true,
             memberCount: true,
           },
         },

@@ -276,8 +276,8 @@ function DiscoverTab({ typeFilter }: { typeFilter: string }) {
                   className="h-12 w-12 rounded-full flex items-center justify-center flex-shrink-0"
                   style={{ backgroundColor: "var(--cg-accent-bg)" }}
                 >
-                  {circle.avatarUrl ? (
-                    <img src={circle.avatarUrl} alt="" className="h-12 w-12 rounded-full object-cover" />
+                  {circle.imageUrl ? (
+                    <img src={circle.imageUrl} alt="" className="h-12 w-12 rounded-full object-cover" />
                   ) : (
                     <TypeIcon type={circle.type} />
                   )}
@@ -390,8 +390,8 @@ function InvitationsTab() {
             className="h-12 w-12 rounded-full flex items-center justify-center flex-shrink-0"
             style={{ backgroundColor: "var(--cg-accent-bg)" }}
           >
-            {inv.circle.avatarUrl ? (
-              <img src={inv.circle.avatarUrl} alt="" className="h-12 w-12 rounded-full object-cover" />
+            {inv.circle.imageUrl ? (
+              <img src={inv.circle.imageUrl} alt="" className="h-12 w-12 rounded-full object-cover" />
             ) : (
               <TypeIcon type={inv.circle.type} />
             )}
@@ -444,8 +444,8 @@ function CircleCard({ circle, showRole }: { circle: any; showRole?: boolean }) {
           className="h-12 w-12 rounded-full flex items-center justify-center flex-shrink-0"
           style={{ backgroundColor: "var(--cg-accent-bg)" }}
         >
-          {circle.avatarUrl ? (
-            <img src={circle.avatarUrl} alt="" className="h-12 w-12 rounded-full object-cover" />
+          {circle.imageUrl ? (
+            <img src={circle.imageUrl} alt="" className="h-12 w-12 rounded-full object-cover" />
           ) : (
             <TypeIcon type={circle.type} />
           )}

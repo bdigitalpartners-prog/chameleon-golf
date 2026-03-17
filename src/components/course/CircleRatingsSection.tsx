@@ -5,7 +5,7 @@ import { Users, Star, MapPin, Loader2 } from "lucide-react";
 import { RateForCircleModal } from "./RateForCircleModal";
 
 interface CircleRating {
-  circle: { id: string; name: string; avatarUrl?: string | null };
+  circle: { id: string; name: string; imageUrl?: string | null };
   aggregate: {
     avgScore: number;
     ratingCount: number;
@@ -80,8 +80,8 @@ export function CircleRatingsSection({ courseId, courseName }: { courseId: numbe
                 className="h-10 w-10 rounded-full flex items-center justify-center shrink-0 overflow-hidden"
                 style={{ backgroundColor: "var(--cg-bg-tertiary)" }}
               >
-                {cr.circle.avatarUrl ? (
-                  <img src={cr.circle.avatarUrl} alt="" className="h-full w-full object-cover" />
+                {cr.circle.imageUrl ? (
+                  <img src={cr.circle.imageUrl} alt="" className="h-full w-full object-cover" />
                 ) : (
                   <Users className="h-4 w-4" style={{ color: "var(--cg-text-muted)" }} />
                 )}

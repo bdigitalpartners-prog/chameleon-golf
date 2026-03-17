@@ -6,7 +6,7 @@ import { X, Star, Loader2 } from "lucide-react";
 interface Circle {
   id: string;
   name: string;
-  avatarUrl?: string | null;
+  imageUrl?: string | null;
 }
 
 const DIMENSIONS = [

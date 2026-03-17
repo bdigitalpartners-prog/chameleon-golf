@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     // Get user's circle memberships
     const memberships = await prisma.circleMembership.findMany({
       where: { userId, role: { in: ["OWNER", "ADMIN", "MEMBER"] } },
-      include: { circle: { select: { id: true, name: true, avatarUrl: true } } },
+      include: { circle: { select: { id: true, name: true, imageUrl: true } } },
     });
 
     if (memberships.length === 0) {
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
     const weights = await prisma.circleScoreWeight.findMany({
       where: { userId },
       include: {
-        circle: { select: { id: true, name: true, avatarUrl: true } },
+        circle: { select: { id: true, name: true, imageUrl: true } },
       },
       orderBy: { circle: { name: "asc" } },
     });
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
       weights: weights.map((w) => ({
         circleId: w.circleId,
         circleName: w.circle.name,
-        avatarUrl: w.circle.avatarUrl,
+        imageUrl: w.circle.imageUrl,
         weight: w.weight,
         enabled: w.enabled,
       })),

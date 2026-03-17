@@ -229,7 +229,7 @@ export async function getCircleRecommendations(userId: string) {
           slug: fc.circle.slug,
           type: fc.circle.type,
           privacy: fc.circle.privacy,
-          avatarUrl: fc.circle.avatarUrl,
+          imageUrl: fc.circle.imageUrl,
           description: fc.circle.description,
           memberCount: fc.circle._count.members,
         },

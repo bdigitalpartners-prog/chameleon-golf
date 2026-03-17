@@ -234,8 +234,8 @@ export default function DiscoverPage() {
                       className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
                       style={{ backgroundColor: "var(--cg-accent)", color: "white" }}
                     >
-                      {circle.avatarUrl ? (
-                        <img src={circle.avatarUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
+                      {circle.imageUrl ? (
+                        <img src={circle.imageUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
                       ) : (
                         circle.name[0]
                       )}

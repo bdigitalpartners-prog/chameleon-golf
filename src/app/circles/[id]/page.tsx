@@ -177,8 +177,8 @@ export default function CircleDetailPage() {
         <div
           className="h-32 sm:h-48 relative"
           style={{
-            background: circle.coverUrl
-              ? `url(${circle.coverUrl}) center/cover`
+            background: circle.imageUrl
+              ? `url(${circle.imageUrl}) center/cover`
               : "linear-gradient(135deg, var(--cg-accent) 0%, var(--cg-bg-tertiary) 100%)",
           }}
         />
@@ -196,8 +196,8 @@ export default function CircleDetailPage() {
                 borderColor: "var(--cg-bg-card)",
               }}
             >
-              {circle.avatarUrl ? (
-                <img src={circle.avatarUrl} alt="" className="h-full w-full rounded-full object-cover" />
+              {circle.imageUrl ? (
+                <img src={circle.imageUrl} alt="" className="h-full w-full rounded-full object-cover" />
               ) : (
                 <TypeIcon className="h-8 w-8" style={{ color: "var(--cg-accent)" }} />
               )}

@@ -19,7 +19,7 @@ export async function GET(req: NextRequest, { params }: { params: { code: string
             slug: true,
             type: true,
             description: true,
-            avatarUrl: true,
+            imageUrl: true,
             memberCount: true,
             privacy: true,
           },

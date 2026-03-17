@@ -9,7 +9,7 @@ import { Loader2, RotateCcw, Sliders } from "lucide-react";
 interface CircleWeight {
   circleId: string;
   circleName: string;
-  avatarUrl: string | null;
+  imageUrl: string | null;
   weight: number;
   enabled: boolean;
 }
@@ -134,13 +134,13 @@ export default function ChameleonScoreSettingsPage() {
                     <div
                       className="h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold"
                       style={{
-                        backgroundColor: w.avatarUrl ? "transparent" : "var(--cg-accent-muted)",
+                        backgroundColor: w.imageUrl ? "transparent" : "var(--cg-accent-muted)",
                         color: "var(--cg-accent)",
-                        backgroundImage: w.avatarUrl ? `url(${w.avatarUrl})` : undefined,
+                        backgroundImage: w.imageUrl ? `url(${w.imageUrl})` : undefined,
                         backgroundSize: "cover",
                       }}
                     >
-                      {!w.avatarUrl && w.circleName.charAt(0).toUpperCase()}
+                      {!w.imageUrl && w.circleName.charAt(0).toUpperCase()}
                     </div>
                     <div>
                       <span
