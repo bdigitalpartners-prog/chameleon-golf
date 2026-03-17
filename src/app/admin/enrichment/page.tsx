@@ -17,6 +17,11 @@ import {
   Download,
   Globe,
   Plus,
+  Zap,
+  Clock,
+  TrendingUp,
+  RefreshCw,
+  Calculator,
 } from "lucide-react";
 
 interface FieldStats {
@@ -145,7 +150,7 @@ const STATE_NAMES: Record<string, string> = {
 };
 
 export default function EnrichmentPage() {
-  const [activeTab, setActiveTab] = useState<"enrichment" | "import">("enrichment");
+  const [activeTab, setActiveTab] = useState<"enrichment" | "batch" | "import">("enrichment");
 
   return (
     <div className="space-y-6">
@@ -163,6 +168,17 @@ export default function EnrichmentPage() {
           Enrichment
         </button>
         <button
+          onClick={() => setActiveTab("batch")}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === "batch"
+              ? "bg-[#22c55e] text-black"
+              : "text-gray-400 hover:text-white hover:bg-[#1a1a1a]"
+          }`}
+        >
+          <Zap size={14} className="inline-block mr-2" />
+          Batch Ops
+        </button>
+        <button
           onClick={() => setActiveTab("import")}
           className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
             activeTab === "import"
@@ -175,7 +191,13 @@ export default function EnrichmentPage() {
         </button>
       </div>
 
-      {activeTab === "enrichment" ? <EnrichmentTab /> : <CourseImportTab />}
+      {activeTab === "enrichment" ? (
+        <EnrichmentTab />
+      ) : activeTab === "batch" ? (
+        <BatchOpsTab />
+      ) : (
+        <CourseImportTab />
+      )}
     </div>
   );
 }
@@ -801,6 +823,603 @@ function EnrichmentTab() {
           </div>
         )}
       </div>
+    </>
+  );
+}
+
+/* ============================================================
+   BATCH OPS TAB — Batch enrichment + score computation
+   ============================================================ */
+
+interface BatchRun {
+  id: number;
+  startedAt: string;
+  completedAt: string | null;
+  status: string;
+  priority: string;
+  batchSize: number;
+  totalCourses: number;
+  coursesProcessed: number;
+  coursesUpdated: number;
+  coursesErrored: number;
+  totalFieldsFilled: number;
+  avgBefore: number | null;
+  avgAfter: number | null;
+  dryRun: boolean;
+  logCount: number;
+}
+
+interface EnrichmentLogEntry {
+  id: number;
+  courseId: number;
+  courseName: string;
+  enrichedAt: string;
+  beforePct: number;
+  afterPct: number;
+  fieldsEnriched: number;
+  ruleBasedFields: string[];
+  aiFields: string[];
+  status: string;
+  errorMessage: string | null;
+}
+
+interface ScoreStatus {
+  totalCourses: number;
+  coursesWithScores: number;
+  coursesWithDimensions: number;
+  coursesWithPrestige: number;
+  lastComputedAt: string | null;
+  dimensionStats: Array<{
+    dimension: string;
+    label: string;
+    min: number;
+    max: number;
+    avg: number;
+    count: number;
+  }>;
+}
+
+function BatchOpsTab() {
+  const [runs, setRuns] = useState<BatchRun[]>([]);
+  const [recentLogs, setRecentLogs] = useState<EnrichmentLogEntry[]>([]);
+  const [aggregateStats, setAggregateStats] = useState<{
+    totalFieldsFilled: number;
+    totalCoursesUpdated: number;
+    totalRuns: number;
+  } | null>(null);
+  const [scoreStatus, setScoreStatus] = useState<ScoreStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [running, setRunning] = useState(false);
+  const [computingScores, setComputingScores] = useState(false);
+  const [batchResult, setBatchResult] = useState<any>(null);
+  const [scoreResult, setScoreResult] = useState<any>(null);
+  const [error, setError] = useState("");
+
+  // Settings
+  const [batchSize, setBatchSize] = useState(50);
+  const [priority, setPriority] = useState("least-enriched-first");
+  const [dryRun, setDryRun] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [batchRes, scoreRes] = await Promise.all([
+        fetch("/api/admin/batch-enrich?limit=10", {
+          headers: { "x-admin-key": getAdminKey() },
+        }),
+        fetch("/api/admin/compute-scores", {
+          headers: { "x-admin-key": getAdminKey() },
+        }),
+      ]);
+
+      if (batchRes.ok) {
+        const data = await batchRes.json();
+        setRuns(data.runs || []);
+        setRecentLogs(data.recentLogs || []);
+        setAggregateStats(data.aggregateStats || null);
+      }
+
+      if (scoreRes.ok) {
+        const data = await scoreRes.json();
+        setScoreStatus(data);
+      }
+    } catch {
+      // silently fail on initial load
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const runBatchEnrichment = async () => {
+    setRunning(true);
+    setBatchResult(null);
+    setError("");
+
+    try {
+      const params = new URLSearchParams({
+        batchSize: String(batchSize),
+        priority,
+      });
+      if (dryRun) params.set("dryRun", "true");
+
+      const res = await fetch(`/api/admin/batch-enrich?${params}`, {
+        method: "POST",
+        headers: { "x-admin-key": getAdminKey() },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Batch enrichment failed");
+        return;
+      }
+      setBatchResult(data);
+      fetchData(); // refresh history
+    } catch (err: any) {
+      setError(err.message || "Batch enrichment failed");
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  const runScoreComputation = async () => {
+    setComputingScores(true);
+    setScoreResult(null);
+    setError("");
+
+    try {
+      const res = await fetch("/api/admin/compute-scores", {
+        method: "POST",
+        headers: { "x-admin-key": getAdminKey() },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Score computation failed");
+        return;
+      }
+      setScoreResult(data);
+      fetchData();
+    } catch (err: any) {
+      setError(err.message || "Score computation failed");
+    } finally {
+      setComputingScores(false);
+    }
+  };
+
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return "—";
+    return new Date(dateStr).toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
+
+  const statusColor = (status: string) => {
+    switch (status) {
+      case "completed": return "text-green-400 bg-green-900/40";
+      case "running": return "text-blue-400 bg-blue-900/40";
+      case "failed": return "text-red-400 bg-red-900/40";
+      case "stopped": return "text-yellow-400 bg-yellow-900/40";
+      case "dry_run": return "text-purple-400 bg-purple-900/40";
+      default: return "text-gray-400 bg-gray-900/40";
+    }
+  };
+
+  return (
+    <>
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-white">Batch Operations</h1>
+        <p className="text-sm text-gray-400 mt-1">
+          Run batch enrichment with AI + compute CF Scores across all courses
+        </p>
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div className="rounded-xl border border-red-900/50 bg-red-900/20 p-4 flex items-center gap-3">
+          <AlertCircle size={16} className="text-red-400 shrink-0" />
+          <p className="text-sm text-red-300">{error}</p>
+          <button onClick={() => setError("")} className="ml-auto text-xs text-red-400 hover:text-red-300">
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* Action Cards */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* Batch Enrichment Card */}
+        <div className="rounded-xl border border-[#222] bg-[#111] p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Zap size={18} className="text-green-400" />
+            <h2 className="text-sm font-semibold text-white">Batch Enrichment</h2>
+          </div>
+          <p className="text-xs text-gray-500 mb-4">
+            Enrich courses using rule-based extraction + Perplexity AI research.
+            Links architects, fills green fees, coordinates, and more.
+          </p>
+
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Batch Size</label>
+              <select
+                value={batchSize}
+                onChange={(e) => setBatchSize(Number(e.target.value))}
+                className="w-full px-2 py-1.5 rounded-lg bg-[#1a1a1a] border border-[#333] text-white text-sm"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={75}>75</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Priority</label>
+              <select
+                value={priority}
+                onChange={(e) => setPriority(e.target.value)}
+                className="w-full px-2 py-1.5 rounded-lg bg-[#1a1a1a] border border-[#333] text-white text-sm"
+              >
+                <option value="least-enriched-first">Least Enriched</option>
+                <option value="top-ranked-first">Top Ranked</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Mode</label>
+              <select
+                value={dryRun ? "dry" : "live"}
+                onChange={(e) => setDryRun(e.target.value === "dry")}
+                className="w-full px-2 py-1.5 rounded-lg bg-[#1a1a1a] border border-[#333] text-white text-sm"
+              >
+                <option value="live">Live Run</option>
+                <option value="dry">Dry Run</option>
+              </select>
+            </div>
+          </div>
+
+          <button
+            onClick={runBatchEnrichment}
+            disabled={running}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#22c55e] text-black font-medium hover:bg-[#16a34a] transition-colors disabled:opacity-40"
+          >
+            {running ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Enriching {batchSize} courses...
+              </>
+            ) : (
+              <>
+                <Play size={16} />
+                Run Batch Enrichment
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Score Computation Card */}
+        <div className="rounded-xl border border-[#222] bg-[#111] p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Calculator size={18} className="text-blue-400" />
+            <h2 className="text-sm font-semibold text-white">CF Score Computation</h2>
+          </div>
+          <p className="text-xs text-gray-500 mb-4">
+            Recompute prestige scores (from 46 ranking lists across 4 sources) and
+            9 dimension scores (Architecture, Challenge, Aesthetics, etc.) for all courses.
+          </p>
+
+          {scoreStatus && (
+            <div className="grid grid-cols-2 gap-2 mb-4 text-xs">
+              <div className="rounded-lg bg-[#1a1a1a] p-2">
+                <div className="text-lg font-bold text-white">{scoreStatus.coursesWithScores}</div>
+                <div className="text-gray-500">Courses w/ Scores</div>
+              </div>
+              <div className="rounded-lg bg-[#1a1a1a] p-2">
+                <div className="text-lg font-bold text-blue-400">{scoreStatus.coursesWithPrestige}</div>
+                <div className="text-gray-500">With Prestige</div>
+              </div>
+              <div className="rounded-lg bg-[#1a1a1a] p-2">
+                <div className="text-lg font-bold text-green-400">{scoreStatus.coursesWithDimensions}</div>
+                <div className="text-gray-500">With Dimensions</div>
+              </div>
+              <div className="rounded-lg bg-[#1a1a1a] p-2">
+                <div className="text-sm font-medium text-gray-300">
+                  {scoreStatus.lastComputedAt ? formatDate(scoreStatus.lastComputedAt) : "Never"}
+                </div>
+                <div className="text-gray-500">Last Computed</div>
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={runScoreComputation}
+            disabled={computingScores}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors disabled:opacity-40"
+          >
+            {computingScores ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Computing scores...
+              </>
+            ) : (
+              <>
+                <RefreshCw size={16} />
+                Recompute All Scores
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Batch Result */}
+      {batchResult && (
+        <div className="rounded-xl border border-green-900/50 bg-green-900/10 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+              <CheckCircle2 size={16} className="text-green-400" />
+              Batch Enrichment {batchResult.dryRun ? "(Dry Run)" : "Complete"}
+            </h3>
+            <button onClick={() => setBatchResult(null)} className="text-xs text-gray-500 hover:text-gray-300">
+              Dismiss
+            </button>
+          </div>
+          <div className="grid grid-cols-5 gap-3 text-center text-xs mb-3">
+            <div className="rounded-lg bg-[#1a1a1a] p-2">
+              <div className="text-lg font-bold text-white">{batchResult.summary.totalProcessed}</div>
+              <div className="text-gray-500">Processed</div>
+            </div>
+            <div className="rounded-lg bg-[#1a1a1a] p-2">
+              <div className="text-lg font-bold text-green-400">{batchResult.summary.updated}</div>
+              <div className="text-gray-500">Updated</div>
+            </div>
+            <div className="rounded-lg bg-[#1a1a1a] p-2">
+              <div className="text-lg font-bold text-yellow-400">{batchResult.summary.totalFieldsEnriched}</div>
+              <div className="text-gray-500">Fields Filled</div>
+            </div>
+            <div className="rounded-lg bg-[#1a1a1a] p-2">
+              <div className="text-lg font-bold text-blue-400">{batchResult.summary.avgBeforePct}%</div>
+              <div className="text-gray-500">Avg Before</div>
+            </div>
+            <div className="rounded-lg bg-[#1a1a1a] p-2">
+              <div className="text-lg font-bold text-green-400">{batchResult.summary.avgAfterPct}%</div>
+              <div className="text-gray-500">Avg After</div>
+            </div>
+          </div>
+          {batchResult.results?.length > 0 && (
+            <div className="max-h-48 overflow-y-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-gray-500 text-left">
+                    <th className="pb-1">Course</th>
+                    <th className="pb-1 text-right">Fields</th>
+                    <th className="pb-1 text-right">Before</th>
+                    <th className="pb-1 text-right">After</th>
+                    <th className="pb-1 text-right">Source</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {batchResult.results
+                    .filter((r: any) => r.fieldsEnriched > 0)
+                    .slice(0, 30)
+                    .map((r: any) => (
+                      <tr key={r.courseId} className="text-gray-300">
+                        <td className="py-0.5 truncate max-w-[200px]">{r.courseName}</td>
+                        <td className="py-0.5 text-right text-green-400">+{r.fieldsEnriched}</td>
+                        <td className="py-0.5 text-right">{r.beforePct}%</td>
+                        <td className="py-0.5 text-right text-green-400">{r.afterPct}%</td>
+                        <td className="py-0.5 text-right text-gray-500">
+                          {(r.ruleBasedFields?.length || 0) > 0 && (
+                            <span className="text-blue-400 mr-1">R:{r.ruleBasedFields.length}</span>
+                          )}
+                          {(r.aiFields?.length || 0) > 0 && (
+                            <span className="text-purple-400">AI:{r.aiFields.length}</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Score Result */}
+      {scoreResult && (
+        <div className="rounded-xl border border-blue-900/50 bg-blue-900/10 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+              <CheckCircle2 size={16} className="text-blue-400" />
+              Score Computation Complete
+            </h3>
+            <button onClick={() => setScoreResult(null)} className="text-xs text-gray-500 hover:text-gray-300">
+              Dismiss
+            </button>
+          </div>
+          <div className="grid grid-cols-4 gap-3 text-center text-xs">
+            <div className="rounded-lg bg-[#1a1a1a] p-2">
+              <div className="text-lg font-bold text-white">{scoreResult.processed}</div>
+              <div className="text-gray-500">Processed</div>
+            </div>
+            <div className="rounded-lg bg-[#1a1a1a] p-2">
+              <div className="text-lg font-bold text-blue-400">{scoreResult.withPrestige}</div>
+              <div className="text-gray-500">With Prestige</div>
+            </div>
+            <div className="rounded-lg bg-[#1a1a1a] p-2">
+              <div className="text-lg font-bold text-green-400">{scoreResult.withDimensions}</div>
+              <div className="text-gray-500">With Dimensions</div>
+            </div>
+            <div className="rounded-lg bg-[#1a1a1a] p-2">
+              <div className="text-lg font-bold text-gray-300">{Math.round(scoreResult.durationMs / 1000)}s</div>
+              <div className="text-gray-500">Duration</div>
+            </div>
+          </div>
+          {scoreResult.errors?.length > 0 && (
+            <div className="mt-2 text-xs text-red-400">
+              {scoreResult.errors.length} errors during computation
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Dimension Score Distribution */}
+      {scoreStatus?.dimensionStats && scoreStatus.dimensionStats.length > 0 && (
+        <div className="rounded-xl border border-[#222] bg-[#111] p-4">
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp size={16} className="text-gray-400" />
+            <h2 className="text-sm font-semibold text-white">Dimension Score Distribution</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {scoreStatus.dimensionStats.map((d) => (
+              <div key={d.dimension} className="rounded-lg bg-[#1a1a1a] p-3">
+                <div className="text-xs text-gray-500 mb-1">{d.label}</div>
+                <div className="text-lg font-bold text-white">{d.avg}</div>
+                <div className="text-xs text-gray-600">
+                  {d.min} – {d.max}
+                </div>
+                <div className="h-1.5 rounded-full bg-[#222] mt-2 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-blue-500"
+                    style={{ width: `${(d.avg / 10) * 100}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Aggregate Stats */}
+      {aggregateStats && aggregateStats.totalRuns > 0 && (
+        <div className="grid grid-cols-3 gap-4">
+          <div className="rounded-xl border border-[#222] bg-[#111] p-4 text-center">
+            <div className="text-2xl font-bold text-white">{aggregateStats.totalRuns}</div>
+            <div className="text-xs text-gray-500">Completed Runs</div>
+          </div>
+          <div className="rounded-xl border border-[#222] bg-[#111] p-4 text-center">
+            <div className="text-2xl font-bold text-green-400">{aggregateStats.totalCoursesUpdated.toLocaleString()}</div>
+            <div className="text-xs text-gray-500">Courses Updated</div>
+          </div>
+          <div className="rounded-xl border border-[#222] bg-[#111] p-4 text-center">
+            <div className="text-2xl font-bold text-yellow-400">{aggregateStats.totalFieldsFilled.toLocaleString()}</div>
+            <div className="text-xs text-gray-500">Fields Filled</div>
+          </div>
+        </div>
+      )}
+
+      {/* Run History */}
+      {runs.length > 0 && (
+        <div className="rounded-xl border border-[#222] bg-[#111] overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-[#222]">
+            <Clock size={16} className="text-gray-400" />
+            <h2 className="text-sm font-semibold text-white">Run History</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[#222] text-gray-400 text-left text-xs">
+                  <th className="px-4 py-2 font-medium">Started</th>
+                  <th className="px-4 py-2 font-medium">Status</th>
+                  <th className="px-4 py-2 font-medium">Priority</th>
+                  <th className="px-4 py-2 font-medium text-right">Processed</th>
+                  <th className="px-4 py-2 font-medium text-right">Updated</th>
+                  <th className="px-4 py-2 font-medium text-right">Fields</th>
+                  <th className="px-4 py-2 font-medium text-right">Avg Before</th>
+                  <th className="px-4 py-2 font-medium text-right">Avg After</th>
+                </tr>
+              </thead>
+              <tbody>
+                {runs.map((r) => (
+                  <tr key={r.id} className="border-b border-[#1a1a1a] hover:bg-[#1a1a1a]">
+                    <td className="px-4 py-2 text-gray-300 text-xs">{formatDate(r.startedAt)}</td>
+                    <td className="px-4 py-2">
+                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${statusColor(r.status)}`}>
+                        {r.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 text-gray-400 text-xs">{r.priority}</td>
+                    <td className="px-4 py-2 text-right text-gray-300 text-xs">{r.coursesProcessed}</td>
+                    <td className="px-4 py-2 text-right text-green-400 text-xs">{r.coursesUpdated}</td>
+                    <td className="px-4 py-2 text-right text-yellow-400 text-xs">{r.totalFieldsFilled}</td>
+                    <td className="px-4 py-2 text-right text-gray-400 text-xs">
+                      {r.avgBefore != null ? `${Math.round(r.avgBefore)}%` : "—"}
+                    </td>
+                    <td className="px-4 py-2 text-right text-green-400 text-xs">
+                      {r.avgAfter != null ? `${Math.round(r.avgAfter)}%` : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Recent Enrichment Logs */}
+      {recentLogs.length > 0 && (
+        <div className="rounded-xl border border-[#222] bg-[#111] overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-[#222]">
+            <Database size={16} className="text-gray-400" />
+            <h2 className="text-sm font-semibold text-white">Recent Enrichment Log</h2>
+          </div>
+          <div className="overflow-x-auto max-h-64 overflow-y-auto">
+            <table className="w-full text-xs">
+              <thead className="sticky top-0 bg-[#111]">
+                <tr className="border-b border-[#222] text-gray-400 text-left">
+                  <th className="px-4 py-2 font-medium">Course</th>
+                  <th className="px-4 py-2 font-medium">Time</th>
+                  <th className="px-4 py-2 font-medium">Status</th>
+                  <th className="px-4 py-2 font-medium text-right">Fields</th>
+                  <th className="px-4 py-2 font-medium text-right">Before</th>
+                  <th className="px-4 py-2 font-medium text-right">After</th>
+                  <th className="px-4 py-2 font-medium text-right">Source</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentLogs.map((l) => (
+                  <tr key={l.id} className="border-b border-[#1a1a1a]">
+                    <td className="px-4 py-1.5 text-gray-300 truncate max-w-[200px]">{l.courseName}</td>
+                    <td className="px-4 py-1.5 text-gray-500">{formatDate(l.enrichedAt)}</td>
+                    <td className="px-4 py-1.5">
+                      <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${
+                        l.status === "success" ? "text-green-400 bg-green-900/40"
+                          : l.status === "error" ? "text-red-400 bg-red-900/40"
+                            : "text-gray-400 bg-gray-900/40"
+                      }`}>
+                        {l.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-1.5 text-right text-green-400">
+                      {l.fieldsEnriched > 0 ? `+${l.fieldsEnriched}` : "0"}
+                    </td>
+                    <td className="px-4 py-1.5 text-right text-gray-400">{l.beforePct}%</td>
+                    <td className="px-4 py-1.5 text-right text-green-400">{l.afterPct}%</td>
+                    <td className="px-4 py-1.5 text-right text-gray-500">
+                      {l.ruleBasedFields.length > 0 && (
+                        <span className="text-blue-400 mr-1">R:{l.ruleBasedFields.length}</span>
+                      )}
+                      {l.aiFields.length > 0 && (
+                        <span className="text-purple-400">AI:{l.aiFields.length}</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {loading && (
+        <div className="text-center py-12">
+          <Loader2 size={20} className="animate-spin inline-block mr-2 text-gray-500" />
+          <span className="text-gray-500 text-sm">Loading batch operations data...</span>
+        </div>
+      )}
     </>
   );
 }

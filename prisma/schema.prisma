@@ -461,6 +461,47 @@ model ChameleonScore {
   @@map("chameleon_scores")
 }
 
+model BatchEnrichmentRun {
+  id              Int       @id @default(autoincrement())
+  startedAt       DateTime  @default(now()) @map("started_at")
+  completedAt     DateTime? @map("completed_at")
+  status          String    @default("running") @db.VarChar(20) // running, completed, failed, stopped
+  priority        String    @default("least-enriched") @db.VarChar(30) // top-ranked-first, least-enriched-first
+  batchSize       Int       @default(50) @map("batch_size")
+  totalCourses    Int       @default(0) @map("total_courses")
+  coursesProcessed Int      @default(0) @map("courses_processed")
+  coursesUpdated  Int       @default(0) @map("courses_updated")
+  coursesErrored  Int       @default(0) @map("courses_errored")
+  totalFieldsFilled Int     @default(0) @map("total_fields_filled")
+  avgBefore       Decimal?  @map("avg_before") @db.Decimal(5, 2)
+  avgAfter        Decimal?  @map("avg_after") @db.Decimal(5, 2)
+  errorSummary    String?   @map("error_summary")
+  dryRun          Boolean   @default(false) @map("dry_run")
+
+  logs            CourseEnrichmentLog[]
+
+  @@map("batch_enrichment_runs")
+}
+
+model CourseEnrichmentLog {
+  id              Int       @id @default(autoincrement())
+  runId           Int?      @map("run_id")
+  courseId        Int       @map("course_id")
+  courseName      String    @map("course_name") @db.VarChar(255)
+  enrichedAt      DateTime  @default(now()) @map("enriched_at")
+  beforePct       Decimal   @map("before_pct") @db.Decimal(5, 2)
+  afterPct        Decimal   @map("after_pct") @db.Decimal(5, 2)
+  fieldsEnriched  Int       @default(0) @map("fields_enriched")
+  ruleBasedFields String[]  @map("rule_based_fields")
+  aiFields        String[]  @map("ai_fields")
+  status          String    @default("success") @db.VarChar(20) // success, error, no_changes
+  errorMessage    String?   @map("error_message")
+
+  run             BatchEnrichmentRun? @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@map("course_enrichment_logs")
+}
+
 model RatingHistory {
   historyId         Int       @id @default(autoincrement()) @map("history_id")
   ratingId          Int       @map("rating_id")
