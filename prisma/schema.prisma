@@ -706,6 +706,10 @@ model ExternalContent {
   submittedBy   String?   @map("submitted_by") @db.VarChar(200)
   tags          String[]
   createdAt     DateTime  @default(now()) @map("created_at")
+  linkStatus    String?   @default("unknown") @map("link_status") @db.VarChar(20)
+  lastCheckedAt DateTime? @map("last_checked_at")
+  checkNote     String?   @map("check_note") @db.VarChar(500)
+  updatedAt     DateTime  @updatedAt @map("updated_at")
 
   architects    ContentArchitectLink[]
   courses       ContentCourseLink[]

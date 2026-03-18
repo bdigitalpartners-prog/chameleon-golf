@@ -10,10 +10,10 @@ import {
   Headphones,
   BookOpen,
   Search,
-  Filter,
   Loader2,
   ExternalLink,
-  ChevronRight,
+  CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 
 interface ContentItem {
@@ -28,6 +28,8 @@ interface ContentItem {
   publishedAt?: string | null;
   duration?: string | null;
   isFeatured: boolean;
+  linkStatus?: string | null;
+  lastCheckedAt?: string | null;
   architects: {
     architect: { id: number; name: string; slug: string };
   }[];
@@ -73,6 +75,15 @@ const TABS = [
   { key: "books", label: "Books", icon: BookOpen },
 ];
 
+function daysAgo(dateStr: string): string {
+  const days = Math.floor(
+    (Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24)
+  );
+  if (days === 0) return "today";
+  if (days === 1) return "1 day ago";
+  return `${days} days ago`;
+}
+
 export default function FairwayPage() {
   const [content, setContent] = useState<ContentItem[]>([]);
   const [books, setBooks] = useState<BookItem[]>([]);
@@ -81,15 +92,14 @@ export default function FairwayPage() {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/fairway")
-        .then((r) => r.json())
-        .then((d) => {
-          setContent(d.content || []);
-          setBooks(d.books || []);
-        })
-        .catch(() => {}),
-    ]).finally(() => setLoading(false));
+    fetch("/api/fairway?hideBroken=true")
+      .then((r) => r.json())
+      .then((d) => {
+        setContent(d.content || []);
+        setBooks(d.books || []);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const filtered = useMemo(() => {
@@ -103,8 +113,12 @@ export default function FairwayPage() {
           c.title.toLowerCase().includes(q) ||
           c.summary?.toLowerCase().includes(q) ||
           c.sourceName?.toLowerCase().includes(q) ||
-          c.architects.some((a) => a.architect.name.toLowerCase().includes(q)) ||
-          c.courses.some((co) => co.course.courseName.toLowerCase().includes(q))
+          c.architects.some((a) =>
+            a.architect.name.toLowerCase().includes(q)
+          ) ||
+          c.courses.some((co) =>
+            co.course.courseName.toLowerCase().includes(q)
+          )
       );
     }
     return items;
@@ -119,7 +133,9 @@ export default function FairwayPage() {
         (b) =>
           b.title.toLowerCase().includes(q) ||
           b.authors.some((a) => a.toLowerCase().includes(q)) ||
-          b.architects.some((a) => a.architect.name.toLowerCase().includes(q))
+          b.architects.some((a) =>
+            a.architect.name.toLowerCase().includes(q)
+          )
       );
     }
     return items;
@@ -208,6 +224,12 @@ export default function FairwayPage() {
                           {item.sourceName}
                         </span>
                       )}
+                      {item.linkStatus === "ok" && (
+                        <CheckCircle2
+                          className="h-3 w-3"
+                          style={{ color: "#22c55e" }}
+                        />
+                      )}
                     </div>
                     <h3
                       className="text-sm font-semibold line-clamp-2 group-hover:text-emerald-400 transition-colors"
@@ -223,21 +245,31 @@ export default function FairwayPage() {
                         {item.summary}
                       </p>
                     )}
-                    {item.architects.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {item.architects.map((a) => (
-                          <span
-                            key={a.architect.id}
-                            className="text-xs rounded-full px-2 py-0.5"
-                            style={{
-                              backgroundColor: "rgba(46,204,113,0.15)",
-                              color: "#2ECC71",
-                            }}
-                          >
-                            {a.architect.name}
-                          </span>
-                        ))}
-                      </div>
+                    <div className="flex items-center gap-2 mt-2">
+                      {item.architects.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {item.architects.map((a) => (
+                            <span
+                              key={a.architect.id}
+                              className="text-xs rounded-full px-2 py-0.5"
+                              style={{
+                                backgroundColor: "rgba(46,204,113,0.15)",
+                                color: "#2ECC71",
+                              }}
+                            >
+                              {a.architect.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {item.lastCheckedAt && (
+                      <p
+                        className="text-[10px] mt-2"
+                        style={{ color: "var(--cg-text-muted)", opacity: 0.6 }}
+                      >
+                        Verified {daysAgo(item.lastCheckedAt)}
+                      </p>
                     )}
                   </div>
                 </a>
@@ -323,11 +355,16 @@ export default function FairwayPage() {
                     bg: "var(--cg-bg-secondary)",
                     text: "var(--cg-text-muted)",
                   };
+                  const isBroken =
+                    item.linkStatus === "broken" || item.linkStatus === "error";
                   return (
                     <div
                       key={item.id}
                       className="rounded-xl p-4 flex gap-4 transition-all hover:ring-1 hover:ring-emerald-500/30"
-                      style={cardStyle}
+                      style={{
+                        ...cardStyle,
+                        opacity: isBroken ? 0.5 : 1,
+                      }}
                     >
                       {item.thumbnailUrl && (
                         <a
@@ -371,6 +408,18 @@ export default function FairwayPage() {
                               {item.duration}
                             </span>
                           )}
+                          {item.linkStatus === "ok" && (
+                            <CheckCircle2
+                              className="h-3 w-3"
+                              style={{ color: "#22c55e" }}
+                            />
+                          )}
+                          {isBroken && (
+                            <span className="inline-flex items-center gap-1 text-xs text-red-400">
+                              <AlertTriangle className="h-3 w-3" />
+                              Link may be broken
+                            </span>
+                          )}
                         </div>
                         <a
                           href={item.url}
@@ -390,7 +439,7 @@ export default function FairwayPage() {
                             {item.summary}
                           </p>
                         )}
-                        <div className="flex flex-wrap gap-1.5 mt-2">
+                        <div className="flex flex-wrap items-center gap-1.5 mt-2">
                           {item.architects.map((a) => (
                             <Link
                               key={a.architect.id}
@@ -417,6 +466,17 @@ export default function FairwayPage() {
                               {c.course.courseName}
                             </Link>
                           ))}
+                          {item.lastCheckedAt && (
+                            <span
+                              className="text-[10px] ml-auto"
+                              style={{
+                                color: "var(--cg-text-muted)",
+                                opacity: 0.6,
+                              }}
+                            >
+                              Verified {daysAgo(item.lastCheckedAt)}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>

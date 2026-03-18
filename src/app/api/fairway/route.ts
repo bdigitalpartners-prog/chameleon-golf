@@ -1,13 +1,21 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const url = new URL(request.url);
+    const hideBroken = url.searchParams.get("hideBroken") === "true";
+
+    const where: any = { isApproved: true };
+    if (hideBroken) {
+      where.linkStatus = { not: "broken" };
+    }
+
     const [content, books] = await Promise.all([
       prisma.externalContent.findMany({
-        where: { isApproved: true },
+        where,
         include: {
           architects: {
             include: {
