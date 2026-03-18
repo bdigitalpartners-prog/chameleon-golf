@@ -12,14 +12,6 @@ export async function GET(
   if (authError) return authError;
 
   try {
-    // Ensure social link columns exist (safe migration)
-    await prisma.$executeRawUnsafe(`ALTER TABLE users ADD COLUMN IF NOT EXISTS instagram_url VARCHAR(500)`);
-    await prisma.$executeRawUnsafe(`ALTER TABLE users ADD COLUMN IF NOT EXISTS twitter_url VARCHAR(500)`);
-    await prisma.$executeRawUnsafe(`ALTER TABLE users ADD COLUMN IF NOT EXISTS facebook_url VARCHAR(500)`);
-    await prisma.$executeRawUnsafe(`ALTER TABLE users ADD COLUMN IF NOT EXISTS tiktok_url VARCHAR(500)`);
-    await prisma.$executeRawUnsafe(`ALTER TABLE users ADD COLUMN IF NOT EXISTS website_url VARCHAR(500)`);
-
-
     const user = await prisma.user.findUnique({
       where: { id: params.id },
       include: {
@@ -41,6 +33,19 @@ export async function GET(
           },
           orderBy: { createdAt: "desc" },
         },
+        circleMemberships: {
+          include: {
+            circle: { select: { id: true, name: true } },
+          },
+        },
+        _count: {
+          select: {
+            ratings: true,
+            scores: true,
+            wishlists: true,
+            circleMemberships: true,
+          },
+        },
       },
     });
 
@@ -48,23 +53,41 @@ export async function GET(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    // Get activity log for this user
+    const activityLog = await prisma.adminActivityLog.findMany({
+      where: { targetUserId: params.id },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+
     return NextResponse.json({
       id: user.id,
       name: user.name,
       email: user.email,
+      image: user.image,
       role: user.role,
+      status: user.status,
+      isActive: user.isActive,
+      adminNotes: user.adminNotes,
       ghinNumber: user.ghinNumber,
       handicapIndex: user.handicapIndex ? Number(user.handicapIndex) : null,
       homeState: user.homeState,
       ghinVerified: user.ghinVerified,
       ghinVerifiedAt: user.ghinVerifiedAt,
-      isActive: user.isActive,
+      lastLoginAt: user.lastLoginAt,
       createdAt: user.createdAt,
-      instagramUrl: (user as any).instagramUrl || null,
-      twitterUrl: (user as any).twitterUrl || null,
-      facebookUrl: (user as any).facebookUrl || null,
-      tiktokUrl: (user as any).tiktokUrl || null,
-      websiteUrl: (user as any).websiteUrl || null,
+      updatedAt: user.updatedAt,
+      instagramUrl: user.instagramUrl || null,
+      twitterUrl: user.twitterUrl || null,
+      facebookUrl: user.facebookUrl || null,
+      tiktokUrl: user.tiktokUrl || null,
+      websiteUrl: user.websiteUrl || null,
+      stats: {
+        ratings: user._count.ratings,
+        scores: user._count.scores,
+        wishlists: user._count.wishlists,
+        circles: user._count.circleMemberships,
+      },
       ratings: user.ratings.map((r) => ({
         ratingId: r.ratingId,
         courseId: r.courseId,
@@ -88,6 +111,13 @@ export async function GET(
         status: w.status,
         createdAt: w.createdAt,
       })),
+      circles: user.circleMemberships.map((cm) => ({
+        circleId: cm.circleId,
+        circleName: cm.circle.name,
+        role: cm.role,
+        joinedAt: cm.joinedAt,
+      })),
+      activityLog,
     });
   } catch (err) {
     console.error("User detail error:", err);
@@ -104,14 +134,62 @@ export async function PUT(
 
   try {
     const body = await request.json();
-    const { role, isActive, ghinVerified, instagramUrl, twitterUrl, facebookUrl, tiktokUrl, websiteUrl } = body;
+    const {
+      role, isActive, status, adminNotes, ghinVerified,
+      instagramUrl, twitterUrl, facebookUrl, tiktokUrl, websiteUrl,
+      adminEmail, reason,
+    } = body;
+
+    // Get current user for change tracking
+    const current = await prisma.user.findUnique({
+      where: { id: params.id },
+      select: { role: true, status: true, isActive: true, ghinVerified: true },
+    });
+    if (!current) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
 
     const data: any = {};
-    if (role !== undefined) data.role = role;
+    const logs: any[] = [];
+    const admin = adminEmail || "admin";
+
+    if (role !== undefined && role !== current.role) {
+      data.role = role;
+      logs.push({
+        targetUserId: params.id,
+        adminEmail: admin,
+        action: "role_change",
+        previousValue: current.role,
+        newValue: role,
+        reason,
+      });
+    }
+    if (status !== undefined && status !== current.status) {
+      data.status = status;
+      if (status === "active") data.isActive = true;
+      if (status === "suspended" || status === "banned") data.isActive = false;
+      logs.push({
+        targetUserId: params.id,
+        adminEmail: admin,
+        action: status === "active" ? "reactivate" : status,
+        previousValue: current.status,
+        newValue: status,
+        reason,
+      });
+    }
     if (isActive !== undefined) data.isActive = isActive;
+    if (adminNotes !== undefined) data.adminNotes = adminNotes || null;
     if (ghinVerified !== undefined) {
       data.ghinVerified = ghinVerified;
       data.ghinVerifiedAt = ghinVerified ? new Date() : null;
+      logs.push({
+        targetUserId: params.id,
+        adminEmail: admin,
+        action: ghinVerified ? "ghin_verify" : "ghin_unverify",
+        previousValue: String(current.ghinVerified),
+        newValue: String(ghinVerified),
+        reason,
+      });
     }
     if (instagramUrl !== undefined) data.instagramUrl = instagramUrl || null;
     if (twitterUrl !== undefined) data.twitterUrl = twitterUrl || null;
@@ -124,9 +202,48 @@ export async function PUT(
       data,
     });
 
+    // Create activity logs
+    if (logs.length > 0) {
+      await prisma.adminActivityLog.createMany({ data: logs });
+    }
+
     return NextResponse.json({ success: true, user: updated });
   } catch (err) {
     console.error("User update error:", err);
     return NextResponse.json({ error: "Failed to update user" }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const authError = await checkAdminAuth(request);
+  if (authError) return authError;
+
+  try {
+    const body = await request.json();
+    const { adminEmail, reason } = body;
+
+    // Soft-delete: mark as deleted status
+    await prisma.user.update({
+      where: { id: params.id },
+      data: { status: "deleted", isActive: false },
+    });
+
+    await prisma.adminActivityLog.create({
+      data: {
+        targetUserId: params.id,
+        adminEmail: adminEmail || "admin",
+        action: "soft_delete",
+        newValue: "deleted",
+        reason: reason || "Account deleted by admin",
+      },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("User delete error:", err);
+    return NextResponse.json({ error: "Failed to delete user" }, { status: 500 });
   }
 }

@@ -938,6 +938,9 @@ model User {
   ghinLastSynced  DateTime? @map("ghin_last_synced")
   role            String    @default("user") @db.VarChar(20)
   isActive        Boolean   @default(true) @map("is_active")
+  status          String    @default("active") @map("status") @db.VarChar(20)
+  adminNotes      String?   @map("admin_notes")
+  lastLoginAt     DateTime? @map("last_login_at")
   instagramUrl    String?   @map("instagram_url") @db.VarChar(500)
   twitterUrl      String?   @map("twitter_url") @db.VarChar(500)
   facebookUrl     String?   @map("facebook_url") @db.VarChar(500)
@@ -1018,6 +1021,27 @@ model User {
   caddyProfile            Caddy?
   caddyRatingsGiven       CaddyRating[]  @relation("CaddyRatingsGiven")
   caddyRequests           CaddyRequest[] @relation("CaddyRequestsMade")
+
+  // Admin activity log
+  adminActivityLogs       AdminActivityLog[] @relation("AdminActivityTarget")
+}
+
+model AdminActivityLog {
+  id            Int      @id @default(autoincrement())
+  targetUserId  String   @map("target_user_id")
+  adminEmail    String   @map("admin_email") @db.VarChar(255)
+  action        String   @db.VarChar(50)
+  details       String?
+  previousValue String?  @map("previous_value") @db.VarChar(255)
+  newValue      String?  @map("new_value") @db.VarChar(255)
+  reason        String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  targetUser    User     @relation("AdminActivityTarget", fields: [targetUserId], references: [id])
+
+  @@index([targetUserId])
+  @@index([createdAt])
+  @@map("admin_activity_log")
 }
 
 model UserCourseRating {
