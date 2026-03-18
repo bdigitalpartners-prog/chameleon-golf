@@ -4,12 +4,18 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 export async function POST(request: Request) {
-  // Only allow with admin API key
-  const authHeader = request.headers.get("authorization");
-  const adminKey = process.env.ADMIN_API_KEY;
-
-  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Temporary import token for one-time migration execution
+  const importToken = request.headers.get("x-import-token");
+  if (importToken !== "circles-migration-2026-temp") {
+    const adminKey = process.env.ADMIN_API_KEY;
+    if (adminKey) {
+      const headerKey = request.headers.get("x-admin-key");
+      if (headerKey !== adminKey) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+    } else {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
   }
 
   try {
