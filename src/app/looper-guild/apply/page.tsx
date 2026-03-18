@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { ArrowLeft, Search, X } from "lucide-react";
 
@@ -20,6 +20,8 @@ export default function CaddyApplyPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [showFieldErrors, setShowFieldErrors] = useState(false);
+  const personalInfoRef = useRef<HTMLDivElement>(null);
 
   // Course search
   useEffect(() => {
@@ -49,8 +51,11 @@ export default function CaddyApplyPage() {
 
     if (!firstName.trim() || !lastName.trim() || !email.trim()) {
       setError("First name, last name, and email are required.");
+      setShowFieldErrors(true);
+      personalInfoRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
+    setShowFieldErrors(false);
 
     setLoading(true);
     try {
@@ -166,10 +171,13 @@ export default function CaddyApplyPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Personal Info */}
           <div
+            ref={personalInfoRef}
             className="rounded-xl p-5 sm:p-6"
             style={{
               backgroundColor: "var(--cg-bg-secondary)",
-              border: "1px solid var(--cg-border)",
+              border: showFieldErrors && (!firstName.trim() || !lastName.trim() || !email.trim())
+                ? "1px solid var(--cg-error, #ef4444)"
+                : "1px solid var(--cg-border)",
             }}
           >
             <h2
@@ -183,23 +191,26 @@ export default function CaddyApplyPage() {
                 label="First Name"
                 required
                 value={firstName}
-                onChange={setFirstName}
+                onChange={(v) => { setFirstName(v); setShowFieldErrors(false); }}
                 placeholder="Your first name"
+                hasError={showFieldErrors && !firstName.trim()}
               />
               <Field
                 label="Last Name"
                 required
                 value={lastName}
-                onChange={setLastName}
+                onChange={(v) => { setLastName(v); setShowFieldErrors(false); }}
                 placeholder="Your last name"
+                hasError={showFieldErrors && !lastName.trim()}
               />
               <Field
                 label="Email"
                 required
                 type="email"
                 value={email}
-                onChange={setEmail}
+                onChange={(v) => { setEmail(v); setShowFieldErrors(false); }}
                 placeholder="you@example.com"
+                hasError={showFieldErrors && !email.trim()}
               />
               <Field
                 label="Phone"
@@ -409,6 +420,7 @@ function Field({
   placeholder,
   type = "text",
   required,
+  hasError,
 }: {
   label: string;
   value: string;
@@ -416,15 +428,16 @@ function Field({
   placeholder?: string;
   type?: string;
   required?: boolean;
+  hasError?: boolean;
 }) {
   return (
     <div>
       <label
         className="block text-xs font-medium mb-1.5"
-        style={{ color: "var(--cg-text-secondary)" }}
+        style={{ color: hasError ? "var(--cg-error, #ef4444)" : "var(--cg-text-secondary)" }}
       >
         {label}
-        {required && <span style={{ color: "var(--cg-accent)" }}> *</span>}
+        {required && <span style={{ color: hasError ? "var(--cg-error, #ef4444)" : "var(--cg-accent)" }}> *</span>}
       </label>
       <input
         type={type}
@@ -435,7 +448,7 @@ function Field({
         style={{
           backgroundColor: "var(--cg-bg-tertiary)",
           color: "var(--cg-text-primary)",
-          border: "1px solid var(--cg-border)",
+          border: hasError ? "1px solid var(--cg-error, #ef4444)" : "1px solid var(--cg-border)",
         }}
       />
     </div>
