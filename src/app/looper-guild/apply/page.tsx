@@ -34,7 +34,7 @@ export default function CaddyApplyPage() {
         );
         if (res.ok) {
           const data = await res.json();
-          setCourseResults(Array.isArray(data) ? data : data.courses || []);
+          setCourseResults(Array.isArray(data) ? data : data.results || data.courses || []);
         }
       } catch {
         // ignore
