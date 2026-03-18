@@ -434,6 +434,27 @@ export async function POST(req: NextRequest) {
       "Index: user_course_ratings(is_seed)"
     );
 
+    // =========================================================
+    // 8. EXTERNAL CONTENT — Add content freshness columns
+    // =========================================================
+
+    await run(
+      `ALTER TABLE "external_content" ADD COLUMN IF NOT EXISTS "link_status" VARCHAR(20) DEFAULT 'unknown'`,
+      "Add link_status to external_content"
+    );
+    await run(
+      `ALTER TABLE "external_content" ADD COLUMN IF NOT EXISTS "last_checked_at" TIMESTAMP(3)`,
+      "Add last_checked_at to external_content"
+    );
+    await run(
+      `ALTER TABLE "external_content" ADD COLUMN IF NOT EXISTS "check_note" VARCHAR(500)`,
+      "Add check_note to external_content"
+    );
+    await run(
+      `ALTER TABLE "external_content" ADD COLUMN IF NOT EXISTS "updated_at" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP`,
+      "Add updated_at to external_content"
+    );
+
     return NextResponse.json({
       success: true,
       totalOk: results.length,
