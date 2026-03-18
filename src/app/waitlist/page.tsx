@@ -32,28 +32,30 @@ const HANDICAP_OPTIONS = [
   { value: "21+", label: "21+ (Beginner)" },
 ];
 
-const VALUE_PROPS = [
-  {
-    icon: SlidersHorizontal,
-    title: "Personalized Rankings",
-    desc: "Adjust 6 dimensions — Design, Conditions, Challenge, Vibe, Value, Prestige — to get YOUR top courses, not someone else's opinion.",
-  },
-  {
-    icon: Database,
-    title: "1,499+ Courses",
-    desc: "The most comprehensive golf course database with expert rankings aggregated from 46+ lists across 4 trusted publications.",
-  },
-  {
-    icon: Users,
-    title: "Social Circles",
-    desc: "Create private groups, share your personalized rankings, and plan golf trips with friends — all in one place.",
-  },
-  {
-    icon: Sparkles,
-    title: "Chameleon Score",
-    desc: "Our proprietary algorithm combines expert data with your personal preferences into a single, dynamic score.",
-  },
-];
+function buildValueProps(courseCount: string, listCount: string, sourceCount: string) {
+  return [
+    {
+      icon: SlidersHorizontal,
+      title: "Personalized Rankings",
+      desc: "Adjust 6 dimensions — Design, Conditions, Challenge, Vibe, Value, Prestige — to get YOUR top courses, not someone else's opinion.",
+    },
+    {
+      icon: Database,
+      title: `${courseCount}+ Courses`,
+      desc: `The most comprehensive golf course database with expert rankings aggregated from ${listCount}+ lists across ${sourceCount} trusted publications.`,
+    },
+    {
+      icon: Users,
+      title: "Social Circles",
+      desc: "Create private groups, share your personalized rankings, and plan golf trips with friends — all in one place.",
+    },
+    {
+      icon: Sparkles,
+      title: "Chameleon Score",
+      desc: "Our proprietary algorithm combines expert data with your personal preferences into a single, dynamic score.",
+    },
+  ];
+}
 
 const HOW_IT_WORKS = [
   {
@@ -392,13 +394,22 @@ function WaitlistForm({
   );
 }
 
+function fmt(n: number): string {
+  return n.toLocaleString("en-US");
+}
+
 export default function WaitlistPage() {
   const [waitlistCount, setWaitlistCount] = useState<number>(0);
+  const [stats, setStats] = useState({ courses: 1499, rankingLists: 46, rankingSources: 4 });
 
   useEffect(() => {
     fetch("/api/waitlist")
       .then((r) => r.json())
       .then((data) => setWaitlistCount(data.count || 0))
+      .catch(() => {});
+    fetch("/api/stats")
+      .then((r) => r.json())
+      .then((data) => setStats({ courses: data.courses, rankingLists: data.rankingLists, rankingSources: data.rankingSources }))
       .catch(() => {});
   }, []);
 
@@ -519,7 +530,7 @@ export default function WaitlistPage() {
           </div>
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {VALUE_PROPS.map((prop) => (
+            {buildValueProps(fmt(stats.courses), fmt(stats.rankingLists), fmt(stats.rankingSources)).map((prop) => (
               <div
                 key={prop.title}
                 className="rounded-2xl p-6 transition-colors group"
@@ -629,7 +640,7 @@ export default function WaitlistPage() {
           >
             Rankings aggregated from{" "}
             <span className="font-semibold" style={{ color: TEAL }}>
-              46+ expert sources
+              {fmt(stats.rankingLists)}+ expert lists
             </span>{" "}
             including Golf Digest, Golfweek, GOLF Magazine, and
             Top100GolfCourses — combined with your personal preferences to
@@ -638,9 +649,9 @@ export default function WaitlistPage() {
 
           <div className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
-              { value: "1,499+", label: "Courses" },
-              { value: "46+", label: "Ranking Lists" },
-              { value: "4", label: "Expert Sources" },
+              { value: `${fmt(stats.courses)}+`, label: "Courses" },
+              { value: `${fmt(stats.rankingLists)}+`, label: "Ranking Lists" },
+              { value: fmt(stats.rankingSources), label: "Expert Sources" },
               { value: "6", label: "Preference Dimensions" },
             ].map((stat) => (
               <div

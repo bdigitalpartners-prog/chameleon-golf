@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import prisma from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -7,7 +8,8 @@ export const metadata: Metadata = {
   description: "Learn how golfEQUALIZER aggregates rankings from Golf Digest, Golfweek, GOLF Magazine, and Top100GolfCourses to create dynamic, personalized golf course rankings.",
 };
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const rankingListCount = await prisma.rankingList.count();
   return (
     <div
       className="min-h-screen py-16 px-4"
@@ -57,7 +59,7 @@ export default function AboutPage() {
                 Expert Prestige
               </h3>
               <p className="mt-1 text-sm" style={{ color: "var(--cg-text-muted)" }}>
-                Aggregated from 46 ranking lists across Golf Digest, Golfweek, GOLF.com, and Top100GolfCourses.
+                Aggregated from {rankingListCount} ranking lists across Golf Digest, Golfweek, GOLF.com, and Top100GolfCourses.
                 Each source has an authority weight, each list a prestige tier (Flagship, Major, Regional, Specialty).
               </p>
             </div>
@@ -128,7 +130,7 @@ export default function AboutPage() {
             className="mt-3 leading-relaxed"
             style={{ color: "var(--cg-text-secondary)" }}
           >
-            Not all ranking lists carry equal weight. We classify each of the 46 lists into four tiers:
+            Not all ranking lists carry equal weight. We classify each of the {rankingListCount} lists into four tiers:
           </p>
           <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
             {[

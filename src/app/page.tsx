@@ -22,6 +22,43 @@ import {
   Mail,
 } from "lucide-react";
 
+// ─── Format number with commas (e.g. 1499 → "1,499") ──────────
+function fmt(n: number): string {
+  return n.toLocaleString("en-US");
+}
+
+// ─── Dynamic stats hook ────────────────────────────────────────
+interface SiteStats {
+  courses: number;
+  rankingLists: number;
+  rankingEntries: number;
+  architects: number;
+  rankingSources: number;
+  airports: number;
+}
+
+const FALLBACK_STATS: SiteStats = {
+  courses: 1499,
+  rankingLists: 46,
+  rankingEntries: 2665,
+  architects: 100,
+  rankingSources: 4,
+  airports: 714,
+};
+
+function useSiteStats(): SiteStats {
+  const [stats, setStats] = useState<SiteStats>(FALLBACK_STATS);
+
+  useEffect(() => {
+    fetch("/api/stats")
+      .then((r) => r.json())
+      .then((data: SiteStats) => setStats(data))
+      .catch(() => {});
+  }, []);
+
+  return stats;
+}
+
 // ─── Ranking Sources Data ───────────────────────────────────────
 const RANKING_SOURCES = [
   {
@@ -341,6 +378,7 @@ function FromTheFairway() {
 export default function LandingPage() {
   const { data: session, status } = useSession();
   const [activeSource, setActiveSource] = useState(0);
+  const stats = useSiteStats();
 
   // Show nothing while checking auth (prevents flash)
   if (status === "loading") {
@@ -383,7 +421,7 @@ export default function LandingPage() {
             >
               golfEQUALIZER aggregates Golf Digest, Golfweek, GOLF Magazine, and
               Top100GolfCourses — then lets you re-weight them based on what matters
-              to you. Explore 46 ranking lists from 4 trusted sources.
+              to you. Explore {fmt(stats.rankingLists)} ranking lists from {fmt(stats.rankingSources)} trusted sources.
             </p>
 
             <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
@@ -396,7 +434,7 @@ export default function LandingPage() {
                   boxShadow: `0 8px 30px var(--cg-accent-glow)`,
                 }}
               >
-                Explore 1,499 Courses
+                Explore {fmt(stats.courses)} Courses
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
@@ -407,7 +445,7 @@ export default function LandingPage() {
                   color: "var(--cg-text-secondary)",
                 }}
               >
-                Browse All 46 Lists
+                Browse All {fmt(stats.rankingLists)} Lists
                 <ChevronRight className="h-4 w-4" />
               </Link>
             </div>
@@ -419,7 +457,7 @@ export default function LandingPage() {
                 className="inline-flex items-center gap-1.5 text-sm font-medium transition-colors hover:opacity-80"
                 style={{ color: "var(--cg-accent)" }}
               >
-                100 Architects
+                {fmt(stats.architects)} Architects
                 <ChevronRight className="h-3.5 w-3.5" />
               </Link>
               <Link
@@ -446,19 +484,19 @@ export default function LandingPage() {
               style={{ color: "var(--cg-text-muted)" }}
             >
               <span>
-                <strong style={{ color: "var(--cg-accent)" }}>4</strong> ranking sources
+                <strong style={{ color: "var(--cg-accent)" }}>{fmt(stats.rankingSources)}</strong> ranking sources
               </span>
               <span>
-                <strong style={{ color: "var(--cg-accent)" }}>46</strong> ranking lists
+                <strong style={{ color: "var(--cg-accent)" }}>{fmt(stats.rankingLists)}</strong> ranking lists
               </span>
               <span>
-                <strong style={{ color: "var(--cg-accent)" }}>2,665</strong> ranked entries
+                <strong style={{ color: "var(--cg-accent)" }}>{fmt(stats.rankingEntries)}</strong> ranked entries
               </span>
               <span>
-                <strong style={{ color: "var(--cg-accent)" }}>1,499</strong> courses
+                <strong style={{ color: "var(--cg-accent)" }}>{fmt(stats.courses)}</strong> courses
               </span>
               <span>
-                <strong style={{ color: "var(--cg-accent)" }}>100</strong> architects
+                <strong style={{ color: "var(--cg-accent)" }}>{fmt(stats.architects)}</strong> architects
               </span>
             </div>
           </div>
@@ -815,10 +853,10 @@ export default function LandingPage() {
             {/* Stats grid */}
             <div className="grid grid-cols-2 gap-4">
               {[
-                { value: "1,499", label: "Ranked Courses" },
-                { value: "4", label: "Ranking Sources" },
-                { value: "46", label: "Ranking Lists" },
-                { value: "714", label: "Airports Mapped" },
+                { value: fmt(stats.courses), label: "Ranked Courses" },
+                { value: fmt(stats.rankingSources), label: "Ranking Sources" },
+                { value: fmt(stats.rankingLists), label: "Ranking Lists" },
+                { value: fmt(stats.airports), label: "Airports Mapped" },
               ].map((stat) => (
                 <div
                   key={stat.label}
