@@ -465,6 +465,11 @@ model Course {
   TripCourse              TripCourse[]
   TripVote                TripVote[]
   circleWishlists         Wishlist[]    @relation("CircleWishlists")
+
+  // Looper Guild relations
+  caddyCourses            CaddyCourse[]
+  caddyRatings            CaddyRating[]
+  caddyRequests           CaddyRequest[]
 }
 
 model CourseAirportProximity {
@@ -1008,6 +1013,11 @@ model User {
   TripVote                TripVote[]
   UserProfile             UserProfile[]
   Wishlist                Wishlist[]
+
+  // Looper Guild relations
+  caddyProfile            Caddy?
+  caddyRatingsGiven       CaddyRating[]  @relation("CaddyRatingsGiven")
+  caddyRequests           CaddyRequest[] @relation("CaddyRequestsMade")
 }
 
 model UserCourseRating {
@@ -2809,5 +2819,105 @@ model Wishlist {
   @@index([circleId])
   @@index([courseId])
 
+}
+
+// ─── Looper Guild (Caddy Community) ───────────────────
+
+enum CaddyStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum CaddyRequestStatus {
+  PENDING
+  FULFILLED
+  CANCELLED
+}
+
+model Caddy {
+  id              String       @id @default(cuid())
+  userId          String?      @unique @map("user_id")
+  firstName       String       @map("first_name")
+  lastName        String       @map("last_name")
+  email           String       @unique
+  phone           String?
+  bio             String?      @db.Text
+  yearsExperience Int?         @map("years_experience")
+  photoUrl        String?      @map("photo_url")
+  status          CaddyStatus  @default(PENDING)
+  appliedAt       DateTime     @default(now()) @map("applied_at")
+  approvedAt      DateTime?    @map("approved_at")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  courses         CaddyCourse[]
+  ratings         CaddyRating[]
+  requests        CaddyRequestCaddy[]
+
+  user            User?        @relation(fields: [userId], references: [id])
+
+  @@map("caddies")
+}
+
+model CaddyCourse {
+  id        String   @id @default(cuid())
+  caddyId   String   @map("caddy_id")
+  courseId   Int      @map("course_id")
+  isPrimary Boolean  @default(false) @map("is_primary")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  caddy     Caddy    @relation(fields: [caddyId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+
+  @@unique([caddyId, courseId])
+  @@map("caddy_courses")
+}
+
+model CaddyRating {
+  id         String   @id @default(cuid())
+  caddyId    String   @map("caddy_id")
+  userId     String   @map("user_id")
+  courseId    Int      @map("course_id")
+  rating     Int
+  comment    String?  @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  caddy      Caddy    @relation(fields: [caddyId], references: [id], onDelete: Cascade)
+  user       User     @relation("CaddyRatingsGiven", fields: [userId], references: [id])
+  course     Course   @relation(fields: [courseId], references: [courseId])
+
+  @@unique([caddyId, userId, courseId])
+  @@map("caddy_ratings")
+}
+
+model CaddyRequest {
+  id          String             @id @default(cuid())
+  userId      String             @map("user_id")
+  courseId     Int                @map("course_id")
+  playDate    DateTime?          @map("play_date")
+  groupSize   Int?               @map("group_size")
+  notes       String?            @db.Text
+  status      CaddyRequestStatus @default(PENDING)
+  createdAt   DateTime           @default(now()) @map("created_at")
+
+  user        User               @relation("CaddyRequestsMade", fields: [userId], references: [id])
+  course      Course             @relation(fields: [courseId], references: [courseId])
+  caddies     CaddyRequestCaddy[]
+
+  @@map("caddy_requests")
+}
+
+model CaddyRequestCaddy {
+  id         String       @id @default(cuid())
+  requestId  String       @map("request_id")
+  caddyId    String       @map("caddy_id")
+
+  request    CaddyRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  caddy      Caddy        @relation(fields: [caddyId], references: [id])
+
+  @@unique([requestId, caddyId])
+  @@map("caddy_request_caddies")
 }
 

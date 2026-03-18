@@ -73,7 +73,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/circles", label: "Circles", icon: Users, requiresAuth: true },
       { href: "/events", label: "Events", icon: Calendar },
       { href: "/fairway", label: "The Fairway", icon: Newspaper },
-      { href: "/feedback", label: "Looper Guild", icon: Flame },
+      { href: "/looper-guild", label: "Looper Guild", icon: Flame },
     ],
   },
   {

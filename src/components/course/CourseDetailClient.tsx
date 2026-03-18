@@ -14,6 +14,7 @@ import {
 import { formatCurrency } from "@/lib/utils";
 import { CoursePlaceholder } from "./CoursePlaceholder";
 import { CircleRatingsSection } from "./CircleRatingsSection";
+import { CaddyWidget } from "./CaddyWidget";
 import { PoweredByBadge } from "@/components/brand/PoweredByBadge";
 import { CourseContentSections } from "./CourseContentSections";
 import { WeatherPlayabilityCalendar, BestMonthsBadge } from "@/components/weather/WeatherPlayabilityCalendar";
@@ -2153,6 +2154,9 @@ export function CourseDetailClient({ course }: { course: any }) {
 
           return (
             <div className="max-w-3xl space-y-8">
+              {/* Looper Guild Caddies */}
+              <CaddyWidget courseId={course.courseId} courseName={course.courseName} />
+
               {/* Your Circles */}
               <CircleRatingsSection courseId={course.courseId} courseName={course.courseName} />
 
