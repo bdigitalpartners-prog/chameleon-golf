@@ -2968,3 +2968,18 @@ model CourseReadability {
   @@map("course_readability")
 }
 
+// ─── Content Sources (RSS/Atom feeds for content discovery) ───
+model ContentSource {
+  id            Int       @id @default(autoincrement())
+  name          String    @db.VarChar(200)
+  feedUrl       String?   @map("feed_url") @db.VarChar(1000)
+  websiteUrl    String    @map("website_url") @db.VarChar(1000)
+  iconUrl       String?   @map("icon_url") @db.VarChar(500)
+  contentTypes  String[]  @map("content_types")
+  isActive      Boolean   @default(true) @map("is_active")
+  lastFetchedAt DateTime? @map("last_fetched_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@map("content_sources")
+}
+

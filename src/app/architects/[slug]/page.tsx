@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArchitectContentSections } from "./ArchitectContentSections";
 import { ArchitectPortfolio } from "./ArchitectPortfolio";
 import { ArchitectDesignSignature } from "./ArchitectDesignSignature";
+import { ArchitectFeaturedContent } from "./ArchitectFeaturedContent";
 
 export const dynamic = "force-dynamic";
 
@@ -611,22 +612,8 @@ export default async function ArchitectDetailPage({ params }: Props) {
           </section>
         )}
 
-        {/* External Content — Coming Soon placeholders */}
-        <div className="grid gap-6 md:grid-cols-3 mb-6">
-          {["Further Reading", "Watch", "Bookshelf"].map((title) => (
-            <section key={title} style={cardStyle}>
-              <h2
-                className="mb-2 text-lg font-semibold"
-                style={{ color: "var(--cg-text-primary)" }}
-              >
-                {title}
-              </h2>
-              <p className="text-sm" style={{ color: "var(--cg-text-muted)" }}>
-                Coming Soon
-              </p>
-            </section>
-          ))}
-        </div>
+        {/* Featured Content about this architect (client component) */}
+        <ArchitectFeaturedContent architectId={architect.id} architectName={architect.name} />
 
         {/* Content and Books sections (client component) */}
         <ArchitectContentSections architectId={architect.id} />

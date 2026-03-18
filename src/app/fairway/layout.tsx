@@ -9,6 +9,11 @@ export const metadata: Metadata = {
     description:
       "Articles, videos, podcasts, and books about golf course architecture.",
   },
+  alternates: {
+    types: {
+      "application/rss+xml": "https://golfequalizer.ai/api/fairway/feed",
+    },
+  },
 };
 
 export default function FairwayLayout({
