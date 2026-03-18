@@ -970,7 +970,7 @@ export async function POST(request: NextRequest) {
           numListsAppeared: course.numListsAppeared || 0,
           websiteUrl: course.websiteUrl || null,
           onSiteLodging: course.onSiteLodging || null,
-          resortName: course.resortName || null,
+          resortNameField: course.resortName || null,
           isEnriched: true,
           architectId: architectMap['Jack Nicklaus'],
           updatedAt: new Date(),
