@@ -231,6 +231,113 @@ function WaitlistCTA() {
   );
 }
 
+function FromTheFairway() {
+  const [items, setItems] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch("/api/fairway?limit=4&featured=true")
+      .then((r) => r.json())
+      .then((data) => setItems(data.content || []))
+      .catch(() => {});
+  }, []);
+
+  if (items.length === 0) return null;
+
+  const typeColors: Record<string, { bg: string; text: string }> = {
+    article: { bg: "rgba(59,130,246,0.15)", text: "#60a5fa" },
+    video: { bg: "rgba(239,68,68,0.15)", text: "#f87171" },
+    podcast: { bg: "rgba(168,85,247,0.15)", text: "#c084fc" },
+  };
+
+  return (
+    <section
+      className="py-16 sm:py-20"
+      style={{
+        backgroundColor: "var(--cg-bg-secondary)",
+        borderTop: "1px solid var(--cg-border-subtle)",
+      }}
+    >
+      <div className="mx-auto max-w-7xl px-4">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2
+              className="text-2xl font-bold sm:text-3xl"
+              style={{ color: "var(--cg-text-primary)" }}
+            >
+              From The Fairway
+            </h2>
+            <p
+              className="mt-2 text-sm"
+              style={{ color: "var(--cg-text-secondary)" }}
+            >
+              Curated golf architecture content — articles, videos, and podcasts
+            </p>
+          </div>
+          <Link
+            href="/fairway"
+            className="inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-medium transition-all"
+            style={{
+              border: "1px solid var(--cg-border)",
+              color: "var(--cg-accent)",
+            }}
+          >
+            Explore The Fairway
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {items.map((item: any) => {
+            const colors = typeColors[item.contentType] || { bg: "var(--cg-bg-tertiary)", text: "var(--cg-text-muted)" };
+            return (
+              <a
+                key={item.id}
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group rounded-xl overflow-hidden transition-all hover:ring-1 hover:ring-emerald-500/40"
+                style={{
+                  backgroundColor: "var(--cg-bg-card)",
+                  border: "1px solid var(--cg-border)",
+                }}
+              >
+                <div className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span
+                      className="text-[10px] font-medium rounded-full px-2 py-0.5"
+                      style={{ backgroundColor: colors.bg, color: colors.text }}
+                    >
+                      {item.contentType}
+                    </span>
+                    {item.sourceName && (
+                      <span className="text-[10px]" style={{ color: "var(--cg-text-muted)" }}>
+                        {item.sourceName}
+                      </span>
+                    )}
+                  </div>
+                  <h3
+                    className="text-sm font-semibold line-clamp-2 group-hover:text-emerald-400 transition-colors"
+                    style={{ color: "var(--cg-text-primary)" }}
+                  >
+                    {item.title}
+                  </h3>
+                  {item.summary && (
+                    <p
+                      className="text-xs mt-2 line-clamp-2"
+                      style={{ color: "var(--cg-text-muted)" }}
+                    >
+                      {item.summary}
+                    </p>
+                  )}
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function LandingPage() {
   const { data: session, status } = useSession();
   const [activeSource, setActiveSource] = useState(0);
@@ -736,6 +843,9 @@ export default function LandingPage() {
 
       {/* ─── WAITLIST CTA ─── */}
       <WaitlistCTA />
+
+      {/* ─── FROM THE FAIRWAY ─── */}
+      <FromTheFairway />
 
       {/* ─── CTA ─── */}
       <section

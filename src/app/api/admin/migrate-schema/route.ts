@@ -455,6 +455,30 @@ export async function POST(req: NextRequest) {
       "Add updated_at to external_content"
     );
 
+    // =========================================================
+    // 9. CONTENT SOURCES TABLE
+    // =========================================================
+
+    await run(
+      `CREATE TABLE IF NOT EXISTS "content_sources" (
+        "id" SERIAL PRIMARY KEY,
+        "name" VARCHAR(200) NOT NULL,
+        "feed_url" VARCHAR(1000),
+        "website_url" VARCHAR(1000) NOT NULL,
+        "icon_url" VARCHAR(500),
+        "content_types" TEXT[] DEFAULT '{}',
+        "is_active" BOOLEAN DEFAULT true,
+        "last_fetched_at" TIMESTAMP(3),
+        "created_at" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP
+      )`,
+      "Create table content_sources"
+    );
+
+    await run(
+      `CREATE UNIQUE INDEX IF NOT EXISTS "content_sources_name_key" ON "content_sources"("name")`,
+      "Unique index: content_sources(name)"
+    );
+
     return NextResponse.json({
       success: true,
       totalOk: results.length,
