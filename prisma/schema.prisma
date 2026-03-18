@@ -470,6 +470,9 @@ model Course {
   caddyCourses            CaddyCourse[]
   caddyRatings            CaddyRating[]
   caddyRequests           CaddyRequest[]
+
+  // Readability Analysis
+  readabilityAdvice       CourseReadability[]
 }
 
 model CourseAirportProximity {
@@ -2947,5 +2950,21 @@ model CaddyRequestCaddy {
 
   @@unique([requestId, caddyId])
   @@map("caddy_request_caddies")
+}
+
+// ─── Course Readability Analysis ───
+// Caches AI-generated hole-by-hole playing advice per course + handicap band
+model CourseReadability {
+  id              String   @id @default(cuid())
+  courseId        Int      @map("course_id")
+  handicapBand    String   @map("handicap_band") @db.VarChar(20) // "scratch", "low", "mid", "high", "beginner"
+  holeAdvice      Json     @map("hole_advice") // Array of { holeNumber, par, yardage, advice, keyChallenge, recommendedPlay }
+  overallStrategy String?  @map("overall_strategy")
+  generatedAt     DateTime @default(now()) @map("generated_at")
+
+  course          Course   @relation(fields: [courseId], references: [courseId], onDelete: Cascade)
+
+  @@unique([courseId, handicapBand])
+  @@map("course_readability")
 }
 

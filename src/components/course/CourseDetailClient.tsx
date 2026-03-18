@@ -18,6 +18,7 @@ import { CaddyWidget } from "./CaddyWidget";
 import { PoweredByBadge } from "@/components/brand/PoweredByBadge";
 import { CourseContentSections } from "./CourseContentSections";
 import { WeatherPlayabilityCalendar, BestMonthsBadge } from "@/components/weather/WeatherPlayabilityCalendar";
+import { ReadabilityTab } from "./tabs/ReadabilityTab";
 
 /* ─── Safe Text Helper ─── */
 
@@ -351,7 +352,7 @@ function HoleCard({ title, holeData, accent }: { title: string; holeData: any; a
 
 /* ─── TABS ─── */
 
-const TABS = ["Overview", "Play It", "Insider Tips", "Travel & Stay", "Community"] as const;
+const TABS = ["Overview", "Play It", "Readability", "Insider Tips", "Travel & Stay", "Community"] as const;
 type Tab = (typeof TABS)[number];
 
 /* ─── Difficulty Labels & Colors ─── */
@@ -1333,6 +1334,11 @@ export function CourseDetailClient({ course }: { course: any }) {
               )}
             </div>
           </div>
+        )}
+
+        {/* ────── READABILITY TAB ────── */}
+        {activeTab === "Readability" && (
+          <ReadabilityTab course={course} />
         )}
 
         {/* ────── INSIDER TIPS TAB ────── */}
