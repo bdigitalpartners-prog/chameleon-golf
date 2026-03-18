@@ -261,12 +261,20 @@ export function PlayItTab({ course }: { course: any }) {
         </section>
       )}
 
-      {/* Strategy by Handicap — Placeholder */}
+      {/* Strategy by Handicap — link to Readability tab */}
       <section style={cardStyle}>
-        <ComingSoon
-          title="Strategy tips by handicap level coming soon"
-          description="Personalized strategy advice for low, mid, and high handicap golfers will be available soon"
-        />
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <div
+            className="flex items-center justify-center h-12 w-12 rounded-2xl mb-3"
+            style={{ backgroundColor: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)" }}
+          >
+            <span style={{ color: "#4ade80" }}>🧠</span>
+          </div>
+          <p className="text-sm font-semibold" style={{ color: "var(--cg-text-primary)" }}>Hole-by-Hole Strategy</p>
+          <p className="mt-1 text-xs max-w-sm" style={{ color: "var(--cg-text-muted)" }}>
+            Check the Readability tab for AI-powered, personalized hole-by-hole playing advice based on your handicap
+          </p>
+        </div>
       </section>
 
       <div className="flex justify-end">
