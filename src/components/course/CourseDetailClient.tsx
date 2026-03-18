@@ -19,6 +19,7 @@ import { PoweredByBadge } from "@/components/brand/PoweredByBadge";
 import { CourseContentSections } from "./CourseContentSections";
 import { WeatherPlayabilityCalendar, BestMonthsBadge } from "@/components/weather/WeatherPlayabilityCalendar";
 import { ReadabilityTab } from "./tabs/ReadabilityTab";
+import { CourseRelatedContent } from "@/app/course/[id]/CourseRelatedContent";
 
 /* ─── Safe Text Helper ─── */
 
@@ -2313,6 +2314,9 @@ export function CourseDetailClient({ course }: { course: any }) {
                   />
                 )}
               </section>
+
+              {/* Related Content */}
+              <CourseRelatedContent courseId={course.courseId} />
             </div>
           );
         })()}
