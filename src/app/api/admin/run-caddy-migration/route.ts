@@ -9,7 +9,6 @@ export const maxDuration = 60;
 const MIGRATION_TOKEN = "run-caddy-tables-2026";
 
 export async function POST(request: NextRequest) {
-  // Allow bypass via query param for migration
   const { searchParams } = new URL(request.url);
   const token = searchParams.get("token");
   if (token !== MIGRATION_TOKEN) {
@@ -53,11 +52,9 @@ export async function POST(request: NextRequest) {
         CONSTRAINT "caddies_pkey" PRIMARY KEY ("id")
       );
     `);
-    results.push("caddies table created");
-
     await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "caddies_user_id_key" ON "caddies"("user_id");`);
     await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "caddies_email_key" ON "caddies"("email");`);
-    results.push("caddies indexes created");
+    results.push("caddies table + indexes created");
 
     // Create caddy_courses table
     await prisma.$executeRawUnsafe(`
@@ -71,14 +68,10 @@ export async function POST(request: NextRequest) {
       );
     `);
     await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "caddy_courses_caddy_id_course_id_key" ON "caddy_courses"("caddy_id", "course_id");`);
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "caddy_courses" DROP CONSTRAINT IF EXISTS "caddy_courses_caddy_id_fkey";
-      ALTER TABLE "caddy_courses" ADD CONSTRAINT "caddy_courses_caddy_id_fkey" FOREIGN KEY ("caddy_id") REFERENCES "caddies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-    `);
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "caddy_courses" DROP CONSTRAINT IF EXISTS "caddy_courses_course_id_fkey";
-      ALTER TABLE "caddy_courses" ADD CONSTRAINT "caddy_courses_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "courses"("course_id") ON DELETE CASCADE ON UPDATE CASCADE;
-    `);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "caddy_courses" DROP CONSTRAINT IF EXISTS "caddy_courses_caddy_id_fkey"`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "caddy_courses" ADD CONSTRAINT "caddy_courses_caddy_id_fkey" FOREIGN KEY ("caddy_id") REFERENCES "caddies"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "caddy_courses" DROP CONSTRAINT IF EXISTS "caddy_courses_course_id_fkey"`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "caddy_courses" ADD CONSTRAINT "caddy_courses_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "courses"("course_id") ON DELETE CASCADE ON UPDATE CASCADE`);
     results.push("caddy_courses table created");
 
     // Create caddy_ratings table
@@ -95,18 +88,12 @@ export async function POST(request: NextRequest) {
       );
     `);
     await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "caddy_ratings_caddy_id_user_id_course_id_key" ON "caddy_ratings"("caddy_id", "user_id", "course_id");`);
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "caddy_ratings" DROP CONSTRAINT IF EXISTS "caddy_ratings_caddy_id_fkey";
-      ALTER TABLE "caddy_ratings" ADD CONSTRAINT "caddy_ratings_caddy_id_fkey" FOREIGN KEY ("caddy_id") REFERENCES "caddies"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-    `);
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "caddy_ratings" DROP CONSTRAINT IF EXISTS "caddy_ratings_user_id_fkey";
-      ALTER TABLE "caddy_ratings" ADD CONSTRAINT "caddy_ratings_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-    `);
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "caddy_ratings" DROP CONSTRAINT IF EXISTS "caddy_ratings_course_id_fkey";
-      ALTER TABLE "caddy_ratings" ADD CONSTRAINT "caddy_ratings_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "courses"("course_id") ON DELETE RESTRICT ON UPDATE CASCADE;
-    `);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "caddy_ratings" DROP CONSTRAINT IF EXISTS "caddy_ratings_caddy_id_fkey"`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "caddy_ratings" ADD CONSTRAINT "caddy_ratings_caddy_id_fkey" FOREIGN KEY ("caddy_id") REFERENCES "caddies"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "caddy_ratings" DROP CONSTRAINT IF EXISTS "caddy_ratings_user_id_fkey"`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "caddy_ratings" ADD CONSTRAINT "caddy_ratings_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "caddy_ratings" DROP CONSTRAINT IF EXISTS "caddy_ratings_course_id_fkey"`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "caddy_ratings" ADD CONSTRAINT "caddy_ratings_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "courses"("course_id") ON DELETE RESTRICT ON UPDATE CASCADE`);
     results.push("caddy_ratings table created");
 
     // Create caddy_requests table
@@ -123,14 +110,10 @@ export async function POST(request: NextRequest) {
         CONSTRAINT "caddy_requests_pkey" PRIMARY KEY ("id")
       );
     `);
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "caddy_requests" DROP CONSTRAINT IF EXISTS "caddy_requests_user_id_fkey";
-      ALTER TABLE "caddy_requests" ADD CONSTRAINT "caddy_requests_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-    `);
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "caddy_requests" DROP CONSTRAINT IF EXISTS "caddy_requests_course_id_fkey";
-      ALTER TABLE "caddy_requests" ADD CONSTRAINT "caddy_requests_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "courses"("course_id") ON DELETE RESTRICT ON UPDATE CASCADE;
-    `);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "caddy_requests" DROP CONSTRAINT IF EXISTS "caddy_requests_user_id_fkey"`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "caddy_requests" ADD CONSTRAINT "caddy_requests_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "caddy_requests" DROP CONSTRAINT IF EXISTS "caddy_requests_course_id_fkey"`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "caddy_requests" ADD CONSTRAINT "caddy_requests_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "courses"("course_id") ON DELETE RESTRICT ON UPDATE CASCADE`);
     results.push("caddy_requests table created");
 
     // Create caddy_request_caddies table
@@ -143,17 +126,13 @@ export async function POST(request: NextRequest) {
       );
     `);
     await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "caddy_request_caddies_request_id_caddy_id_key" ON "caddy_request_caddies"("request_id", "caddy_id");`);
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "caddy_request_caddies" DROP CONSTRAINT IF EXISTS "caddy_request_caddies_request_id_fkey";
-      ALTER TABLE "caddy_request_caddies" ADD CONSTRAINT "caddy_request_caddies_request_id_fkey" FOREIGN KEY ("request_id") REFERENCES "caddy_requests"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-    `);
-    await prisma.$executeRawUnsafe(`
-      ALTER TABLE "caddy_request_caddies" DROP CONSTRAINT IF EXISTS "caddy_request_caddies_caddy_id_fkey";
-      ALTER TABLE "caddy_request_caddies" ADD CONSTRAINT "caddy_request_caddies_caddy_id_fkey" FOREIGN KEY ("caddy_id") REFERENCES "caddies"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-    `);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "caddy_request_caddies" DROP CONSTRAINT IF EXISTS "caddy_request_caddies_request_id_fkey"`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "caddy_request_caddies" ADD CONSTRAINT "caddy_request_caddies_request_id_fkey" FOREIGN KEY ("request_id") REFERENCES "caddy_requests"("id") ON DELETE CASCADE ON UPDATE CASCADE`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "caddy_request_caddies" DROP CONSTRAINT IF EXISTS "caddy_request_caddies_caddy_id_fkey"`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "caddy_request_caddies" ADD CONSTRAINT "caddy_request_caddies_caddy_id_fkey" FOREIGN KEY ("caddy_id") REFERENCES "caddies"("id") ON DELETE RESTRICT ON UPDATE CASCADE`);
     results.push("caddy_request_caddies table created");
 
-    // Verify by counting tables
+    // Verify
     const tableCheck = await prisma.$queryRawUnsafe(`
       SELECT table_name FROM information_schema.tables 
       WHERE table_name IN ('caddies', 'caddy_courses', 'caddy_ratings', 'caddy_requests', 'caddy_request_caddies')
