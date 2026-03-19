@@ -24,6 +24,7 @@ const BREADCRUMB_MAP: Record<string, { section: string; label: string }> = {
   "/circles": { section: "Community", label: "Circles" },
   "/events": { section: "Community", label: "Events" },
   "/fairway": { section: "Community", label: "The Fairway" },
+  "/settings/handicap": { section: "My Golf", label: "My GHIN" },
   "/bucket-list": { section: "My Golf", label: "My Courses" },
   "/journal": { section: "My Golf", label: "Score Journal" },
   "/badges": { section: "My Golf", label: "EQ Tokens" },

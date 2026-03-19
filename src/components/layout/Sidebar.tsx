@@ -29,6 +29,7 @@ import {
   NotebookPen,
   GraduationCap,
   Flame,
+  FileCheck,
 } from "lucide-react";
 
 /* ─── Types ────────────────────────────────────────── */
@@ -79,6 +80,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "My Golf",
     items: [
+      { href: "/settings/handicap", label: "My GHIN", icon: FileCheck, requiresAuth: true },
       { href: "/bucket-list", label: "My Courses", icon: Heart, requiresAuth: true },
       { href: "/journal", label: "Score Journal", icon: NotebookPen, requiresAuth: true },
       { href: "/badges", label: "EQ Tokens", icon: Coins, requiresAuth: true },
