@@ -25,6 +25,7 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
+  Zap,
 } from "lucide-react";
 
 function getAdminKey() {
@@ -142,6 +143,8 @@ export default function AdminContentPage() {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [importing, setImporting] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const [enriching, setEnriching] = useState(false);
+  const [enrichResult, setEnrichResult] = useState<any>(null);
 
   const [newContent, setNewContent] = useState({
     title: "",
@@ -402,7 +405,32 @@ export default function AdminContentPage() {
           <h1 className="text-2xl font-bold text-white">Content Management</h1>
           <p className="text-sm text-gray-400 mt-1">{total} content items</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={async () => {
+              if (!confirm("This will replace ALL Fairway content with 60+ curated articles, videos, and podcasts from top golf architecture sources. Continue?")) return;
+              setEnriching(true);
+              setEnrichResult(null);
+              try {
+                const res = await fetch("/api/admin/re-enrich-fairway", {
+                  method: "POST",
+                  headers: { "x-admin-key": getAdminKey() },
+                });
+                const data = await res.json();
+                setEnrichResult(data);
+                fetchContent();
+                fetchPendingCount();
+              } catch (err) {
+                setEnrichResult({ error: "Enrichment failed" });
+              }
+              setEnriching(false);
+            }}
+            disabled={enriching}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-600 text-white font-medium hover:bg-amber-500 transition-colors disabled:opacity-50 text-sm"
+          >
+            {enriching ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
+            {enriching ? "Enriching..." : "Enrich Fairway"}
+          </button>
           <button
             onClick={() => setShowBulkImport(!showBulkImport)}
             className="px-4 py-2 rounded-lg border border-[#333] text-gray-300 hover:bg-[#1a1a1a] text-sm"
@@ -418,6 +446,32 @@ export default function AdminContentPage() {
           </button>
         </div>
       </div>
+
+      {/* Enrichment Result */}
+      {enrichResult && (
+        <div className={`rounded-xl p-4 border ${
+          enrichResult.error ? 'bg-red-900/20 border-red-800' : 'bg-green-900/20 border-green-800'
+        }`}>
+          {enrichResult.error ? (
+            <p className="text-red-400 text-sm">{enrichResult.error}</p>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-green-400 text-sm font-medium">{enrichResult.message}</p>
+              {enrichResult.architectsFound && (
+                <p className="text-gray-400 text-xs">
+                  Matched architects: {enrichResult.architectsFound.join(', ')}
+                </p>
+              )}
+              <button
+                onClick={() => setEnrichResult(null)}
+                className="text-xs text-gray-500 hover:text-gray-300"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Bulk Import */}
       {showBulkImport && (

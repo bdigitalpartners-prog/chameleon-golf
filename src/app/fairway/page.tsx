@@ -2,7 +2,7 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import {
   FileText,
@@ -14,6 +14,8 @@ import {
   ExternalLink,
   CheckCircle2,
   AlertTriangle,
+  Play,
+  X,
 } from "lucide-react";
 
 interface ContentItem {
@@ -75,6 +77,28 @@ const TABS = [
   { key: "books", label: "Books", icon: BookOpen },
 ];
 
+/** Extract YouTube video ID from various URL formats */
+function getYouTubeId(url: string): string | null {
+  if (!url) return null;
+  // Standard watch URL
+  const watchMatch = url.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/);
+  if (watchMatch) return watchMatch[1];
+  // Short URL
+  const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+  if (shortMatch) return shortMatch[1];
+  // Embed URL
+  const embedMatch = url.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/);
+  if (embedMatch) return embedMatch[1];
+  return null;
+}
+
+/** Get YouTube thumbnail URL */
+function getYouTubeThumbnail(url: string): string | null {
+  const id = getYouTubeId(url);
+  if (!id) return null;
+  return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+}
+
 function daysAgo(dateStr: string): string {
   const days = Math.floor(
     (Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24)
@@ -84,12 +108,32 @@ function daysAgo(dateStr: string): string {
   return `${days} days ago`;
 }
 
+/** Source brand colors for visual variety */
+const SOURCE_COLORS: Record<string, string> = {
+  "The Fried Egg": "#e8b931",
+  "Golf Digest": "#c62828",
+  "No Laying Up": "#2e7d32",
+  "Golf Club Atlas": "#1565c0",
+  "Random Golf Club": "#6a1b9a",
+  "Links Magazine": "#00695c",
+  "Golfweek": "#e65100",
+  "Golf Magazine / GOLF.com": "#ad1457",
+  "Fried Egg Golf": "#e8b931",
+  "GOLF Magazine": "#ad1457",
+};
+
+function getSourceColor(name: string | null | undefined): string {
+  if (!name) return "var(--cg-text-muted)";
+  return SOURCE_COLORS[name] || "var(--cg-text-muted)";
+}
+
 export default function FairwayPage() {
   const [content, setContent] = useState<ContentItem[]>([]);
   const [books, setBooks] = useState<BookItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("all");
   const [search, setSearch] = useState("");
+  const [videoModal, setVideoModal] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/fairway?hideBroken=true")
@@ -100,6 +144,15 @@ export default function FairwayPage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+  }, []);
+
+  // Close video modal on Escape
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setVideoModal(null);
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
   }, []);
 
   const filtered = useMemo(() => {
@@ -141,7 +194,17 @@ export default function FairwayPage() {
     return items;
   }, [books, tab, search]);
 
-  const featured = content.filter((c) => c.isFeatured).slice(0, 3);
+  const featured = content.filter((c) => c.isFeatured).slice(0, 6);
+
+  // Content counts for tab badges
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { all: content.length };
+    for (const item of content) {
+      c[item.contentType] = (c[item.contentType] || 0) + 1;
+    }
+    c.books = books.length;
+    return c;
+  }, [content, books]);
 
   const cardStyle: React.CSSProperties = {
     backgroundColor: "var(--cg-bg-card)",
@@ -149,11 +212,58 @@ export default function FairwayPage() {
     borderRadius: "0.75rem",
   };
 
+  /** Handle clicking a video item - open in modal or new tab */
+  const handleVideoClick = useCallback((url: string, e: React.MouseEvent) => {
+    const ytId = getYouTubeId(url);
+    if (ytId) {
+      e.preventDefault();
+      setVideoModal(ytId);
+    }
+    // For non-YouTube videos, let the link open normally
+  }, []);
+
+  /** Get thumbnail for an item - use stored thumbnail or generate from YouTube URL */
+  const getThumbnail = useCallback((item: ContentItem): string | null => {
+    if (item.thumbnailUrl) return item.thumbnailUrl;
+    if (item.contentType === "video") return getYouTubeThumbnail(item.url);
+    return null;
+  }, []);
+
   return (
     <div
       className="min-h-screen"
       style={{ backgroundColor: "var(--cg-bg-primary)" }}
     >
+      {/* YouTube Video Modal */}
+      {videoModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.85)" }}
+          onClick={() => setVideoModal(null)}
+        >
+          <div
+            className="relative w-full max-w-4xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setVideoModal(null)}
+              className="absolute -top-10 right-0 text-white/70 hover:text-white transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+              <iframe
+                className="absolute inset-0 w-full h-full rounded-xl"
+                src={`https://www.youtube.com/embed/${videoModal}?autoplay=1&rel=0`}
+                title="Video player"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto max-w-7xl px-4 py-8">
         {/* Hero */}
         <div className="mb-8">
@@ -183,97 +293,125 @@ export default function FairwayPage() {
               Featured
             </h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {featured.map((item) => (
-                <a
-                  key={item.id}
-                  href={item.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group rounded-xl overflow-hidden transition-all hover:ring-1 hover:ring-emerald-500"
-                  style={cardStyle}
-                >
-                  {item.thumbnailUrl && (
-                    <div className="aspect-video overflow-hidden">
-                      <img
-                        src={item.thumbnailUrl}
-                        alt={item.title}
-                        className="h-full w-full object-cover group-hover:scale-105 transition-transform"
-                      />
-                    </div>
-                  )}
-                  <div className="p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span
-                        className="text-xs font-medium rounded-full px-2 py-0.5"
-                        style={{
-                          backgroundColor:
-                            TYPE_COLORS[item.contentType]?.bg ??
-                            "var(--cg-bg-secondary)",
-                          color:
-                            TYPE_COLORS[item.contentType]?.text ??
-                            "var(--cg-text-muted)",
-                        }}
+              {featured.map((item) => {
+                const thumb = getThumbnail(item);
+                const ytId = getYouTubeId(item.url);
+                return (
+                  <a
+                    key={item.id}
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => {
+                      if (ytId) {
+                        e.preventDefault();
+                        setVideoModal(ytId);
+                      }
+                    }}
+                    className="group rounded-xl overflow-hidden transition-all hover:ring-1 hover:ring-emerald-500"
+                    style={cardStyle}
+                  >
+                    {thumb ? (
+                      <div className="aspect-video overflow-hidden relative">
+                        <img
+                          src={thumb}
+                          alt={item.title}
+                          className="h-full w-full object-cover group-hover:scale-105 transition-transform"
+                        />
+                        {ytId && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
+                            <div className="rounded-full bg-red-600/90 p-3 group-hover:bg-red-600 transition-colors">
+                              <Play className="h-6 w-6 text-white fill-white" />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div
+                        className="aspect-video flex items-center justify-center"
+                        style={{ backgroundColor: "var(--cg-bg-secondary)" }}
                       >
-                        {item.contentType}
-                      </span>
-                      {item.sourceName && (
+                        {item.contentType === "video" ? (
+                          <Video className="h-8 w-8" style={{ color: "var(--cg-text-muted)" }} />
+                        ) : item.contentType === "podcast" ? (
+                          <Headphones className="h-8 w-8" style={{ color: "var(--cg-text-muted)" }} />
+                        ) : (
+                          <FileText className="h-8 w-8" style={{ color: "var(--cg-text-muted)" }} />
+                        )}
+                      </div>
+                    )}
+                    <div className="p-4">
+                      <div className="flex items-center gap-2 mb-2">
                         <span
-                          className="text-xs"
+                          className="text-xs font-medium rounded-full px-2 py-0.5"
+                          style={{
+                            backgroundColor:
+                              TYPE_COLORS[item.contentType]?.bg ??
+                              "var(--cg-bg-secondary)",
+                            color:
+                              TYPE_COLORS[item.contentType]?.text ??
+                              "var(--cg-text-muted)",
+                          }}
+                        >
+                          {item.contentType}
+                        </span>
+                        {item.sourceName && (
+                          <span
+                            className="text-xs font-medium"
+                            style={{ color: getSourceColor(item.sourceName) }}
+                          >
+                            {item.sourceName}
+                          </span>
+                        )}
+                        {item.duration && (
+                          <span
+                            className="text-xs"
+                            style={{ color: "var(--cg-text-muted)" }}
+                          >
+                            {item.duration}
+                          </span>
+                        )}
+                      </div>
+                      <h3
+                        className="text-sm font-semibold line-clamp-2 group-hover:text-emerald-400 transition-colors"
+                        style={{ color: "var(--cg-text-primary)" }}
+                      >
+                        {item.title}
+                      </h3>
+                      {item.summary && (
+                        <p
+                          className="text-xs mt-1 line-clamp-2"
                           style={{ color: "var(--cg-text-muted)" }}
                         >
-                          {item.sourceName}
-                        </span>
+                          {item.summary}
+                        </p>
                       )}
-                      {item.linkStatus === "ok" && (
-                        <CheckCircle2
-                          className="h-3 w-3"
-                          style={{ color: "#22c55e" }}
-                        />
-                      )}
+                      <div className="flex items-center gap-2 mt-2 flex-wrap">
+                        {item.architects.slice(0, 3).map((a) => (
+                          <span
+                            key={a.architect.id}
+                            className="text-xs rounded-full px-2 py-0.5"
+                            style={{
+                              backgroundColor: "rgba(46,204,113,0.15)",
+                              color: "#2ECC71",
+                            }}
+                          >
+                            {a.architect.name}
+                          </span>
+                        ))}
+                        {item.architects.length > 3 && (
+                          <span
+                            className="text-xs"
+                            style={{ color: "var(--cg-text-muted)" }}
+                          >
+                            +{item.architects.length - 3} more
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <h3
-                      className="text-sm font-semibold line-clamp-2 group-hover:text-emerald-400 transition-colors"
-                      style={{ color: "var(--cg-text-primary)" }}
-                    >
-                      {item.title}
-                    </h3>
-                    {item.summary && (
-                      <p
-                        className="text-xs mt-1 line-clamp-2"
-                        style={{ color: "var(--cg-text-muted)" }}
-                      >
-                        {item.summary}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-2 mt-2">
-                      {item.architects.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {item.architects.map((a) => (
-                            <span
-                              key={a.architect.id}
-                              className="text-xs rounded-full px-2 py-0.5"
-                              style={{
-                                backgroundColor: "rgba(46,204,113,0.15)",
-                                color: "#2ECC71",
-                              }}
-                            >
-                              {a.architect.name}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    {item.lastCheckedAt && (
-                      <p
-                        className="text-[10px] mt-2"
-                        style={{ color: "var(--cg-text-muted)", opacity: 0.6 }}
-                      >
-                        Verified {daysAgo(item.lastCheckedAt)}
-                      </p>
-                    )}
-                  </div>
-                </a>
-              ))}
+                  </a>
+                );
+              })}
             </div>
           </div>
         )}
@@ -316,6 +454,17 @@ export default function FairwayPage() {
               >
                 {t.icon && <t.icon className="h-3 w-3" />}
                 {t.label}
+                {counts[t.key] !== undefined && (
+                  <span
+                    className="text-[10px] rounded-full px-1.5 py-0.5 ml-0.5"
+                    style={{
+                      backgroundColor: tab === t.key ? "rgba(0,0,0,0.2)" : "var(--cg-bg-secondary)",
+                      color: tab === t.key ? "#000" : "var(--cg-text-muted)",
+                    }}
+                  >
+                    {counts[t.key]}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -357,6 +506,8 @@ export default function FairwayPage() {
                   };
                   const isBroken =
                     item.linkStatus === "broken" || item.linkStatus === "error";
+                  const thumb = getThumbnail(item);
+                  const ytId = getYouTubeId(item.url);
                   return (
                     <div
                       key={item.id}
@@ -366,22 +517,38 @@ export default function FairwayPage() {
                         opacity: isBroken ? 0.5 : 1,
                       }}
                     >
-                      {item.thumbnailUrl && (
+                      {thumb ? (
                         <a
                           href={item.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="shrink-0"
+                          className="shrink-0 relative group/thumb cursor-pointer"
+                          onClick={(e) => handleVideoClick(item.url, e)}
                         >
                           <img
-                            src={item.thumbnailUrl}
+                            src={thumb}
                             alt=""
                             className="h-20 w-32 rounded-lg object-cover"
                           />
+                          {ytId && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover/thumb:bg-black/30 transition-colors rounded-lg">
+                              <div className="rounded-full bg-red-600/90 p-1.5">
+                                <Play className="h-3.5 w-3.5 text-white fill-white" />
+                              </div>
+                            </div>
+                          )}
                         </a>
-                      )}
+                      ) : item.contentType === "video" ? (
+                        <div
+                          className="shrink-0 h-20 w-32 rounded-lg flex items-center justify-center cursor-pointer"
+                          style={{ backgroundColor: "var(--cg-bg-secondary)" }}
+                          onClick={(e) => handleVideoClick(item.url, e as any)}
+                        >
+                          <Play className="h-6 w-6" style={{ color: "var(--cg-text-muted)" }} />
+                        </div>
+                      ) : null}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <span
                             className="inline-flex items-center gap-1 text-xs font-medium rounded-full px-2 py-0.5"
                             style={{
@@ -394,8 +561,8 @@ export default function FairwayPage() {
                           </span>
                           {item.sourceName && (
                             <span
-                              className="text-xs"
-                              style={{ color: "var(--cg-text-muted)" }}
+                              className="text-xs font-medium"
+                              style={{ color: getSourceColor(item.sourceName) }}
                             >
                               {item.sourceName}
                             </span>
@@ -407,12 +574,6 @@ export default function FairwayPage() {
                             >
                               {item.duration}
                             </span>
-                          )}
-                          {item.linkStatus === "ok" && (
-                            <CheckCircle2
-                              className="h-3 w-3"
-                              style={{ color: "#22c55e" }}
-                            />
                           )}
                           {isBroken && (
                             <span className="inline-flex items-center gap-1 text-xs text-red-400">
@@ -427,9 +588,11 @@ export default function FairwayPage() {
                           rel="noopener noreferrer"
                           className="text-sm font-semibold hover:text-emerald-400 transition-colors inline-flex items-center gap-1"
                           style={{ color: "var(--cg-text-primary)" }}
+                          onClick={(e) => handleVideoClick(item.url, e)}
                         >
                           {item.title}
-                          <ExternalLink className="h-3 w-3 shrink-0 opacity-50" />
+                          {!ytId && <ExternalLink className="h-3 w-3 shrink-0 opacity-50" />}
+                          {ytId && <Play className="h-3 w-3 shrink-0 opacity-50" />}
                         </a>
                         {item.summary && (
                           <p
@@ -466,17 +629,6 @@ export default function FairwayPage() {
                               {c.course.courseName}
                             </Link>
                           ))}
-                          {item.lastCheckedAt && (
-                            <span
-                              className="text-[10px] ml-auto"
-                              style={{
-                                color: "var(--cg-text-muted)",
-                                opacity: 0.6,
-                              }}
-                            >
-                              Verified {daysAgo(item.lastCheckedAt)}
-                            </span>
-                          )}
                         </div>
                       </div>
                     </div>
