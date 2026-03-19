@@ -68,6 +68,7 @@ function UserDropdown({ session }: { session: any }) {
           </div>
           {[
             { href: "/profile", label: "Profile" },
+            { href: "/settings/handicap", label: "My GHIN" },
             { href: "/settings/profile", label: "Settings" },
           ].map((item) => (
             <Link
@@ -182,6 +183,7 @@ export function Navbar() {
                     { href: "/feed", label: "Feed" },
                     { href: "/circles", label: "Circles" },
                     { href: "/journal", label: "Score Journal" },
+                    { href: "/settings/handicap", label: "My GHIN" },
                     { href: "/profile", label: "Profile" },
                   ]
                 : []),
@@ -263,6 +265,7 @@ export function Navbar() {
                       { href: "/feed", label: "Feed" },
                       { href: "/circles", label: "Circles" },
                       { href: "/journal", label: "Score Journal" },
+                      { href: "/settings/handicap", label: "My GHIN" },
                       { href: "/profile", label: "Profile" },
                       { href: "/settings/profile", label: "Settings" },
                     ]

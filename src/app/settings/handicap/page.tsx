@@ -185,21 +185,21 @@ export default function HandicapVerificationPage() {
       {/* Header */}
       <div className="mb-8">
         <button
-          onClick={() => router.push("/settings/profile")}
+          onClick={() => router.push("/profile")}
           className="flex items-center gap-1 text-sm mb-4 transition-colors"
           style={{ color: "var(--cg-text-muted)" }}
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Profile Settings
+          Back to Profile
         </button>
         <h1
           className="font-display text-2xl font-bold"
           style={{ color: "var(--cg-text-primary)" }}
         >
-          Handicap Verification
+          My GHIN
         </h1>
         <p className="text-sm mt-1" style={{ color: "var(--cg-text-muted)" }}>
-          Verify your GHIN handicap to display a verified badge on your profile
+          Link your GHIN number and verify your handicap to unlock verified scoring and course ratings
         </p>
       </div>
 
