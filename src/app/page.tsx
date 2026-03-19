@@ -325,6 +325,9 @@ function FromTheFairway() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {items.map((item: any) => {
             const colors = typeColors[item.contentType] || { bg: "var(--cg-bg-tertiary)", text: "var(--cg-text-muted)" };
+            // Get YouTube thumbnail
+            const ytMatch = item.url?.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/) || item.url?.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+            const thumb = item.thumbnailUrl || (ytMatch ? `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg` : null);
             return (
               <a
                 key={item.id}
@@ -337,6 +340,18 @@ function FromTheFairway() {
                   border: "1px solid var(--cg-border)",
                 }}
               >
+                {thumb && (
+                  <div className="aspect-video overflow-hidden relative">
+                    <img src={thumb} alt="" className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
+                    {item.contentType === "video" && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                        <div className="rounded-full bg-red-600/90 p-2">
+                          <svg className="h-4 w-4 text-white fill-white" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <span
