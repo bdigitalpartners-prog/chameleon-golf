@@ -58,9 +58,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Note: the `users` table has columns (id, username, password, role, name)
-    // and NO email column. Admin role is managed via JWT callback based on
-    // ADMIN_EMAILS env var. No need to insert into users table here.
+    // Ensure user exists in users table with admin role
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO users (email, role, created_at, updated_at)
+       VALUES ($1, 'admin', NOW(), NOW())
+       ON CONFLICT (email) DO UPDATE SET role = 'admin', updated_at = NOW()`,
+      trimmedEmail
+    );
 
     return NextResponse.json({ success: true, message: "Password set and admin role confirmed" });
   } catch (error: any) {

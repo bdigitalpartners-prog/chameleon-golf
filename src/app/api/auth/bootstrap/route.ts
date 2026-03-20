@@ -28,6 +28,51 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ existingCols: [...existingCols], action: "check" });
     }
 
+    if (action === "fix-nulls") {
+      // Make username and password nullable so auth_users entries can sync
+      const fixes: string[] = [];
+      try {
+        await prisma.$executeRawUnsafe(`ALTER TABLE users ALTER COLUMN username DROP NOT NULL`);
+        fixes.push("username: dropped NOT NULL");
+      } catch (e: any) { fixes.push(`username: ${e.message?.substring(0, 80)}`); }
+      try {
+        await prisma.$executeRawUnsafe(`ALTER TABLE users ALTER COLUMN password DROP NOT NULL`);
+        fixes.push("password: dropped NOT NULL");
+      } catch (e: any) { fixes.push(`password: ${e.message?.substring(0, 80)}`); }
+
+      // Now sync all auth_users into users
+      const authUsers: any[] = await prisma.$queryRawUnsafe(
+        `SELECT id, email, first_name, last_name FROM auth_users`
+      );
+      for (const au of authUsers) {
+        try {
+          await prisma.$executeRawUnsafe(
+            `INSERT INTO users (id, email, name, role, created_at, updated_at)
+             VALUES ($1, $2, $3, 'user', NOW(), NOW())
+             ON CONFLICT (email) DO UPDATE SET
+               name = COALESCE(EXCLUDED.name, users.name),
+               updated_at = NOW()`,
+            au.id, au.email, `${au.first_name} ${au.last_name}`
+          );
+          fixes.push(`SYNC: ${au.email} ✅`);
+        } catch (e: any) {
+          // Try update by id if email conflict from existing admin row
+          try {
+            await prisma.$executeRawUnsafe(
+              `UPDATE users SET email = $1, name = COALESCE($2, name), updated_at = NOW() WHERE id = $3`,
+              au.email, `${au.first_name} ${au.last_name}`, au.id
+            );
+            fixes.push(`SYNC (update): ${au.email} ✅`);
+          } catch (e2: any) {
+            fixes.push(`SYNC FAIL: ${au.email} — ${e2.message?.substring(0, 80)}`);
+          }
+        }
+      }
+
+      const allUsers: any[] = await prisma.$queryRawUnsafe(`SELECT id, name, email, role FROM users`);
+      return NextResponse.json({ action: "fix-nulls", fixes, users: allUsers });
+    }
+
     if (action === "migrate") {
       // Define all columns that need to be added to match Prisma schema
       const columnsToAdd = [
