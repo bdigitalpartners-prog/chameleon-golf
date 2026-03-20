@@ -144,9 +144,15 @@ export default function HandicapVerificationPage() {
         }),
       });
 
-      const data = await res.json();
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        setError(`Server error (${res.status}). Please try again.`);
+        return;
+      }
       if (!res.ok) {
-        setError(data.error || "Failed to submit");
+        setError(data.error || `Failed to submit (${res.status})`);
         return;
       }
 
@@ -158,8 +164,9 @@ export default function HandicapVerificationPage() {
       setHandicapIndex("");
       setScreenshotPreview("");
       setScreenshotFile(null);
-    } catch {
-      setError("Failed to submit verification. Please try again.");
+    } catch (err: any) {
+      console.error("GHIN submit error:", err);
+      setError(err?.message || "Failed to submit verification. Please try again.");
     } finally {
       setSubmitting(false);
     }
