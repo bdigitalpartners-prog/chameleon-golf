@@ -473,6 +473,12 @@ model Course {
 
   // Readability Analysis
   readabilityAdvice       CourseReadability[]
+
+  // Logo
+  logoUrl               String?   @map("logo_url") @db.VarChar(1000)
+  logoLocalPath         String?   @map("logo_local_path") @db.VarChar(500)
+  logoSource            String?   @map("logo_source") @db.VarChar(255)
+  logoBackgroundColor   String?   @map("logo_background_color") @db.VarChar(50)
 }
 
 model CourseAirportProximity {
