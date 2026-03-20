@@ -594,7 +594,7 @@ export function CourseDetailClient({ course }: { course: any }) {
             </div>
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
             {primaryImage.credit && (
-              <div className="absolute bottom-3 right-3 z-10 rounded px-2 py-1 text-xs text-white/90 bg-black/50 backdrop-blur-sm">
+              <div className={`absolute ${course.logoUrl && course.logoSource !== 'favicon' && course.logoSource !== 'favicon-fallback' ? 'bottom-24' : 'bottom-3'} right-3 z-10 rounded px-2 py-1 text-xs text-white/90 bg-black/50 backdrop-blur-sm`}>
                 Photo: {primaryImage.credit}
               </div>
             )}
@@ -637,6 +637,26 @@ export function CourseDetailClient({ course }: { course: any }) {
             >
               {Math.round(scoreNum)}
             </div>
+          </div>
+        )}
+
+        {/* Club logo - bottom right */}
+        {course.logoUrl && course.logoSource !== 'favicon' && course.logoSource !== 'favicon-fallback' && (
+          <div
+            className="absolute bottom-5 right-4 md:bottom-6 md:right-6 z-10 flex items-center justify-center rounded-xl shadow-lg"
+            style={{
+              backgroundColor: "rgba(255,255,255,0.95)",
+              width: 72,
+              height: 72,
+              padding: 8,
+            }}
+          >
+            <img
+              src={course.logoUrl}
+              alt={`${course.courseName} logo`}
+              className="max-w-[56px] max-h-[56px] object-contain"
+              onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
+            />
           </div>
         )}
 

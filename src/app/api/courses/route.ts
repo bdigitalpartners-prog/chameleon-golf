@@ -96,6 +96,8 @@ export async function GET(req: NextRequest) {
         chameleon_score: string | null;
         prestige_score: string | null;
         primary_image_url: string | null;
+        logo_url: string | null;
+        logo_source: string | null;
         weighted_score: string | null;
         total_count: bigint;
       };
@@ -122,6 +124,8 @@ export async function GET(req: NextRequest) {
           cs.chameleon_score::text,
           cs.prestige_score::text,
           (SELECT cm.url FROM course_media cm WHERE cm.course_id = c.course_id AND cm.is_primary = true LIMIT 1) as primary_image_url,
+          c.logo_url,
+          c.logo_source,
           CASE
             WHEN cs.id IS NOT NULL THEN
               (
@@ -188,6 +192,8 @@ export async function GET(req: NextRequest) {
           chameleonScore: r.chameleon_score ? parseFloat(r.chameleon_score) : null,
           prestigeScore: r.prestige_score,
           primaryImageUrl: r.primary_image_url,
+          logoUrl: r.logo_url,
+          logoSource: r.logo_source,
           bestRank: rankings[0]?.rankPosition ?? null,
           bestSource: rankings[0]?.list?.source?.sourceName ?? null,
           rankings: rankings.slice(0, 3).map((re) => ({
@@ -242,6 +248,8 @@ export async function GET(req: NextRequest) {
         chameleon_score: string | null;
         prestige_score: string | null;
         primary_image_url: string | null;
+        logo_url: string | null;
+        logo_source: string | null;
         gd_rank: number | null;
         total_count: bigint;
       };
@@ -270,6 +278,8 @@ export async function GET(req: NextRequest) {
           cs.chameleon_score::text,
           cs.prestige_score::text,
           (SELECT cm.url FROM course_media cm WHERE cm.course_id = c.course_id AND cm.is_primary = true LIMIT 1) as primary_image_url,
+          c.logo_url,
+          c.logo_source,
           re.rank_position as gd_rank,
           COUNT(*) OVER() as total_count
         FROM courses c
@@ -335,6 +345,8 @@ export async function GET(req: NextRequest) {
           chameleonScore: r.chameleon_score ? parseFloat(r.chameleon_score) : null,
           prestigeScore: r.prestige_score,
           primaryImageUrl: r.primary_image_url,
+          logoUrl: r.logo_url,
+          logoSource: r.logo_source,
           bestRank: rankings[0]?.rankPosition ?? null,
           bestSource: rankings[0]?.list?.source?.sourceName ?? null,
           rankings: rankings.slice(0, 3).map((re) => ({
@@ -424,6 +436,8 @@ export async function GET(req: NextRequest) {
       chameleonScore: c.chameleonScores?.chameleonScore ? parseFloat(c.chameleonScores.chameleonScore.toString()) : null,
       prestigeScore: c.chameleonScores?.prestigeScore?.toString() ?? null,
       primaryImageUrl: c.media[0]?.url ?? null,
+      logoUrl: c.logoUrl ?? null,
+      logoSource: c.logoSource ?? null,
       bestRank: c.rankings[0]?.rankPosition ?? null,
       bestSource: c.rankings[0]?.list?.source?.sourceName ?? null,
       rankings: c.rankings.map((r) => ({

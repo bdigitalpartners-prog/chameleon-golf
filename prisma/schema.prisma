@@ -479,6 +479,7 @@ model Course {
   logoLocalPath         String?   @map("logo_local_path") @db.VarChar(500)
   logoSource            String?   @map("logo_source") @db.VarChar(255)
   logoBackgroundColor   String?   @map("logo_background_color") @db.VarChar(50)
+  logoQualityTier       String?   @map("logo_quality_tier") @db.VarChar(20)
 }
 
 model CourseAirportProximity {

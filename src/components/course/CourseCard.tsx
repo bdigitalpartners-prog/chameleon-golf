@@ -101,6 +101,20 @@ export function CourseCard({ course, showWeightedScore }: { course: CourseCardTy
             <div className="absolute bottom-3 left-3" style={{ zIndex: 10 }}>
               <BucketListButton courseId={course.courseId} courseName={course.courseName} size="sm" />
             </div>
+            {course.logoUrl && course.logoSource !== 'favicon' && course.logoSource !== 'favicon-fallback' && (
+              <div
+                className="absolute bottom-3 right-3 flex items-center justify-center rounded-lg shadow-md"
+                style={{ backgroundColor: "rgba(255,255,255,0.92)", width: 40, height: 40, padding: 4, zIndex: 10 }}
+              >
+                <img
+                  src={course.logoUrl}
+                  alt=""
+                  className="max-w-[32px] max-h-[32px] object-contain"
+                  loading="lazy"
+                  onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
+                />
+              </div>
+            )}
           </div>
           <div className="p-4">
             <h3

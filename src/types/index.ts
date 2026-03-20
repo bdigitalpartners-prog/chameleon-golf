@@ -19,6 +19,8 @@ export interface CourseCard {
   chameleonScore: number | null;
   prestigeScore: string | null;
   primaryImageUrl: string | null;
+  logoUrl: string | null;
+  logoSource: string | null;
   bestRank: number | null;
   bestSource: string | null;
   rankings: { rank: number; list: string; source: string }[];
