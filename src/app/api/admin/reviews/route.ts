@@ -74,41 +74,47 @@ export async function GET(request: NextRequest) {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const [ratings, total, totalAll, avgRating, ratingsThisMonth, pendingScores] = await Promise.all([
-      prisma.userCourseRating.findMany({
-        where,
-        include: {
-          user: { select: { id: true, name: true } },
-          course: { select: { courseId: true, courseName: true } },
-        },
-        orderBy: { createdAt: "desc" },
-        take: limit,
-        skip: (page - 1) * limit,
-      }),
-      prisma.userCourseRating.count({ where }),
+    // Use raw SQL to avoid Prisma relation errors when user_ids don't exist in users table
+    // (seeded reviews may reference fake user IDs)
+    const offset = (page - 1) * limit;
+    
+    const [ratingsRaw, totalAll, avgRating, ratingsThisMonth, pendingScores] = await Promise.all([
+      prisma.$queryRawUnsafe<any[]>(`
+        SELECT r.rating_id, r.user_id, u.name as user_name, r.course_id, c.course_name,
+               r.overall_rating, r.conditioning, r.layout_design, r.value,
+               r.review_title, r.is_published, r.is_seed, r.seed_source, 
+               r.seed_reviewer_name, r.created_at
+        FROM user_course_ratings r
+        LEFT JOIN users u ON r.user_id = u.id
+        LEFT JOIN courses c ON r.course_id = c.course_id
+        ORDER BY r.created_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `),
       prisma.userCourseRating.count(),
       prisma.userCourseRating.aggregate({ _avg: { overallRating: true } }),
       prisma.userCourseRating.count({ where: { createdAt: { gte: monthStart } } }),
       prisma.postedScore.count({ where: { verificationStatus: "unverified" } }),
     ]);
 
+    const total = totalAll; // For unfiltered, total == totalAll
+
     return NextResponse.json({
-      ratings: ratings.map((r) => ({
-        ratingId: r.ratingId,
-        userId: r.userId,
-        userName: r.user.name,
-        courseId: r.courseId,
-        courseName: r.course.courseName,
-        overallRating: Number(r.overallRating),
+      ratings: ratingsRaw.map((r: any) => ({
+        ratingId: r.rating_id,
+        userId: r.user_id,
+        userName: r.user_name || r.seed_reviewer_name || "Unknown",
+        courseId: r.course_id,
+        courseName: r.course_name || "Unknown Course",
+        overallRating: r.overall_rating ? Number(r.overall_rating) : 0,
         conditioning: r.conditioning ? Number(r.conditioning) : null,
-        layoutDesign: r.layoutDesign ? Number(r.layoutDesign) : null,
+        layoutDesign: r.layout_design ? Number(r.layout_design) : null,
         value: r.value ? Number(r.value) : null,
-        reviewTitle: r.reviewTitle,
-        isPublished: r.isPublished,
-        isSeed: r.isSeed,
-        seedSource: r.seedSource,
-        seedReviewerName: r.seedReviewerName,
-        createdAt: r.createdAt,
+        reviewTitle: r.review_title,
+        isPublished: r.is_published,
+        isSeed: r.is_seed,
+        seedSource: r.seed_source,
+        seedReviewerName: r.seed_reviewer_name,
+        createdAt: r.created_at,
       })),
       total,
       page,

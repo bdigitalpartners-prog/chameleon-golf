@@ -1,15 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { trackPageView } from "@/lib/analytics";
 
 /**
- * Client-side route-change tracker.
- * Fires a page_view event to GA4 on every Next.js soft navigation.
- * (The initial hard-load page_view is handled by gtag('config', …).)
+ * Inner tracker that uses useSearchParams (must be inside Suspense).
  */
-export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
+function AnalyticsTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -18,5 +16,21 @@ export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
     trackPageView(url);
   }, [pathname, searchParams]);
 
-  return <>{children}</>;
+  return null;
+}
+
+/**
+ * Client-side route-change tracker.
+ * Fires a page_view event to GA4 on every Next.js soft navigation.
+ * (The initial hard-load page_view is handled by gtag('config', …).)
+ */
+export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <Suspense fallback={null}>
+        <AnalyticsTracker />
+      </Suspense>
+      {children}
+    </>
+  );
 }
