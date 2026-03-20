@@ -32,6 +32,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
           take: 10,
         },
         chameleonScores: true,
+        nearbyDining: { orderBy: { sortOrder: "asc" } },
+        nearbyLodging: { orderBy: { sortOrder: "asc" } },
+        nearbyAttractions: { orderBy: { sortOrder: "asc" } },
         intelligenceNotes: {
           where: { isVisible: true },
           orderBy: { category: "asc" },
