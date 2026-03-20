@@ -1287,11 +1287,11 @@ function MediaTab({
                     />
                   </div>
                 )}
-                <p className="text-xs mt-0.5 ${
+                <p className={`text-xs mt-0.5 ${
                   uf.status === "done" ? "text-green-400" :
                   uf.status === "error" ? "text-red-400" :
                   uf.status === "processing" ? "text-blue-400" : "text-gray-500"
-                }">
+                }`}>
                   {uf.status === "uploading" && "Uploading..."}
                   {uf.status === "processing" && "Saving to course..."}
                   {uf.status === "done" && "Done"}
