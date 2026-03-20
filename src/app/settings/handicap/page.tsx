@@ -47,7 +47,7 @@ export default function HandicapVerificationPage() {
   const [ghinNumber, setGhinNumber] = useState("");
   const [handicapIndex, setHandicapIndex] = useState("");
   const [screenshotPreview, setScreenshotPreview] = useState("");
-  const [screenshotDataUrl, setScreenshotDataUrl] = useState("");
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchStatus = useCallback(async () => {
@@ -86,11 +86,10 @@ export default function HandicapVerificationPage() {
     }
 
     setError("");
+    setScreenshotFile(file);
     const reader = new FileReader();
     reader.onload = () => {
-      const dataUrl = reader.result as string;
-      setScreenshotPreview(dataUrl);
-      setScreenshotDataUrl(dataUrl);
+      setScreenshotPreview(reader.result as string);
     };
     reader.readAsDataURL(file);
   };
@@ -111,20 +110,37 @@ export default function HandicapVerificationPage() {
       return;
     }
 
-    if (!screenshotDataUrl) {
+    if (!screenshotFile) {
       setError("Please upload a screenshot of your GHIN profile");
       return;
     }
 
     setSubmitting(true);
     try {
+      // Upload screenshot to R2 first
+      let screenshotUrl = "";
+      const uploadForm = new FormData();
+      uploadForm.append("file", screenshotFile);
+      uploadForm.append("type", "ghin");
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: uploadForm,
+      });
+      if (uploadRes.ok) {
+        const uploadData = await uploadRes.json();
+        screenshotUrl = uploadData.url;
+      } else {
+        // R2 may not be configured — submit without screenshot URL
+        console.warn("Screenshot upload failed, submitting without URL");
+      }
+
       const res = await fetch("/api/ghin/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ghinNumber: ghinNumber.trim(),
           handicapIndex: parsedHandicap,
-          screenshotUrl: screenshotDataUrl,
+          screenshotUrl,
         }),
       });
 
@@ -141,7 +157,7 @@ export default function HandicapVerificationPage() {
       setGhinNumber("");
       setHandicapIndex("");
       setScreenshotPreview("");
-      setScreenshotDataUrl("");
+      setScreenshotFile(null);
     } catch {
       setError("Failed to submit verification. Please try again.");
     } finally {
@@ -151,7 +167,7 @@ export default function HandicapVerificationPage() {
 
   const clearScreenshot = () => {
     setScreenshotPreview("");
-    setScreenshotDataUrl("");
+    setScreenshotFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 

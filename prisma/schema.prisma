@@ -85,7 +85,7 @@ model AdminVerificationQueue {
   userId             String    @map("user_id")
   courseId            Int       @map("course_id")
   submittedAt        DateTime  @default(now()) @map("submitted_at")
-  screenshotUrl      String?   @map("screenshot_url") @db.VarChar(500)
+  screenshotUrl      String?   @map("screenshot_url") @db.Text
   ghinNumber         String?   @map("ghin_number") @db.VarChar(20)
   status             String    @default("pending") @db.VarChar(20)
   reviewedBy         String?   @map("reviewed_by")
