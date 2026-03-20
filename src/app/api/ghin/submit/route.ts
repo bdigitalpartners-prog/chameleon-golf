@@ -23,79 +23,45 @@ export async function POST(req: NextRequest) {
 
     const trimmedGhin = ghinNumber.trim();
     const handicapVal = handicapIndex != null && !isNaN(Number(handicapIndex)) ? Number(handicapIndex) : null;
-    const screenshot = screenshotUrl || "";
+    const screenshot = screenshotUrl || null;
 
-    // Update user's GHIN number and handicap index
+    // Check for existing pending/approved entry
+    const existing = await prisma.$queryRaw<Array<{ status: string }>>`
+      SELECT status FROM admin_verification_queue
+      WHERE user_id = ${userId} AND status IN ('pending', 'approved')
+      LIMIT 1
+    `;
+
+    if (existing.length > 0) {
+      return NextResponse.json({
+        error: existing[0].status === "approved"
+          ? "Your GHIN is already verified"
+          : "You already have a pending verification request",
+      }, { status: 409 });
+    }
+
+    // Update user record
     await prisma.$executeRaw`
-      UPDATE users 
-      SET ghin_number = ${trimmedGhin}, 
+      UPDATE users
+      SET ghin_number = ${trimmedGhin},
           handicap_index = ${handicapVal}
       WHERE id = ${userId}
     `;
 
-    // Ensure user has a UserProfile (required for ghin_verifications FK)
-    await prisma.$executeRaw`
-      INSERT INTO "UserProfile" (id, "userId", "createdAt", "updatedAt")
-      VALUES (gen_random_uuid()::text, ${userId}, NOW(), NOW())
-      ON CONFLICT ("userId") DO NOTHING
+    // Create verification queue entry
+    const result = await prisma.$queryRaw<Array<{ queue_id: number }>>`
+      INSERT INTO admin_verification_queue (user_id, score_id, course_id, screenshot_url, ghin_number, status, submitted_at)
+      VALUES (${userId}, 0, 0, ${screenshot}, ${trimmedGhin}, 'pending', NOW())
+      RETURNING queue_id
     `;
-
-    // Get the user's profile ID
-    const profileRows = await prisma.$queryRaw<Array<{id: string}>>`
-      SELECT id FROM "UserProfile" WHERE "userId" = ${userId} LIMIT 1
-    `;
-    const profileId = profileRows[0]?.id;
-
-    // Write to ghin_verifications (primary table for admin queue)
-    let queueId: string | null = null;
-    if (profileId) {
-      try {
-        // Remove any existing pending entry first
-        await prisma.$executeRaw`
-          DELETE FROM ghin_verifications 
-          WHERE user_id = ${profileId} AND status = 'pending'
-        `;
-
-        const verifResult = await prisma.$queryRaw<Array<{id: string}>>`
-          INSERT INTO ghin_verifications (id, user_id, ghin_number, handicap_index, screenshot_url, status, created_at, updated_at)
-          VALUES (gen_random_uuid()::text, ${profileId}, ${trimmedGhin}, ${handicapVal}, ${screenshot}, 'pending', NOW(), NOW())
-          RETURNING id
-        `;
-        queueId = verifResult[0]?.id ?? null;
-      } catch (gvErr: any) {
-        console.warn("ghin_verifications insert failed (table may not exist):", gvErr.message);
-      }
-    }
-
-    // Also write to admin_verification_queue as fallback
-    try {
-      // Remove any existing pending entry first
-      await prisma.$executeRaw`
-        DELETE FROM admin_verification_queue 
-        WHERE user_id = ${userId} AND status = 'pending'
-      `;
-
-      const aqResult = await prisma.$queryRaw<Array<{queue_id: number}>>`
-        INSERT INTO admin_verification_queue (user_id, score_id, course_id, screenshot_url, ghin_number, status, submitted_at)
-        VALUES (${userId}, 0, 0, ${screenshot || null}, ${trimmedGhin}, 'pending', NOW())
-        RETURNING queue_id
-      `;
-      if (!queueId) queueId = String(aqResult[0]?.queue_id ?? "");
-    } catch (aqErr: any) {
-      console.warn("admin_verification_queue insert failed:", aqErr.message);
-    }
-
-    if (!queueId) {
-      return NextResponse.json({ error: "Failed to create verification entry" }, { status: 500 });
-    }
 
     return NextResponse.json({
       success: true,
-      queueId,
+      queueId: result[0]?.queue_id,
       message: "Verification request submitted. An admin will review it shortly.",
     });
   } catch (error: any) {
-    console.error("POST /api/ghin/submit error:", error?.message || error, JSON.stringify(error?.meta || {}));
+    console.error("POST /api/ghin/submit error:", error?.message || error);
     return NextResponse.json(
       { error: error?.message || "Internal server error" },
       { status: 500 }
@@ -111,30 +77,53 @@ export async function GET() {
 
   const userId = (session.user as any).id;
 
-  const verification = await prisma.adminVerificationQueue.findFirst({
-    where: { userId },
-    orderBy: { submittedAt: "desc" },
-  });
+  try {
+    // Raw SQL to avoid Prisma schema mismatch
+    const users = await prisma.$queryRaw<Array<{
+      ghin_number: string | null;
+      ghin_verified: boolean;
+      ghin_verified_at: Date | null;
+      handicap_index: number | null;
+    }>>`
+      SELECT ghin_number, ghin_verified, ghin_verified_at, handicap_index
+      FROM users WHERE id = ${userId} LIMIT 1
+    `;
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      ghinNumber: true,
-      ghinVerified: true,
-      ghinVerifiedAt: true,
-    },
-  });
+    const queue = await prisma.$queryRaw<Array<{
+      queue_id: number;
+      ghin_number: string | null;
+      status: string;
+      review_notes: string | null;
+      submitted_at: Date;
+      reviewed_at: Date | null;
+    }>>`
+      SELECT queue_id, ghin_number, status, review_notes, submitted_at, reviewed_at
+      FROM admin_verification_queue
+      WHERE user_id = ${userId}
+      ORDER BY submitted_at DESC
+      LIMIT 1
+    `;
 
-  return NextResponse.json({
-    ghinNumber: user?.ghinNumber,
-    ghinVerified: user?.ghinVerified ?? false,
-    ghinVerifiedAt: user?.ghinVerifiedAt,
-    latestSubmission: verification
-      ? {
-          status: verification.status,
-          submittedAt: verification.submittedAt,
-          reviewNotes: verification.reviewNotes,
-        }
-      : null,
-  });
+    const user = users[0] ?? null;
+    const entry = queue[0] ?? null;
+
+    return NextResponse.json({
+      ghinNumber: user?.ghin_number,
+      ghinVerified: user?.ghin_verified ?? false,
+      ghinVerifiedAt: user?.ghin_verified_at,
+      latestSubmission: entry
+        ? {
+            status: entry.status,
+            submittedAt: entry.submitted_at,
+            reviewNotes: entry.review_notes,
+          }
+        : null,
+    });
+  } catch (error: any) {
+    console.error("GET /api/ghin/submit error:", error?.message || error);
+    return NextResponse.json(
+      { error: error?.message || "Internal server error" },
+      { status: 500 }
+    );
+  }
 }

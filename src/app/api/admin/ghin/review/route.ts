@@ -28,17 +28,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const verification = await prisma.ghinVerification.findUnique({
-      where: { id: verificationId },
-      include: { userProfile: true },
-    });
+    const queueId = parseInt(verificationId, 10);
 
-    if (!verification) {
-      return NextResponse.json(
-        { error: "Verification not found" },
-        { status: 404 }
-      );
+    // Look up the verification entry
+    const rows = await prisma.$queryRaw<Array<{
+      queue_id: number;
+      user_id: string;
+      ghin_number: string | null;
+      status: string;
+    }>>`
+      SELECT queue_id, user_id, ghin_number, status
+      FROM admin_verification_queue
+      WHERE queue_id = ${queueId}
+      LIMIT 1
+    `;
+
+    if (rows.length === 0) {
+      return NextResponse.json({ error: "Verification not found" }, { status: 404 });
     }
+
+    const verification = rows[0];
 
     if (verification.status !== "pending") {
       return NextResponse.json(
@@ -47,53 +56,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get reviewer ID from session
+    // Get reviewer ID
     const session = await getServerSession(authOptions);
     const reviewerId = (session?.user as any)?.id || null;
-
     const newStatus = action === "approve" ? "approved" : "rejected";
 
-    // Update verification
-    const updated = await prisma.ghinVerification.update({
-      where: { id: verificationId },
-      data: {
-        status: newStatus,
-        reviewedBy: reviewerId,
-        reviewedAt: new Date(),
-        reviewNote: note || null,
-      },
-    });
+    // Update the queue entry
+    await prisma.$executeRaw`
+      UPDATE admin_verification_queue
+      SET status = ${newStatus},
+          reviewed_by = ${reviewerId},
+          reviewed_at = NOW(),
+          review_notes = ${note || null}
+      WHERE queue_id = ${queueId}
+    `;
 
-    // If approved, update the user profile with verified handicap
-    if (action === "approve") {
-      await prisma.userProfile.update({
-        where: { id: verification.userId },
-        data: {
-          handicapIndex: verification.handicapIndex,
-          handicapVerified: true,
-          ghinNumber: verification.ghinNumber,
-        },
-      });
-
-      // Also update the User model's GHIN fields
-      await prisma.user.update({
-        where: { id: verification.userProfile.userId },
-        data: {
-          ghinNumber: verification.ghinNumber,
-          handicapIndex: verification.handicapIndex,
-          ghinVerified: true,
-          ghinVerifiedAt: new Date(),
-        },
-      });
+    // If approved, update the user's GHIN verification status
+    if (action === "approve" && verification.user_id) {
+      await prisma.$executeRaw`
+        UPDATE users
+        SET ghin_verified = true,
+            ghin_verified_at = NOW()
+        WHERE id = ${verification.user_id}
+      `;
     }
 
     return NextResponse.json({
-      id: updated.id,
-      status: updated.status,
-      reviewedAt: updated.reviewedAt,
+      id: String(queueId),
+      status: newStatus,
+      reviewedAt: new Date().toISOString(),
     });
-  } catch (err) {
-    console.error("GHIN review error:", err);
+  } catch (err: any) {
+    console.error("GHIN review error:", err?.message || err);
     return NextResponse.json(
       { error: "Failed to review verification" },
       { status: 500 }
