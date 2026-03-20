@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Save, Loader2, Plus, Trash2, X, Star, Pencil, ImageIcon, Sparkles, CheckCircle, AlertCircle, Video, Instagram, Play, Link as LinkIcon, ExternalLink } from "lucide-react";
+import { ArrowLeft, Save, Loader2, Plus, Trash2, X, Star, Pencil, ImageIcon, Sparkles, CheckCircle, AlertCircle, Video, Instagram, Play, Link as LinkIcon, ExternalLink, Upload, GripVertical, FileVideo } from "lucide-react";
 
 function getAdminKey() {
   if (typeof window === "undefined") return "";
@@ -845,10 +845,8 @@ export default function CourseEditorPage() {
 /* ─────────────────────────── Media Tab Component ─────────────────────────── */
 
 function getVideoThumbnail(url: string): string | null {
-  // YouTube
   const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
   if (ytMatch) return `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg`;
-  // Vimeo — can't easily get thumbnail without API, return null
   return null;
 }
 
@@ -864,6 +862,23 @@ function detectVideoType(url: string): string {
   if (url.match(/youtube\.com|youtu\.be/i)) return "youtube";
   if (url.match(/vimeo\.com/i)) return "vimeo";
   return "direct";
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  return (bytes / (1024 * 1024 * 1024)).toFixed(2) + " GB";
+}
+
+interface UploadingFile {
+  id: string;
+  file: File;
+  progress: number;
+  status: "uploading" | "processing" | "done" | "error";
+  error?: string;
+  url?: string;
+  preview?: string;
 }
 
 function MediaTab({
@@ -893,13 +908,18 @@ function MediaTab({
   const [editSaving, setEditSaving] = useState(false);
   const [mediaMessage, setMediaMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+  // Upload state
+  const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = { current: null as HTMLInputElement | null };
+
   useEffect(() => {
     setMedia(initialMedia);
   }, [initialMedia]);
 
   const showMsg = (type: "success" | "error", text: string) => {
     setMediaMessage({ type, text });
-    setTimeout(() => setMediaMessage(null), 3000);
+    setTimeout(() => setMediaMessage(null), 4000);
   };
 
   const resetForm = () => {
@@ -911,6 +931,179 @@ function MediaTab({
     setPreviewError(false);
   };
 
+  // ---- File Upload Logic ----
+  const ACCEPTED_IMAGE = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"];
+  const ACCEPTED_VIDEO = ["video/mp4", "video/webm", "video/quicktime", "video/x-msvideo", "video/x-matroska"];
+  const ALL_ACCEPTED = [...ACCEPTED_IMAGE, ...ACCEPTED_VIDEO];
+
+  const uploadFile = async (file: File): Promise<{ url: string; mediaType: string } | null> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("folder", "course-media");
+    formData.append("courseId", courseId);
+
+    const res = await fetch("/api/admin/upload", {
+      method: "POST",
+      headers: { "x-admin-key": adminKey },
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || "Upload failed");
+    }
+
+    const result = await res.json();
+    return { url: result.url, mediaType: result.mediaType };
+  };
+
+  const createMediaRecord = async (url: string, mediaType: string, caption?: string) => {
+    const body: any = {
+      url,
+      mediaType,
+      caption: caption || null,
+      credit: null,
+      isPrimary: false,
+    };
+    if (mediaType === "video") {
+      body.imageType = "uploaded";
+    }
+    const res = await fetch(`/api/admin/courses/${courseId}/media`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || "Failed to create media record");
+    }
+  };
+
+  const processFiles = async (files: File[]) => {
+    const validFiles = files.filter((f) => ALL_ACCEPTED.includes(f.type));
+    const invalidFiles = files.filter((f) => !ALL_ACCEPTED.includes(f.type));
+
+    if (invalidFiles.length > 0) {
+      showMsg("error", `${invalidFiles.length} file(s) skipped — unsupported format. Use JPG, PNG, WebP, GIF, MP4, WebM, or MOV.`);
+    }
+
+    if (validFiles.length === 0) return;
+
+    const newUploads: UploadingFile[] = validFiles.map((file) => {
+      const isImage = ACCEPTED_IMAGE.includes(file.type);
+      let preview: string | undefined;
+      if (isImage) {
+        preview = URL.createObjectURL(file);
+      }
+      return {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        file,
+        progress: 0,
+        status: "uploading" as const,
+        preview,
+      };
+    });
+
+    setUploadingFiles((prev) => [...prev, ...newUploads]);
+
+    // Process uploads concurrently (max 3)
+    const processQueue = async (uploads: UploadingFile[]) => {
+      const queue = [...uploads];
+      const active: Promise<void>[] = [];
+
+      const processOne = async (item: UploadingFile) => {
+        try {
+          // Update to uploading
+          setUploadingFiles((prev) =>
+            prev.map((u) => (u.id === item.id ? { ...u, status: "uploading" as const, progress: 30 } : u))
+          );
+
+          const result = await uploadFile(item.file);
+
+          if (!result) throw new Error("Upload returned no result");
+
+          // Update to processing (creating DB record)
+          setUploadingFiles((prev) =>
+            prev.map((u) => (u.id === item.id ? { ...u, status: "processing" as const, progress: 70, url: result.url } : u))
+          );
+
+          const caption = item.file.name.replace(/\.[^.]+$/, "").replace(/[-_]/g, " ");
+          await createMediaRecord(result.url, result.mediaType, caption);
+
+          // Done
+          setUploadingFiles((prev) =>
+            prev.map((u) => (u.id === item.id ? { ...u, status: "done" as const, progress: 100 } : u))
+          );
+        } catch (err: any) {
+          setUploadingFiles((prev) =>
+            prev.map((u) =>
+              u.id === item.id ? { ...u, status: "error" as const, error: err.message } : u
+            )
+          );
+        }
+      };
+
+      for (const item of queue) {
+        if (active.length >= 3) {
+          await Promise.race(active);
+        }
+        const p = processOne(item).then(() => {
+          const idx = active.indexOf(p);
+          if (idx > -1) active.splice(idx, 1);
+        });
+        active.push(p);
+      }
+
+      await Promise.all(active);
+    };
+
+    await processQueue(newUploads);
+
+    // Refresh media list
+    onMediaChange();
+
+    // Clean up completed uploads after a delay
+    setTimeout(() => {
+      setUploadingFiles((prev) => prev.filter((u) => u.status !== "done"));
+      // Revoke object URLs
+      newUploads.forEach((u) => {
+        if (u.preview) URL.revokeObjectURL(u.preview);
+      });
+    }, 2000);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) processFiles(files);
+    // Reset input
+    if (e.target) e.target.value = "";
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) processFiles(files);
+  };
+
+  const clearUploadError = (id: string) => {
+    setUploadingFiles((prev) => prev.filter((u) => u.id !== id));
+  };
+
+  // ---- URL-based add ----
   const handleAdd = async (mediaType: string) => {
     if (!addUrl.trim()) return;
     setAdding(true);
@@ -1012,33 +1205,140 @@ function MediaTab({
   const labelClass = "block text-xs text-gray-400 mb-1";
 
   const videoThumb = showAddForm === "video" && addUrl.trim() ? getVideoThumbnail(addUrl.trim()) : null;
+  const isUploading = uploadingFiles.some((u) => u.status === "uploading" || u.status === "processing");
 
   return (
     <div>
-      {/* Header */}
+      {/* ===== UPLOAD DROP ZONE ===== */}
+      <div
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={() => fileInputRef.current?.click()}
+        className={`mb-6 border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+          isDragging
+            ? "border-[#22c55e] bg-[#22c55e]/10"
+            : "border-[#333] bg-[#0a0a0a] hover:border-[#555] hover:bg-[#0d0d0d]"
+        }`}
+      >
+        <input
+          ref={(el) => { fileInputRef.current = el; }}
+          type="file"
+          multiple
+          accept="image/jpeg,image/png,image/webp,image/gif,image/avif,video/mp4,video/webm,video/quicktime"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+        <div className="flex flex-col items-center gap-3">
+          <div className={`w-14 h-14 rounded-full flex items-center justify-center ${
+            isDragging ? "bg-[#22c55e]/20" : "bg-[#1a1a1a]"
+          }`}>
+            <Upload size={24} className={isDragging ? "text-[#22c55e]" : "text-gray-400"} />
+          </div>
+          <div>
+            <p className={`text-sm font-medium ${isDragging ? "text-[#22c55e]" : "text-white"}`}>
+              {isDragging ? "Drop files here" : "Upload Photos & Videos"}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              Drag and drop or click to browse. JPG, PNG, WebP, GIF, MP4, WebM, MOV.
+            </p>
+            <p className="text-xs text-gray-600 mt-0.5">
+              Images up to 20MB, videos up to 500MB. Multiple files supported.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ===== UPLOAD PROGRESS ===== */}
+      {uploadingFiles.length > 0 && (
+        <div className="mb-6 space-y-2">
+          {uploadingFiles.map((uf) => (
+            <div key={uf.id} className={`flex items-center gap-3 p-3 rounded-lg border ${
+              uf.status === "error"
+                ? "bg-red-900/10 border-red-800/50"
+                : uf.status === "done"
+                ? "bg-green-900/10 border-green-800/50"
+                : "bg-[#0d0d0d] border-[#222]"
+            }`}>
+              {/* Preview thumbnail */}
+              <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#1a1a1a] flex-shrink-0 flex items-center justify-center">
+                {uf.preview ? (
+                  <img src={uf.preview} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <FileVideo size={18} className="text-blue-400" />
+                )}
+              </div>
+
+              {/* File info + progress */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-white truncate">{uf.file.name}</p>
+                  <span className="text-xs text-gray-500 ml-2 flex-shrink-0">{formatFileSize(uf.file.size)}</span>
+                </div>
+                {uf.status === "error" ? (
+                  <p className="text-xs text-red-400 mt-0.5">{uf.error}</p>
+                ) : (
+                  <div className="mt-1.5 h-1.5 rounded-full bg-[#1a1a1a] overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        uf.status === "done" ? "bg-[#22c55e]" : "bg-blue-500"
+                      }`}
+                      style={{ width: `${uf.progress}%` }}
+                    />
+                  </div>
+                )}
+                <p className="text-xs mt-0.5 ${
+                  uf.status === "done" ? "text-green-400" :
+                  uf.status === "error" ? "text-red-400" :
+                  uf.status === "processing" ? "text-blue-400" : "text-gray-500"
+                }">
+                  {uf.status === "uploading" && "Uploading..."}
+                  {uf.status === "processing" && "Saving to course..."}
+                  {uf.status === "done" && "Done"}
+                </p>
+              </div>
+
+              {/* Actions */}
+              {uf.status === "error" && (
+                <button onClick={() => clearUploadError(uf.id)} className="p-1 text-gray-500 hover:text-white">
+                  <X size={14} />
+                </button>
+              )}
+              {uf.status === "done" && (
+                <CheckCircle size={16} className="text-[#22c55e] flex-shrink-0" />
+              )}
+              {(uf.status === "uploading" || uf.status === "processing") && (
+                <Loader2 size={16} className="animate-spin text-blue-400 flex-shrink-0" />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Header with URL-based add buttons */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-medium text-white">Course Media ({media.length})</h3>
         <div className="flex gap-2">
           <button
             onClick={() => setShowAddForm("photo")}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#22c55e] text-black text-sm font-medium hover:bg-[#16a34a] transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#333] text-gray-300 text-xs font-medium hover:border-[#22c55e] hover:text-[#22c55e] transition-colors"
           >
-            <Plus size={16} />
-            Add Photo
+            <LinkIcon size={12} />
+            Photo URL
           </button>
           <button
             onClick={() => setShowAddForm("video")}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#333] text-gray-300 text-xs font-medium hover:border-blue-400 hover:text-blue-400 transition-colors"
           >
-            <Video size={16} />
-            Add Video
+            <Video size={12} />
+            Video URL
           </button>
           <button
             onClick={() => setShowAddForm("instagram")}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-pink-600 text-white text-sm font-medium hover:bg-pink-700 transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[#333] text-gray-300 text-xs font-medium hover:border-pink-400 hover:text-pink-400 transition-colors"
           >
-            <Instagram size={16} />
-            Add Instagram
+            <Instagram size={12} />
+            Instagram
           </button>
         </div>
       </div>
@@ -1294,13 +1594,27 @@ function MediaTab({
             const isInstagram = m.mediaType === "instagram";
             const isImage = !isVideo && !isInstagram;
             const thumbUrl = isVideo ? getVideoThumbnail(m.url) : null;
+            const isDirectVideo = isVideo && m.imageType === "uploaded";
 
             return (
               <div key={m.mediaId} className="group rounded-lg border border-[#222] overflow-hidden bg-[#0d0d0d] relative">
                 {/* Media preview */}
                 <div className="relative">
-                  {isImage && (m.url?.match(/\.(jpg|jpeg|png|gif|webp)/i) || m.mediaType === "image") ? (
+                  {isImage && (m.url?.match(/\.(jpg|jpeg|png|gif|webp|avif)/i) || m.mediaType === "image") ? (
                     <img src={m.url} alt={m.caption || "Course media"} className="w-full h-40 object-cover" />
+                  ) : isDirectVideo ? (
+                    <div className="relative">
+                      <video src={m.url} className="w-full h-40 object-cover" muted preload="metadata" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                        <div className="w-12 h-12 rounded-full bg-black/70 flex items-center justify-center">
+                          <Play size={20} className="text-white ml-0.5" />
+                        </div>
+                      </div>
+                      <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-blue-600 text-white text-xs font-medium flex items-center gap-1">
+                        <FileVideo size={10} />
+                        Uploaded
+                      </div>
+                    </div>
                   ) : isVideo && thumbUrl ? (
                     <div className="relative cursor-pointer" onClick={() => window.open(m.url, "_blank")}>
                       <img src={thumbUrl} alt={m.caption || "Video"} className="w-full h-40 object-cover" />
@@ -1424,8 +1738,8 @@ function MediaTab({
       ) : (
         <div className="text-center py-12">
           <ImageIcon size={32} className="mx-auto text-gray-600 mb-3" />
-          <p className="text-gray-500 text-sm">No media uploaded</p>
-          <p className="text-gray-600 text-xs mt-1">Add photos, videos, or Instagram posts to get started</p>
+          <p className="text-gray-500 text-sm">No media yet</p>
+          <p className="text-gray-600 text-xs mt-1">Upload files or add by URL to get started</p>
         </div>
       )}
     </div>
