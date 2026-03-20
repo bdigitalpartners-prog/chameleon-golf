@@ -120,8 +120,12 @@ export async function GET(request: NextRequest) {
         pendingScores,
       },
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error("Reviews error:", err);
-    return NextResponse.json({ error: "Failed to fetch reviews" }, { status: 500 });
+    return NextResponse.json({ 
+      error: "Failed to fetch reviews", 
+      detail: err?.message || String(err),
+      code: err?.code 
+    }, { status: 500 });
   }
 }
