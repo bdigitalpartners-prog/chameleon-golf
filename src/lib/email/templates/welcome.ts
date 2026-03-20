@@ -1,12 +1,12 @@
 export function welcomeEmail({ name, loginUrl }: { name: string; loginUrl?: string }) {
-  const url = loginUrl || 'https://chameleongolf.ai/auth/login';
+  const url = loginUrl || 'https://golfequalizer.ai/auth/login';
 
   return {
-    subject: 'Welcome to Chameleon Golf',
+    subject: 'Welcome to golfEQUALIZER',
     html: `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
         <div style="text-align: center; margin-bottom: 32px;">
-          <h1 style="color: #1a1a1a; font-size: 28px; margin: 0;">Welcome to Chameleon Golf</h1>
+          <h1 style="color: #1a1a1a; font-size: 28px; margin: 0;">Welcome to golfEQUALIZER</h1>
         </div>
         <p style="color: #374151; font-size: 16px; line-height: 1.6;">
           Hey ${name},
@@ -24,10 +24,10 @@ export function welcomeEmail({ name, loginUrl }: { name: string; loginUrl?: stri
         </p>
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 32px 0;" />
         <p style="color: #9ca3af; font-size: 12px; text-align: center;">
-          Chameleon Golf — chameleongolf.ai
+          golfEQUALIZER — golfequalizer.ai
         </p>
       </div>
     `,
-    text: `Welcome to Chameleon Golf, ${name}! Get started at ${url}`,
+    text: `Welcome to golfEQUALIZER, ${name}! Get started at ${url}`,
   };
 }

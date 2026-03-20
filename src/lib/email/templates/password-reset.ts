@@ -1,6 +1,6 @@
 export function passwordResetEmail({ name, resetUrl }: { name: string; resetUrl: string }) {
   return {
-    subject: 'Reset your Chameleon Golf password',
+    subject: 'Reset your golfEQUALIZER password',
     html: `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
         <h2 style="color: #1a1a1a; font-size: 22px; margin: 0 0 16px;">Password Reset</h2>
@@ -20,7 +20,7 @@ export function passwordResetEmail({ name, resetUrl }: { name: string; resetUrl:
         </p>
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 32px 0;" />
         <p style="color: #9ca3af; font-size: 12px; text-align: center;">
-          Chameleon Golf — chameleongolf.ai
+          golfEQUALIZER — golfequalizer.ai
         </p>
       </div>
     `,

@@ -33,7 +33,7 @@ export function notificationEmail({
         ${actionButton}
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 32px 0;" />
         <p style="color: #9ca3af; font-size: 12px; text-align: center;">
-          Chameleon Golf — chameleongolf.ai
+          golfEQUALIZER — golfequalizer.ai
         </p>
       </div>
     `,
