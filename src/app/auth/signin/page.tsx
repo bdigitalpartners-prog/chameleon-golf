@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
+import { trackSignUp, trackSignIn } from "@/lib/analytics";
 
 function SignInContent() {
   const searchParams = useSearchParams();
@@ -85,6 +86,7 @@ function SignInContent() {
           return;
         }
 
+        trackSignUp("credentials");
         window.location.href = callbackUrl;
       } else {
         const result = await signIn("credentials", {
@@ -99,6 +101,7 @@ function SignInContent() {
           return;
         }
 
+        trackSignIn("credentials");
         window.location.href = callbackUrl;
       }
     } catch {
