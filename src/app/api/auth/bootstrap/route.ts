@@ -22,6 +22,18 @@ export async function GET(req: NextRequest) {
     // Check ADMIN_API_KEY for debugging
     const envKey = process.env.ADMIN_API_KEY;
 
+    // First, check what columns the users table has
+    const usersColumns: any[] = await prisma.$queryRawUnsafe(
+      `SELECT column_name FROM information_schema.columns WHERE table_name = 'users' ORDER BY ordinal_position`
+    );
+    const colNames = usersColumns.map((c: any) => c.column_name);
+
+    // Also check auth_users columns
+    const authColumns: any[] = await prisma.$queryRawUnsafe(
+      `SELECT column_name FROM information_schema.columns WHERE table_name = 'auth_users' ORDER BY ordinal_position`
+    );
+    const authColNames = authColumns.map((c: any) => c.column_name);
+
     // Update auth_users password
     const updated = await prisma.$executeRawUnsafe(
       `UPDATE "auth_users" SET password_hash = $1, updated_at = NOW() WHERE email = $2`,
@@ -44,16 +56,29 @@ export async function GET(req: NextRequest) {
     }
 
     // Ensure user exists in users table with admin role
-    await prisma.$executeRaw`
-      INSERT INTO users (email, role)
-      VALUES (${email}, 'admin')
-      ON CONFLICT (email) DO UPDATE SET role = 'admin'
-    `;
+    // Use the correct column name based on what actually exists
+    let usersResult = "skipped";
+    if (colNames.includes("email")) {
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO users (email, role) VALUES ($1, 'admin') ON CONFLICT (email) DO UPDATE SET role = 'admin'`,
+        email
+      );
+      usersResult = "updated via email column";
+    } else if (colNames.includes("name")) {
+      // Maybe there's a different identifier — just update role where we can find the user
+      const existingUser: any[] = await prisma.$queryRawUnsafe(
+        `SELECT id, name, role FROM users LIMIT 10`
+      );
+      usersResult = JSON.stringify(existingUser);
+    }
 
     return NextResponse.json({
       success: true,
       updated,
       created,
+      usersResult,
+      usersColumns: colNames,
+      authUsersColumns: authColNames,
       debug: {
         ADMIN_API_KEY_set: envKey !== undefined,
         ADMIN_API_KEY_value: envKey ? envKey.substring(0, 5) + "..." : "(not set)",
