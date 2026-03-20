@@ -279,6 +279,7 @@ export async function GET(req: NextRequest) {
             JOIN ranking_sources rs ON rs.source_id = rl.source_id
             WHERE rs.source_name ILIKE '%Golf Digest%'
             AND rl.list_name ILIKE '%100 Greatest%'
+            AND rl.list_name NOT ILIKE '%Second%'
             ORDER BY rl.year_published DESC LIMIT 1
           )
         LEFT JOIN chameleon_scores cs ON cs.course_id = c.course_id
