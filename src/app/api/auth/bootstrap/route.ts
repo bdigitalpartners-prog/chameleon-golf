@@ -4,7 +4,8 @@ import prisma from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 /**
- * Temporary DB introspection endpoint. Remove after use.
+ * One-time DB migration endpoint. Adds missing columns to the users table
+ * to align production DB with Prisma schema. REMOVE AFTER USE.
  */
 export async function GET(req: NextRequest) {
   const secret = req.nextUrl.searchParams.get("secret");
@@ -12,120 +13,154 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "no" }, { status: 403 });
   }
 
+  const action = req.nextUrl.searchParams.get("action") || "check";
+  const results: string[] = [];
+
   try {
-    // Get all tables and their columns
-    const columns: any[] = await prisma.$queryRawUnsafe(`
-      SELECT 
-        t.table_name,
-        c.column_name,
-        c.data_type,
-        c.is_nullable,
-        c.column_default,
-        c.character_maximum_length,
-        c.numeric_precision,
-        c.udt_name
-      FROM information_schema.tables t
-      JOIN information_schema.columns c ON t.table_name = c.table_name AND t.table_schema = c.table_schema
-      WHERE t.table_schema = 'public'
-      ORDER BY t.table_name, c.ordinal_position
-    `);
+    // Get current users columns
+    const currentCols: any[] = await prisma.$queryRawUnsafe(
+      `SELECT column_name FROM information_schema.columns WHERE table_name = 'users' ORDER BY ordinal_position`
+    );
+    const existingCols = new Set(currentCols.map((c: any) => c.column_name));
+    results.push(`Current users columns: ${[...existingCols].join(", ")}`);
 
-    // Get all unique constraints and indexes
-    const indexes: any[] = await prisma.$queryRawUnsafe(`
-      SELECT 
-        t.relname AS table_name,
-        i.relname AS index_name,
-        ix.indisunique AS is_unique,
-        ix.indisprimary AS is_primary,
-        array_agg(a.attname ORDER BY k.n) AS columns
-      FROM pg_index ix
-      JOIN pg_class t ON t.oid = ix.indrelid
-      JOIN pg_class i ON i.oid = ix.indexrelid
-      JOIN pg_namespace ns ON ns.oid = t.relnamespace
-      CROSS JOIN LATERAL unnest(ix.indkey) WITH ORDINALITY AS k(attnum, n)
-      JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = k.attnum
-      WHERE ns.nspname = 'public'
-      GROUP BY t.relname, i.relname, ix.indisunique, ix.indisprimary
-      ORDER BY t.relname, i.relname
-    `);
+    if (action === "check") {
+      return NextResponse.json({ existingCols: [...existingCols], action: "check" });
+    }
 
-    // Get foreign keys
-    const fkeys: any[] = await prisma.$queryRawUnsafe(`
-      SELECT
-        tc.table_name,
-        kcu.column_name,
-        ccu.table_name AS foreign_table_name,
-        ccu.column_name AS foreign_column_name,
-        tc.constraint_name
-      FROM information_schema.table_constraints AS tc
-      JOIN information_schema.key_column_usage AS kcu ON tc.constraint_name = kcu.constraint_name
-      JOIN information_schema.constraint_column_usage AS ccu ON ccu.constraint_name = tc.constraint_name
-      WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = 'public'
-      ORDER BY tc.table_name
-    `);
+    if (action === "migrate") {
+      // Define all columns that need to be added to match Prisma schema
+      const columnsToAdd = [
+        { name: "email", sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255) UNIQUE` },
+        { name: "email_verified", sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified TIMESTAMP(3)` },
+        { name: "image", sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS image TEXT` },
+        { name: "ghin_number", sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS ghin_number VARCHAR(20)` },
+        { name: "handicap_index", sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS handicap_index DECIMAL(4,1)` },
+        { name: "home_course_id", sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS home_course_id INTEGER` },
+        { name: "home_state", sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS home_state VARCHAR(100)` },
+        { name: "ghin_verified", sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS ghin_verified BOOLEAN NOT NULL DEFAULT false` },
+        { name: "ghin_verified_at", sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS ghin_verified_at TIMESTAMP(3)` },
+        { name: "ghin_last_synced", sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS ghin_last_synced TIMESTAMP(3)` },
+        { name: "is_active", sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true` },
+        { name: "status", sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'active'` },
+        { name: "admin_notes", sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_notes TEXT` },
+        { name: "last_login_at", sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP(3)` },
+        { name: "instagram_url", sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS instagram_url VARCHAR(500)` },
+        { name: "twitter_url", sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS twitter_url VARCHAR(500)` },
+        { name: "facebook_url", sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS facebook_url VARCHAR(500)` },
+        { name: "tiktok_url", sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS tiktok_url VARCHAR(500)` },
+        { name: "website_url", sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS website_url VARCHAR(500)` },
+        { name: "created_at", sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP` },
+        { name: "updated_at", sql: `ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP` },
+      ];
 
-    // Get enums
-    const enums: any[] = await prisma.$queryRawUnsafe(`
-      SELECT t.typname AS enum_name, e.enumlabel AS enum_value
-      FROM pg_type t
-      JOIN pg_enum e ON t.oid = e.enumtypid
-      JOIN pg_namespace n ON n.oid = t.typnamespace
-      WHERE n.nspname = 'public'
-      ORDER BY t.typname, e.enumsortorder
-    `);
+      let added = 0;
+      let skipped = 0;
 
-    // Organize by table
-    const tables: Record<string, any> = {};
-    for (const col of columns) {
-      if (!tables[col.table_name]) {
-        tables[col.table_name] = { columns: [], indexes: [], fkeys: [] };
+      for (const col of columnsToAdd) {
+        if (existingCols.has(col.name)) {
+          results.push(`SKIP: ${col.name} (already exists)`);
+          skipped++;
+          continue;
+        }
+        try {
+          await prisma.$executeRawUnsafe(col.sql);
+          results.push(`ADD: ${col.name} ✅`);
+          added++;
+        } catch (err: any) {
+          results.push(`FAIL: ${col.name} — ${err.message}`);
+        }
       }
-      tables[col.table_name].columns.push({
-        name: col.column_name,
-        type: col.udt_name,
-        dataType: col.data_type,
-        nullable: col.is_nullable === "YES",
-        default: col.column_default,
-        maxLength: col.character_maximum_length,
+
+      // Now populate email for existing users by joining with auth_users
+      try {
+        // Get all auth_users emails
+        const authUsers: any[] = await prisma.$queryRawUnsafe(
+          `SELECT id, email, first_name, last_name FROM auth_users`
+        );
+        results.push(`Found ${authUsers.length} auth_users entries`);
+
+        // For the existing admin user, set email to Calvin's email
+        const adminUpdate = await prisma.$executeRawUnsafe(
+          `UPDATE users SET email = 'calvin@bdigitalpartners.com', created_at = NOW(), updated_at = NOW()
+           WHERE role = 'admin' AND email IS NULL`
+        );
+        results.push(`Updated ${adminUpdate} admin users with Calvin's email`);
+
+        // Create users entries for other auth_users that don't have a users row yet
+        for (const au of authUsers) {
+          try {
+            await prisma.$executeRawUnsafe(
+              `INSERT INTO users (id, name, email, role, created_at, updated_at)
+               VALUES ($1, $2, $3, 'user', NOW(), NOW())
+               ON CONFLICT (id) DO UPDATE SET
+                 email = COALESCE(users.email, EXCLUDED.email),
+                 name = COALESCE(users.name, EXCLUDED.name)`,
+              au.id,
+              `${au.first_name} ${au.last_name}`,
+              au.email
+            );
+            results.push(`SYNC: ${au.email} → users table`);
+          } catch (err: any) {
+            // If id conflict, try with email match
+            try {
+              await prisma.$executeRawUnsafe(
+                `UPDATE users SET email = $1 WHERE email IS NULL AND name IS NOT NULL LIMIT 0`,
+                au.email
+              );
+            } catch {}
+            results.push(`SYNC NOTE: ${au.email} — ${err.message?.substring(0, 100)}`);
+          }
+        }
+      } catch (err: any) {
+        results.push(`AUTH_SYNC ERROR: ${err.message}`);
+      }
+
+      // Also create content_sources table if missing (Prisma model exists but table doesn't)
+      try {
+        await prisma.$executeRawUnsafe(`
+          CREATE TABLE IF NOT EXISTS content_sources (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            url VARCHAR(500),
+            rss_url VARCHAR(500),
+            source_type VARCHAR(50) NOT NULL DEFAULT 'rss',
+            is_active BOOLEAN NOT NULL DEFAULT true,
+            last_fetched_at TIMESTAMP(3),
+            created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+        results.push("CREATE TABLE: content_sources ✅");
+      } catch (err: any) {
+        results.push(`CREATE TABLE content_sources: ${err.message}`);
+      }
+
+      // Verify the updated users schema
+      const updatedCols: any[] = await prisma.$queryRawUnsafe(
+        `SELECT column_name FROM information_schema.columns WHERE table_name = 'users' ORDER BY ordinal_position`
+      );
+      const finalCols = updatedCols.map((c: any) => c.column_name);
+
+      // Show all users now
+      const allUsers: any[] = await prisma.$queryRawUnsafe(`SELECT id, name, email, role FROM users`);
+
+      return NextResponse.json({
+        action: "migrate",
+        added,
+        skipped,
+        finalColumns: finalCols,
+        users: allUsers,
+        details: results,
       });
     }
 
-    // Add indexes
-    for (const idx of indexes) {
-      if (tables[idx.table_name]) {
-        tables[idx.table_name].indexes.push({
-          name: idx.index_name,
-          unique: idx.is_unique,
-          primary: idx.is_primary,
-          columns: idx.columns,
-        });
-      }
-    }
-
-    // Add foreign keys
-    for (const fk of fkeys) {
-      if (tables[fk.table_name]) {
-        tables[fk.table_name].fkeys.push({
-          column: fk.column_name,
-          foreignTable: fk.foreign_table_name,
-          foreignColumn: fk.foreign_column_name,
-        });
-      }
-    }
-
-    // Organize enums
-    const enumMap: Record<string, string[]> = {};
-    for (const e of enums) {
-      if (!enumMap[e.enum_name]) enumMap[e.enum_name] = [];
-      enumMap[e.enum_name].push(e.enum_value);
-    }
-
-    return NextResponse.json({
-      tableCount: Object.keys(tables).length,
-      tables,
-      enums: enumMap,
-    });
+    return NextResponse.json({ error: "Unknown action. Use ?action=check or ?action=migrate" });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message, stack: error.stack?.substring(0, 1000) }, { status: 500 });
+    return NextResponse.json({
+      error: error.message,
+      stack: error.stack?.substring(0, 500),
+      results,
+    }, { status: 500 });
   }
 }
