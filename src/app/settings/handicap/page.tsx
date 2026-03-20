@@ -117,21 +117,27 @@ export default function HandicapVerificationPage() {
 
     setSubmitting(true);
     try {
-      // Upload screenshot to R2 first
+      // Upload screenshot to R2 first, fall back to base64 data URI
       let screenshotUrl = "";
-      const uploadForm = new FormData();
-      uploadForm.append("file", screenshotFile);
-      uploadForm.append("type", "ghin");
-      const uploadRes = await fetch("/api/upload", {
-        method: "POST",
-        body: uploadForm,
-      });
-      if (uploadRes.ok) {
-        const uploadData = await uploadRes.json();
-        screenshotUrl = uploadData.url;
-      } else {
-        // R2 may not be configured — submit without screenshot URL
-        console.warn("Screenshot upload failed, submitting without URL");
+      try {
+        const uploadForm = new FormData();
+        uploadForm.append("file", screenshotFile);
+        uploadForm.append("type", "ghin");
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: uploadForm,
+        });
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          screenshotUrl = uploadData.url;
+        }
+      } catch {
+        // upload endpoint failed
+      }
+
+      // Fallback: send the base64 preview if R2 upload failed
+      if (!screenshotUrl && screenshotPreview) {
+        screenshotUrl = screenshotPreview; // data:image/... URI
       }
 
       const res = await fetch("/api/ghin/submit", {

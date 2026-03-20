@@ -240,13 +240,17 @@ export default function VerificationQueuePage() {
                       {v.handicapIndex?.toFixed(1) ?? "—"}
                     </td>
                     <td className="px-4 py-3">
-                      <button
-                        onClick={() => setScreenshotModal(v.screenshotUrl)}
-                        className="flex items-center gap-1.5 text-xs px-2 py-1 rounded border border-[#333] text-gray-400 hover:text-white hover:border-[#01696F] transition-colors"
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                        View
-                      </button>
+                      {v.screenshotUrl ? (
+                        <button
+                          onClick={() => setScreenshotModal(v.screenshotUrl)}
+                          className="flex items-center gap-1.5 text-xs px-2 py-1 rounded border border-[#333] text-gray-400 hover:text-white hover:border-[#01696F] transition-colors"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          View
+                        </button>
+                      ) : (
+                        <span className="text-xs text-gray-600">No image</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-gray-400">
                       {new Date(v.createdAt).toLocaleDateString("en-US", {

@@ -15,6 +15,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User ID not found" }, { status: 400 });
     }
 
+    // Ensure screenshot_url column is TEXT (not VARCHAR) so base64 data URIs fit
+    try {
+      await prisma.$executeRawUnsafe(`
+        ALTER TABLE admin_verification_queue
+        ALTER COLUMN screenshot_url TYPE TEXT
+      `);
+    } catch {
+      // already TEXT or column doesn't exist — ignore
+    }
+
     const { ghinNumber, handicapIndex, screenshotUrl } = await req.json();
 
     if (!ghinNumber || typeof ghinNumber !== "string" || !/^\d{7,8}$/.test(ghinNumber.trim())) {

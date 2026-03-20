@@ -6,6 +6,22 @@ export const dynamic = "force-dynamic";
 const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
 const PERPLEXITY_ENDPOINT = "https://api.perplexity.ai/chat/completions";
 
+/* ── Ensure table exists ── */
+
+async function ensureTable() {
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS course_readability (
+      id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+      course_id INTEGER NOT NULL REFERENCES courses(course_id) ON DELETE CASCADE,
+      handicap_band VARCHAR(20) NOT NULL,
+      hole_advice JSONB NOT NULL DEFAULT '[]',
+      overall_strategy TEXT,
+      generated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(course_id, handicap_band)
+    )
+  `);
+}
+
 /* ── Handicap band mapping ── */
 
 function getHandicapBand(handicap: number): string {
@@ -134,29 +150,42 @@ export async function GET(
   const handicapLabel = getHandicapLabel(band);
 
   try {
-    // Check cache first
-    const cached = await prisma.courseReadability.findUnique({
-      where: { courseId_handicapBand: { courseId, handicapBand: band } },
-    });
+    // Ensure table exists (no-op if already there)
+    await ensureTable();
 
-    if (cached) {
-      // If cached within 30 days, return it
-      const ageMs = Date.now() - cached.generatedAt.getTime();
+    // Check cache first (raw SQL to avoid Prisma schema mismatch)
+    const cached = await prisma.$queryRaw<Array<{
+      id: string;
+      course_id: number;
+      handicap_band: string;
+      hole_advice: any;
+      overall_strategy: string | null;
+      generated_at: Date;
+    }>>`
+      SELECT id, course_id, handicap_band, hole_advice, overall_strategy, generated_at
+      FROM course_readability
+      WHERE course_id = ${courseId} AND handicap_band = ${band}
+      LIMIT 1
+    `;
+
+    if (cached.length > 0) {
+      const entry = cached[0];
+      const ageMs = Date.now() - new Date(entry.generated_at).getTime();
       const thirtyDays = 30 * 24 * 60 * 60 * 1000;
       if (ageMs < thirtyDays) {
         return NextResponse.json({
           courseId,
           handicapBand: band,
           handicapLabel,
-          overallStrategy: cached.overallStrategy,
-          holes: cached.holeAdvice,
+          overallStrategy: entry.overall_strategy,
+          holes: entry.hole_advice,
           cached: true,
-          generatedAt: cached.generatedAt.toISOString(),
+          generatedAt: entry.generated_at,
         });
       }
     }
 
-    // Fetch course data
+    // Fetch course data (Course model works fine with Prisma)
     const course = await prisma.course.findUnique({
       where: { courseId },
       select: {
@@ -272,21 +301,26 @@ export async function GET(
       );
     }
 
-    // Cache the result
-    await prisma.courseReadability.upsert({
-      where: { courseId_handicapBand: { courseId, handicapBand: band } },
-      update: {
-        holeAdvice: parsed.holes,
-        overallStrategy: parsed.overallStrategy || null,
-        generatedAt: new Date(),
-      },
-      create: {
-        courseId,
-        handicapBand: band,
-        holeAdvice: parsed.holes,
-        overallStrategy: parsed.overallStrategy || null,
-      },
-    });
+    const holeAdviceJson = JSON.stringify(parsed.holes);
+    const overallStrategy = parsed.overallStrategy || null;
+
+    // Upsert cache (raw SQL)
+    if (cached.length > 0) {
+      await prisma.$executeRaw`
+        UPDATE course_readability
+        SET hole_advice = ${holeAdviceJson}::jsonb,
+            overall_strategy = ${overallStrategy},
+            generated_at = NOW()
+        WHERE course_id = ${courseId} AND handicap_band = ${band}
+      `;
+    } else {
+      await prisma.$executeRaw`
+        INSERT INTO course_readability (id, course_id, handicap_band, hole_advice, overall_strategy, generated_at)
+        VALUES (gen_random_uuid()::text, ${courseId}, ${band}, ${holeAdviceJson}::jsonb, ${overallStrategy}, NOW())
+        ON CONFLICT (course_id, handicap_band)
+        DO UPDATE SET hole_advice = EXCLUDED.hole_advice, overall_strategy = EXCLUDED.overall_strategy, generated_at = NOW()
+      `;
+    }
 
     return NextResponse.json({
       courseId,
