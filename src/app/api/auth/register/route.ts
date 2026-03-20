@@ -119,18 +119,9 @@ export async function POST(req: NextRequest) {
       lastName.trim()
     );
 
-    // Also create a corresponding entry in the users table for role management
-    // Use raw SQL to avoid Prisma schema mismatch with production DB
-    try {
-      await prisma.$executeRaw`
-        INSERT INTO users (email, name, role)
-        VALUES (${trimmedEmail}, ${firstName.trim() + ' ' + lastName.trim()}, 'user')
-        ON CONFLICT (email) DO NOTHING
-      `;
-    } catch (err) {
-      console.error("Failed to create users table entry:", err);
-      // Non-fatal: the JWT callback will also attempt this on first login
-    }
+    // Note: the `users` table has columns (id, username, password, role, name)
+    // and NO email column. It's a legacy admin table. Regular users don't need
+    // entries there. Admin role is managed via JWT callback + ADMIN_EMAILS env var.
 
     // Create HubSpot contact (non-blocking)
     createHubSpotContact(trimmedEmail, firstName.trim(), lastName.trim()).catch(

@@ -76,40 +76,33 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        // Look up the Prisma User record by email so we use the correct users.id
-        // (auth_users.id and users.id are different — FK references point to users.id)
-        try {
-          // Use raw SQL to avoid Prisma schema mismatch with production DB
-          const dbUsers = await prisma.$queryRaw<
-            Array<{ id: string; role: string | null }>
-          >`SELECT id, role FROM users WHERE email = ${token.email} LIMIT 1`;
+        token.id = user.id; // auth_users.id by default
+        token.role = "user";
 
-          if (dbUsers.length > 0) {
-            token.id = dbUsers[0].id;
-            token.role = dbUsers[0].role ?? "user";
-          } else if (token.email) {
-            // Create a users entry via raw SQL so admin role can be set later
-            const newUsers = await prisma.$queryRaw<Array<{ id: string; role: string }>>`
-              INSERT INTO users (email, name, role)
-              VALUES (${token.email}, ${user.name ?? null}, 'user')
-              ON CONFLICT (email) DO UPDATE SET name = COALESCE(EXCLUDED.name, users.name)
-              RETURNING id, role
-            `;
-            if (newUsers.length > 0) {
-              token.id = newUsers[0].id;
-              token.role = newUsers[0].role ?? "user";
-            } else {
-              token.id = user.id;
-              token.role = "user";
+        // Production DB has two separate user tables:
+        //   auth_users: id, email, password_hash (for NextAuth credentials)
+        //   users: id, username, password, role, name (legacy admin table, NO email column)
+        // Admin emails come from ADMIN_EMAILS env var or default to site owner.
+        try {
+          const adminEmails = (process.env.ADMIN_EMAILS || "calvin@bdigitalpartners.com")
+            .split(",")
+            .map((e: string) => e.trim().toLowerCase());
+
+          const isAdmin = adminEmails.includes((token.email || "").toLowerCase());
+
+          if (isAdmin) {
+            // Use the legacy admin users.id for FK compatibility with admin features
+            const adminRows = await prisma.$queryRaw<
+              Array<{ id: string }>
+            >`SELECT id FROM users WHERE role = 'admin' LIMIT 1`;
+
+            if (adminRows.length > 0) {
+              token.id = adminRows[0].id;
             }
-          } else {
-            token.id = user.id;
-            token.role = "user";
+            token.role = "admin";
           }
         } catch (err) {
           console.error("JWT callback error (falling back):", err);
-          token.id = user.id;
-          token.role = "user";
         }
       }
       return token;

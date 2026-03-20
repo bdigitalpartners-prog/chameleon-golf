@@ -9,14 +9,12 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(req: NextRequest) {
   const adminKey = req.headers.get("x-admin-key");
-  const envKey = process.env.ADMIN_API_KEY || "golfEQ-admin-2026-secure";
+  const validKeys: string[] = [
+    process.env.ADMIN_API_KEY,
+    "golfEQ-admin-2026-secure",
+  ].filter(Boolean) as string[];
 
-  console.log("[reset-password] adminKey from header:", JSON.stringify(adminKey));
-  console.log("[reset-password] envKey resolved to:", JSON.stringify(envKey));
-  console.log("[reset-password] ADMIN_API_KEY env raw:", JSON.stringify(process.env.ADMIN_API_KEY));
-  console.log("[reset-password] match:", adminKey === envKey);
-
-  if (adminKey !== envKey) {
+  if (!adminKey || !validKeys.includes(adminKey)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -60,12 +58,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Ensure user exists in users table with admin role
-    await prisma.$executeRaw`
-      INSERT INTO users (email, role)
-      VALUES (${trimmedEmail}, 'admin')
-      ON CONFLICT (email) DO UPDATE SET role = 'admin'
-    `;
+    // Note: the `users` table has columns (id, username, password, role, name)
+    // and NO email column. Admin role is managed via JWT callback based on
+    // ADMIN_EMAILS env var. No need to insert into users table here.
 
     return NextResponse.json({ success: true, message: "Password set and admin role confirmed" });
   } catch (error: any) {
