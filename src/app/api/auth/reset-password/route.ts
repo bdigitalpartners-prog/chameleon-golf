@@ -11,6 +11,11 @@ export async function POST(req: NextRequest) {
   const adminKey = req.headers.get("x-admin-key");
   const envKey = process.env.ADMIN_API_KEY || "golfEQ-admin-2026-secure";
 
+  console.log("[reset-password] adminKey from header:", JSON.stringify(adminKey));
+  console.log("[reset-password] envKey resolved to:", JSON.stringify(envKey));
+  console.log("[reset-password] ADMIN_API_KEY env raw:", JSON.stringify(process.env.ADMIN_API_KEY));
+  console.log("[reset-password] match:", adminKey === envKey);
+
   if (adminKey !== envKey) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
