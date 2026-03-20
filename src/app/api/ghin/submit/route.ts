@@ -4,66 +4,74 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  const userId = (session.user as any).id;
-  if (!userId) {
-    return NextResponse.json({ error: "User ID not found" }, { status: 400 });
-  }
+    const userId = (session.user as any).id;
+    if (!userId) {
+      return NextResponse.json({ error: "User ID not found" }, { status: 400 });
+    }
 
-  const { ghinNumber, handicapIndex, screenshotUrl } = await req.json();
+    const { ghinNumber, handicapIndex, screenshotUrl } = await req.json();
 
-  if (!ghinNumber || typeof ghinNumber !== "string" || !/^\d{7,8}$/.test(ghinNumber.trim())) {
-    return NextResponse.json({ error: "GHIN number must be 7 or 8 digits" }, { status: 400 });
-  }
+    if (!ghinNumber || typeof ghinNumber !== "string" || !/^\d{7,8}$/.test(ghinNumber.trim())) {
+      return NextResponse.json({ error: "GHIN number must be 7 or 8 digits" }, { status: 400 });
+    }
 
-  // Check if user already has a pending or approved verification
-  const existing = await prisma.adminVerificationQueue.findFirst({
-    where: {
-      userId,
-      status: { in: ["pending", "approved"] },
-    },
-  });
+    // Check if user already has a pending or approved verification
+    const existing = await prisma.adminVerificationQueue.findFirst({
+      where: {
+        userId,
+        status: { in: ["pending", "approved"] },
+      },
+    });
 
-  if (existing) {
+    if (existing) {
+      return NextResponse.json({
+        error: existing.status === "approved"
+          ? "Your GHIN is already verified"
+          : "You already have a pending verification request",
+      }, { status: 409 });
+    }
+
+    // Update user's GHIN number and handicap index
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        ghinNumber: ghinNumber.trim(),
+        ...(handicapIndex != null && !isNaN(Number(handicapIndex))
+          ? { handicapIndex: Number(handicapIndex) }
+          : {}),
+      },
+    });
+
+    // Create verification queue entry
+    const queueEntry = await prisma.adminVerificationQueue.create({
+      data: {
+        userId,
+        scoreId: 0,
+        courseId: 0,
+        screenshotUrl: screenshotUrl || null,
+        ghinNumber: ghinNumber.trim(),
+        status: "pending",
+      },
+    });
+
     return NextResponse.json({
-      error: existing.status === "approved"
-        ? "Your GHIN is already verified"
-        : "You already have a pending verification request",
-    }, { status: 409 });
+      success: true,
+      queueId: queueEntry.queueId,
+      message: "Verification request submitted. An admin will review it shortly.",
+    });
+  } catch (error: any) {
+    console.error("POST /api/ghin/submit error:", error?.message || error, JSON.stringify(error?.meta || {}));
+    return NextResponse.json(
+      { error: error?.message || "Internal server error" },
+      { status: 500 }
+    );
   }
-
-  // Update user's GHIN number and handicap index
-  await prisma.user.update({
-    where: { id: userId },
-    data: {
-      ghinNumber,
-      ...(handicapIndex != null && !isNaN(Number(handicapIndex))
-        ? { handicapIndex: Number(handicapIndex) }
-        : {}),
-    },
-  });
-
-  // Create verification queue entry
-  const queueEntry = await prisma.adminVerificationQueue.create({
-    data: {
-      userId,
-      scoreId: 0, // Not tied to a specific score
-      courseId: 0, // Not tied to a specific course
-      screenshotUrl: screenshotUrl || null,
-      ghinNumber,
-      status: "pending",
-    },
-  });
-
-  return NextResponse.json({
-    success: true,
-    queueId: queueEntry.queueId,
-    message: "Verification request submitted. An admin will review it shortly.",
-  });
 }
 
 export async function GET() {
