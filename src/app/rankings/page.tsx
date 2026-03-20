@@ -93,12 +93,21 @@ export default function RankingsPage() {
         !searchTerm ||
         l.listName.toLowerCase().includes(searchTerm.toLowerCase())
     )
-    .sort(
-      (a, b) =>
+    .sort((a, b) => {
+      // Pin "100 Greatest Golf Courses" to the very top
+      const aIsGreatest = /100 Greatest Golf Courses$/i.test(a.listName) ? 0 : 1;
+      const bIsGreatest = /100 Greatest Golf Courses$/i.test(b.listName) ? 0 : 1;
+      if (aIsGreatest !== bIsGreatest) return aIsGreatest - bIsGreatest;
+
+      // Then sort by prestige tier
+      const tierDiff =
         (PRESTIGE_ORDER[a.prestigeTier] ?? 9) -
-          (PRESTIGE_ORDER[b.prestigeTier] ?? 9) ||
-        a.listName.localeCompare(b.listName)
-    );
+        (PRESTIGE_ORDER[b.prestigeTier] ?? 9);
+      if (tierDiff !== 0) return tierDiff;
+
+      // Then alphabetically
+      return a.listName.localeCompare(b.listName);
+    });
 
   // Group by prestige tier
   const grouped = filteredLists.reduce(
