@@ -79,24 +79,35 @@ export const authOptions: NextAuthOptions = {
         // Look up the Prisma User record by email so we use the correct users.id
         // (auth_users.id and users.id are different — FK references point to users.id)
         try {
-          let dbUser = await prisma.user.findUnique({
-            where: { email: token.email! },
-            select: { id: true, role: true },
-          });
-          // If no users entry exists yet, create one so admin role can be set via SQL
-          if (!dbUser && token.email) {
-            dbUser = await prisma.user.create({
-              data: {
-                email: token.email,
-                name: user.name ?? null,
-              },
-              select: { id: true, role: true },
-            });
+          // Use raw SQL to avoid Prisma schema mismatch with production DB
+          const dbUsers = await prisma.$queryRaw<
+            Array<{ id: string; role: string | null }>
+          >`SELECT id, role FROM users WHERE email = ${token.email} LIMIT 1`;
+
+          if (dbUsers.length > 0) {
+            token.id = dbUsers[0].id;
+            token.role = dbUsers[0].role ?? "user";
+          } else if (token.email) {
+            // Create a users entry via raw SQL so admin role can be set later
+            const newUsers = await prisma.$queryRaw<Array<{ id: string; role: string }>>`
+              INSERT INTO users (email, name, role)
+              VALUES (${token.email}, ${user.name ?? null}, 'user')
+              ON CONFLICT (email) DO UPDATE SET name = COALESCE(EXCLUDED.name, users.name)
+              RETURNING id, role
+            `;
+            if (newUsers.length > 0) {
+              token.id = newUsers[0].id;
+              token.role = newUsers[0].role ?? "user";
+            } else {
+              token.id = user.id;
+              token.role = "user";
+            }
+          } else {
+            token.id = user.id;
+            token.role = "user";
           }
-          // Use the Prisma User id (not auth_users.id) so foreign keys resolve
-          token.id = dbUser?.id ?? user.id;
-          token.role = dbUser?.role ?? "user";
-        } catch {
+        } catch (err) {
+          console.error("JWT callback error (falling back):", err);
           token.id = user.id;
           token.role = "user";
         }

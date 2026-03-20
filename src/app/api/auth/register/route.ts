@@ -120,18 +120,13 @@ export async function POST(req: NextRequest) {
     );
 
     // Also create a corresponding entry in the users table for role management
+    // Use raw SQL to avoid Prisma schema mismatch with production DB
     try {
-      const existingUser = await prisma.user.findUnique({
-        where: { email: trimmedEmail },
-      });
-      if (!existingUser) {
-        await prisma.user.create({
-          data: {
-            email: trimmedEmail,
-            name: `${firstName.trim()} ${lastName.trim()}`,
-          },
-        });
-      }
+      await prisma.$executeRaw`
+        INSERT INTO users (email, name, role)
+        VALUES (${trimmedEmail}, ${firstName.trim() + ' ' + lastName.trim()}, 'user')
+        ON CONFLICT (email) DO NOTHING
+      `;
     } catch (err) {
       console.error("Failed to create users table entry:", err);
       // Non-fatal: the JWT callback will also attempt this on first login

@@ -80,7 +80,8 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
 
   const isAdmin = (session?.user as any)?.role === "admin";
   const keyParam = searchParams.get("key");
-  const hasKeyAccess = keyParam === process.env.NEXT_PUBLIC_ADMIN_API_KEY || !!keyParam;
+  const VALID_KEY = process.env.NEXT_PUBLIC_ADMIN_API_KEY || "golfEQ-admin-2026-secure";
+  const hasKeyAccess = !!keyParam && keyParam === VALID_KEY;
 
   // Store the admin key in sessionStorage so all admin pages can use it for API calls
   useEffect(() => {
