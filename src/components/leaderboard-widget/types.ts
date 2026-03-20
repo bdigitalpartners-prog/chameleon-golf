@@ -12,6 +12,10 @@ export interface PlayerData {
     score: string;
     strokes: number;
   }[];
+  /** Pre-computed current round score for display */
+  currentRoundScore: string;
+  /** Player's thru status for the current round (e.g., "Thru 14", "F") */
+  thru: string;
 }
 
 export interface TournamentStatus {

@@ -14,10 +14,7 @@ function getScoreClass(score: string): string {
   return "";
 }
 
-function getCurrentRoundScore(rounds: { period: number; score: string }[]): string {
-  if (!rounds.length) return "--";
-  return rounds[rounds.length - 1]?.score || "--";
-}
+// getCurrentRoundScore is now computed in use-leaderboard.ts and stored on PlayerData
 
 function formatTime(date: Date): string {
   return date.toLocaleTimeString("en-US", {
@@ -321,7 +318,7 @@ function LeaderboardTable({ data }: { data: LeagueData }) {
 
       {/* Player rows */}
       {data.players.map((player, i) => {
-        const roundScore = getCurrentRoundScore(player.rounds);
+        const roundScore = player.currentRoundScore;
         return (
           <div
             key={`${player.name}-${i}`}

@@ -19,6 +19,29 @@ const API_CONFIG = {
 const REFRESH_INTERVAL_LIVE = 60_000; // 60 seconds when live
 const REFRESH_INTERVAL_IDLE = 300_000; // 5 minutes when not live
 
+/**
+ * Get the display score for the current round.
+ * ESPN linescores include empty placeholder rounds for future rounds.
+ * We match by period number, falling back to the last valid round.
+ */
+function getCurrentRoundDisplayScore(
+  rounds: { period: number; score: string; strokes: number }[],
+  currentPeriod: number
+): string {
+  if (!rounds.length) return "--";
+
+  // Try to find the round matching the current tournament period
+  const currentRound = rounds.find((r) => r.period === currentPeriod);
+  if (currentRound) {
+    // A displayValue of "-" means the player hasn't started this round yet
+    return currentRound.score === "-" ? "--" : currentRound.score || "--";
+  }
+
+  // Fallback: last completed round
+  const lastRound = rounds[rounds.length - 1];
+  return lastRound?.score || "--";
+}
+
 async function fetchLeagueData(league: LeagueKey): Promise<LeagueData | null> {
   try {
     const [scoreboardRes, headerRes] = await Promise.all([
@@ -58,11 +81,29 @@ async function fetchLeagueData(league: LeagueKey): Promise<LeagueData | null> {
     const statusType = statusObj?.type as Record<string, unknown> | undefined;
     const competitors = competition.competitors as Array<Record<string, unknown>> | undefined;
 
+    // Current tournament period (round number)
+    const currentPeriod = (statusObj?.period as number) || 0;
+
     // Build top 10
     const top10: PlayerData[] = (competitors || []).slice(0, 10).map((c, i) => {
       const athlete = c.athlete as Record<string, unknown> | undefined;
       const flag = athlete?.flag as Record<string, unknown> | undefined;
       const linescores = c.linescores as Array<Record<string, unknown>> | undefined;
+
+      // Filter out empty placeholder rounds (no displayValue or displayValue is null)
+      const validRounds = (linescores || [])
+        .filter((ls) => ls.displayValue != null && ls.displayValue !== "")
+        .map((ls) => ({
+          period: ls.period as number,
+          score: ls.displayValue as string,
+          strokes: ls.value as number,
+        }));
+
+      // Determine the player's thru/status for the current round
+      // ESPN provides per-competitor status with hole-by-hole detail
+      const competitorStatus = c.status as Record<string, unknown> | undefined;
+      const competitorStatusType = competitorStatus?.type as Record<string, unknown> | undefined;
+      const thru = (competitorStatusType?.shortDetail as string) || "";
 
       return {
         position: (c.order as number) || i + 1,
@@ -71,11 +112,9 @@ async function fetchLeagueData(league: LeagueKey): Promise<LeagueData | null> {
         flag: (flag?.href as string) || "",
         country: (flag?.alt as string) || "",
         score: (c.score as string) || "E",
-        rounds: (linescores || []).map((ls) => ({
-          period: ls.period as number,
-          score: ls.displayValue as string,
-          strokes: ls.value as number,
-        })),
+        rounds: validRounds,
+        currentRoundScore: getCurrentRoundDisplayScore(validRounds, currentPeriod),
+        thru,
       };
     });
 
@@ -147,25 +186,25 @@ export function useLeaderboard() {
     }
   }, []);
 
+  // Initial fetch on mount
   useEffect(() => {
     fetchAll();
+  }, [fetchAll]);
 
-    // Dynamic refresh interval based on live status
-    const scheduleRefresh = () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      const isLive =
-        leagueData.pga?.status.state === "in" ||
-        leagueData.liv?.status.state === "in";
-      const interval = isLive ? REFRESH_INTERVAL_LIVE : REFRESH_INTERVAL_IDLE;
-      intervalRef.current = setInterval(fetchAll, interval);
-    };
+  // Dynamic refresh interval — reacts to live status changes
+  useEffect(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
 
-    scheduleRefresh();
+    const anyLive =
+      leagueData.pga?.status.state === "in" ||
+      leagueData.liv?.status.state === "in";
+    const interval = anyLive ? REFRESH_INTERVAL_LIVE : REFRESH_INTERVAL_IDLE;
+    intervalRef.current = setInterval(fetchAll, interval);
+
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchAll]);
+  }, [fetchAll, leagueData.pga?.status.state, leagueData.liv?.status.state]);
 
   const isLive =
     leagueData.pga?.status.state === "in" ||
