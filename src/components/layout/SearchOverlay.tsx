@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { trackCourseSearch } from "@/lib/analytics";
 
 interface SearchResult {
   courseId: number;
@@ -30,7 +31,9 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
       try {
         const res = await fetch(`/api/courses/search?q=${encodeURIComponent(query)}`);
         const data = await res.json();
-        setResults(data.results ?? []);
+        const hits = data.results ?? [];
+        setResults(hits);
+        trackCourseSearch(query, hits.length);
       } catch { setResults([]); }
       setLoading(false);
     }, 300);

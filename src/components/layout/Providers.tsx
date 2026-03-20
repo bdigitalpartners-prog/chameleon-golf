@@ -8,6 +8,7 @@ import { CompareProvider } from "@/contexts/CompareContext";
 import { BucketListProvider } from "@/contexts/BucketListContext";
 import { SidebarProvider } from "@/contexts/SidebarContext";
 import { ToastProvider } from "@/components/ui/ToastProvider";
+import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
@@ -21,7 +22,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <SidebarProvider>
             <CompareProvider>
               <BucketListProvider>
-                {children}
+                <AnalyticsProvider>
+                  {children}
+                </AnalyticsProvider>
                 <ToastProvider />
               </BucketListProvider>
             </CompareProvider>

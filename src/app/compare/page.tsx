@@ -8,6 +8,7 @@ import {
   ChevronDown, ArrowRight,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { trackCourseCompare } from "@/lib/analytics";
 
 /* ─── Types ─── */
 
@@ -387,7 +388,14 @@ function ComparePageContent() {
     fetch(`/api/compare?courses=${courseIds.join(",")}`)
       .then((r) => r.json())
       .then((data) => {
-        setCourses(data.courses ?? []);
+        const loaded = data.courses ?? [];
+        setCourses(loaded);
+        if (loaded.length >= 2) {
+          trackCourseCompare(
+            loaded.map((c: CompareCourse) => c.courseId),
+            loaded.map((c: CompareCourse) => c.courseName)
+          );
+        }
       })
       .catch(() => setCourses([]))
       .finally(() => setLoading(false));

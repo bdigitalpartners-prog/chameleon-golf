@@ -3,6 +3,9 @@ import "leaflet/dist/leaflet.css";
 import type { Metadata } from "next";
 import { Providers } from "@/components/layout/Providers";
 import { AppShell } from "@/components/layout/AppShell";
+import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   title: "golfEQUALIZER — Dynamic Golf Course Rankings",
@@ -44,9 +47,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
+        <GoogleAnalytics />
         <Providers>
           <AppShell>{children}</AppShell>
         </Providers>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

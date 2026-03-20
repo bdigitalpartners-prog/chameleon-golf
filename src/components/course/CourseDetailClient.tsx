@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   MapPin, Globe, Phone, Trophy, Plane, Star, Calendar,
@@ -20,6 +20,7 @@ import { CourseContentSections } from "./CourseContentSections";
 import { WeatherPlayabilityCalendar, BestMonthsBadge } from "@/components/weather/WeatherPlayabilityCalendar";
 import { ReadabilityTab } from "./tabs/ReadabilityTab";
 import { CourseRelatedContent } from "@/app/course/[id]/CourseRelatedContent";
+import { trackCourseView } from "@/lib/analytics";
 
 /* ─── Safe Text Helper ─── */
 
@@ -491,6 +492,13 @@ function ReviewCard({ review, showHandicap }: { review: any; showHandicap?: bool
 export function CourseDetailClient({ course }: { course: any }) {
   const [activeTab, setActiveTab] = useState<Tab>("Overview");
   const [travelSubTab, setTravelSubTab] = useState<string>("overview");
+
+  /* ── Analytics: track course view ── */
+  useEffect(() => {
+    if (course?.courseId && course?.courseName) {
+      trackCourseView(course.courseId, course.courseName, course.state, course.country);
+    }
+  }, [course?.courseId, course?.courseName, course?.state, course?.country]);
 
   /* ── Chameleon Scores ── */
   const csData = Array.isArray(course.chameleonScores) ? course.chameleonScores[0] : course.chameleonScores;

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
+import { trackBucketListAdd, trackBucketListRemove } from "@/lib/analytics";
 
 export interface BucketListEntry {
   id: number | string;
@@ -154,6 +155,7 @@ export function BucketListProvider({ children }: { children: React.ReactNode }) 
               ...prev,
               { ...data, notes: null, targetDate: null, playedAt: null, rating: null },
             ]);
+            trackBucketListAdd(courseId, data.courseName ?? `Course #${courseId}`);
           }
         } catch (err) {
           console.error("[BucketList] add error:", err);
@@ -175,6 +177,7 @@ export function BucketListProvider({ children }: { children: React.ReactNode }) 
           setLocalItems(updated);
           return updated;
         });
+        trackBucketListAdd(courseId, `Course #${courseId}`);
       }
     },
     [isAuthenticated, items]
@@ -196,6 +199,7 @@ export function BucketListProvider({ children }: { children: React.ReactNode }) 
         if (!isAuthenticated) setLocalItems(updated);
         return updated;
       });
+      trackBucketListRemove(courseId, item.course?.courseName ?? `Course #${courseId}`);
     },
     [isAuthenticated, items]
   );
