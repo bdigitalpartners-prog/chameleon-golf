@@ -72,6 +72,18 @@ export async function GET(req: NextRequest) {
       usersResult = JSON.stringify(existingUser);
     }
 
+    // Get all users rows
+    const allUsers: any[] = await prisma.$queryRawUnsafe(`SELECT * FROM users`);
+    
+    // Get all auth_users rows  
+    const allAuthUsers: any[] = await prisma.$queryRawUnsafe(`SELECT id, email, first_name, last_name FROM auth_users`);
+
+    // Check all tables in the database
+    const allTables: any[] = await prisma.$queryRawUnsafe(
+      `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name`
+    );
+    const tableNames = allTables.map((t: any) => t.table_name);
+
     return NextResponse.json({
       success: true,
       updated,
@@ -79,6 +91,9 @@ export async function GET(req: NextRequest) {
       usersResult,
       usersColumns: colNames,
       authUsersColumns: authColNames,
+      allUsers,
+      allAuthUsers,
+      allTables: tableNames,
       debug: {
         ADMIN_API_KEY_set: envKey !== undefined,
         ADMIN_API_KEY_value: envKey ? envKey.substring(0, 5) + "..." : "(not set)",
