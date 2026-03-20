@@ -221,9 +221,16 @@ export async function GET(req: NextRequest) {
         (SELECT COUNT(*) FROM course_nearby_attractions) as total_attractions_records
     `;
 
+    // Convert BigInt values to numbers for JSON serialization
+    const row = stats[0];
+    const serialized: Record<string, number> = {};
+    for (const [k, v] of Object.entries(row)) {
+      serialized[k] = typeof v === 'bigint' ? Number(v) : Number(v) || 0;
+    }
+
     return NextResponse.json({
       success: true,
-      stats: stats[0],
+      stats: serialized,
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
