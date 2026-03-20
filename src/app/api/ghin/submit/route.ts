@@ -22,47 +22,40 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if user already has a pending or approved verification
-    const existing = await prisma.adminVerificationQueue.findFirst({
-      where: {
-        userId,
-        status: { in: ["pending", "approved"] },
-      },
-    });
+    const existing = await prisma.$queryRaw<Array<{status: string}>>`
+      SELECT status FROM admin_verification_queue 
+      WHERE user_id = ${userId} AND status IN ('pending', 'approved')
+      LIMIT 1
+    `;
 
-    if (existing) {
+    if (existing.length > 0) {
       return NextResponse.json({
-        error: existing.status === "approved"
+        error: existing[0].status === "approved"
           ? "Your GHIN is already verified"
           : "You already have a pending verification request",
       }, { status: 409 });
     }
 
-    // Update user's GHIN number and handicap index
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        ghinNumber: ghinNumber.trim(),
-        ...(handicapIndex != null && !isNaN(Number(handicapIndex))
-          ? { handicapIndex: Number(handicapIndex) }
-          : {}),
-      },
-    });
+    // Update user's GHIN number and handicap index via raw SQL to avoid Prisma schema mismatch
+    const handicapVal = handicapIndex != null && !isNaN(Number(handicapIndex)) ? Number(handicapIndex) : null;
+    await prisma.$executeRaw`
+      UPDATE users 
+      SET ghin_number = ${ghinNumber.trim()}, 
+          handicap_index = ${handicapVal}
+      WHERE id = ${userId}
+    `;
 
-    // Create verification queue entry
-    const queueEntry = await prisma.adminVerificationQueue.create({
-      data: {
-        userId,
-        scoreId: 0,
-        courseId: 0,
-        screenshotUrl: screenshotUrl || null,
-        ghinNumber: ghinNumber.trim(),
-        status: "pending",
-      },
-    });
+    // Create verification queue entry via raw SQL
+    const queueResult = await prisma.$queryRaw<Array<{queue_id: number}>>`
+      INSERT INTO admin_verification_queue (user_id, score_id, course_id, screenshot_url, ghin_number, status, submitted_at)
+      VALUES (${userId}, 0, 0, ${screenshotUrl || null}, ${ghinNumber.trim()}, 'pending', NOW())
+      RETURNING queue_id
+    `;
+    const queueId = queueResult[0]?.queue_id;
 
     return NextResponse.json({
       success: true,
-      queueId: queueEntry.queueId,
+      queueId,
       message: "Verification request submitted. An admin will review it shortly.",
     });
   } catch (error: any) {
