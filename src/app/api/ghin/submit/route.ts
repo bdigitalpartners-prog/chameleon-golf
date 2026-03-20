@@ -16,8 +16,8 @@ export async function POST(req: NextRequest) {
 
   const { ghinNumber, handicapIndex, screenshotUrl } = await req.json();
 
-  if (!ghinNumber || typeof ghinNumber !== "string" || !/^\d{7}$/.test(ghinNumber.trim())) {
-    return NextResponse.json({ error: "GHIN number must be exactly 7 digits" }, { status: 400 });
+  if (!ghinNumber || typeof ghinNumber !== "string" || !/^\d{7,8}$/.test(ghinNumber.trim())) {
+    return NextResponse.json({ error: "GHIN number must be 7 or 8 digits" }, { status: 400 });
   }
 
   // Check if user already has a pending or approved verification

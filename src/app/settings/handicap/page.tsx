@@ -99,8 +99,8 @@ export default function HandicapVerificationPage() {
     setError("");
     setSuccess("");
 
-    if (!ghinNumber || !/^\d{7}$/.test(ghinNumber.trim())) {
-      setError("GHIN number must be exactly 7 digits");
+    if (!ghinNumber || !/^\d{7,8}$/.test(ghinNumber.trim())) {
+      setError("GHIN number must be 7 or 8 digits");
       return;
     }
 
@@ -300,8 +300,8 @@ export default function HandicapVerificationPage() {
               <input
                 type="text"
                 inputMode="numeric"
-                pattern="\d{7}"
-                maxLength={7}
+                pattern="\d{7,8}"
+                maxLength={8}
                 value={ghinNumber}
                 onChange={(e) => setGhinNumber(e.target.value.replace(/\D/g, ""))}
                 placeholder="1234567"
@@ -313,7 +313,7 @@ export default function HandicapVerificationPage() {
                 }}
               />
               <p className="text-xs mt-1" style={{ color: "var(--cg-text-muted)" }}>
-                7-digit number from your GHIN profile
+                7 or 8 digit number from your GHIN profile
               </p>
             </div>
 
@@ -457,7 +457,7 @@ export default function HandicapVerificationPage() {
               className="text-xs mt-2 space-y-1.5 list-disc list-inside"
               style={{ color: "var(--cg-text-muted)" }}
             >
-              <li>Enter your 7-digit GHIN number and current handicap index</li>
+              <li>Enter your 7 or 8 digit GHIN number and current handicap index</li>
               <li>Upload a screenshot from the GHIN app or USGA website</li>
               <li>Our team will review and verify within 24-48 hours</li>
               <li>Once verified, a badge will appear on your profile</li>
