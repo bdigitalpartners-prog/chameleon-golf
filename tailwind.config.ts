@@ -9,6 +9,13 @@ const config: Config = {
           from: { opacity: "0" },
           to: { opacity: "1" },
         },
+        logoZoomIn: {
+          from: { opacity: "0", transform: "scale(0.85)" },
+          to: { opacity: "1", transform: "scale(1)" },
+        },
+      },
+      animation: {
+        "logo-zoom-in": "logoZoomIn 200ms ease-out forwards",
       },
       colors: {
         brand: {

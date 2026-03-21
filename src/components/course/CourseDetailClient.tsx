@@ -491,7 +491,16 @@ function ReviewCard({ review, showHandicap }: { review: any; showHandicap?: bool
 
 export function CourseDetailClient({ course }: { course: any }) {
   const [activeTab, setActiveTab] = useState<Tab>("Overview");
+  const [logoEnlarged, setLogoEnlarged] = useState(false);
   const [travelSubTab, setTravelSubTab] = useState<string>("overview");
+
+  /* ── Close enlarged logo on Escape key ── */
+  useEffect(() => {
+    if (!logoEnlarged) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setLogoEnlarged(false); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [logoEnlarged]);
 
   /* ── Analytics: track course view ── */
   useEffect(() => {
@@ -640,16 +649,18 @@ export function CourseDetailClient({ course }: { course: any }) {
           </div>
         )}
 
-        {/* Club logo - bottom right */}
+        {/* Club logo - bottom right (click to enlarge) */}
         {course.logoUrl && course.logoSource !== 'favicon' && course.logoSource !== 'favicon-fallback' && (
           <div
-            className="absolute bottom-5 right-4 md:bottom-6 md:right-6 z-10 flex items-center justify-center rounded-xl shadow-lg"
+            className="absolute bottom-5 right-4 md:bottom-6 md:right-6 z-10 flex items-center justify-center rounded-xl shadow-lg cursor-pointer transition-transform duration-200 hover:scale-110"
             style={{
               backgroundColor: "rgba(255,255,255,0.95)",
               width: 72,
               height: 72,
               padding: 8,
             }}
+            onClick={() => setLogoEnlarged(true)}
+            title="Click to enlarge"
           >
             <img
               src={course.logoUrl}
@@ -657,6 +668,38 @@ export function CourseDetailClient({ course }: { course: any }) {
               className="max-w-[56px] max-h-[56px] object-contain"
               onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
             />
+          </div>
+        )}
+
+        {/* Enlarged logo overlay */}
+        {logoEnlarged && course.logoUrl && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            onClick={() => setLogoEnlarged(false)}
+          >
+            <div
+              className="relative rounded-2xl shadow-2xl p-6 animate-logo-zoom-in"
+              style={{ backgroundColor: "rgba(255,255,255,0.97)" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={course.logoUrl}
+                alt={`${course.courseName} logo`}
+                className="max-w-[280px] max-h-[280px] md:max-w-[360px] md:max-h-[360px] object-contain"
+              />
+              <button
+                onClick={() => setLogoEnlarged(false)}
+                className="absolute -top-3 -right-3 h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold shadow-md transition-colors"
+                style={{
+                  backgroundColor: "var(--cg-bg-primary, #1a1a1a)",
+                  color: "var(--cg-text-primary, #fff)",
+                  border: "1px solid var(--cg-border, #333)",
+                }}
+                aria-label="Close enlarged logo"
+              >
+                ✕
+              </button>
+            </div>
           </div>
         )}
 
