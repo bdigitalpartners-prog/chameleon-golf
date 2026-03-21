@@ -63,10 +63,18 @@ export async function GET(req: NextRequest) {
       conditions.push(Prisma.sql`c.green_fee_high <= ${priceMax}`);
     if (minLists !== undefined)
       conditions.push(Prisma.sql`c.num_lists_appeared >= ${minLists}`);
-    if (search)
+    if (search) {
+      const searchPattern = "%" + search + "%";
       conditions.push(
-        Prisma.sql`c.course_name ILIKE ${"%" + search + "%"}`
+        Prisma.sql`(
+          c.course_name ILIKE ${searchPattern}
+          OR c.facility_name ILIKE ${searchPattern}
+          OR c.city ILIKE ${searchPattern}
+          OR c.state ILIKE ${searchPattern}
+          OR c.original_architect ILIKE ${searchPattern}
+        )`
       );
+    }
 
     // Proximity search
     let distanceSelect = Prisma.sql``;
