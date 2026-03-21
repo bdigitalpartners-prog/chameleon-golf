@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { checkAdminAuth } from "@/lib/admin-auth";
 
 export const dynamic = 'force-dynamic';
 
@@ -7,14 +8,11 @@ export const dynamic = 'force-dynamic';
  * Bulk enrichment endpoint — accepts an array of course updates.
  * POST /api/admin/enrich
  * Body: { courses: [{ courseId: number, ...fieldsToUpdate }] }
- * Auth: x-admin-key header or ?key= query param
+ * Auth: x-admin-key header (env var or hardcoded fallback) or admin session
  */
 export async function POST(req: NextRequest) {
-  const key =
-    req.headers.get("x-admin-key") || req.nextUrl.searchParams.get("key");
-  if (key !== process.env.ADMIN_API_KEY) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authError = await checkAdminAuth(req);
+  if (authError) return authError;
 
   try {
     const body = await req.json();
@@ -77,11 +75,8 @@ export async function POST(req: NextRequest) {
  * GET /api/admin/enrich — Get enrichment stats
  */
 export async function GET(req: NextRequest) {
-  const key =
-    req.headers.get("x-admin-key") || req.nextUrl.searchParams.get("key");
-  if (key !== process.env.ADMIN_API_KEY) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authError = await checkAdminAuth(req);
+  if (authError) return authError;
 
   // Get field-level enrichment stats
   const stats = await prisma.$queryRaw<any[]>`
