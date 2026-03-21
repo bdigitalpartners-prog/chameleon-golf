@@ -38,6 +38,18 @@ export async function GET(req: NextRequest) {
     const yearMin = url.searchParams.get("yearMin") ? parseInt(url.searchParams.get("yearMin")!) : undefined;
     const yearMax = url.searchParams.get("yearMax") ? parseInt(url.searchParams.get("yearMax")!) : undefined;
     const architect = url.searchParams.get("architect") || undefined;
+    const search = url.searchParams.get("search")?.trim() || undefined;
+
+    // Build search helpers for raw SQL paths
+    let searchTsquery: string | undefined;
+    let searchTrigram: string | undefined;
+    if (search && search.length >= 2) {
+      const words = search.replace(/[^\w\s]/g, " ").split(/\s+/).filter((w) => w.length > 0);
+      if (words.length > 0) {
+        searchTsquery = words.map((w) => `${w}:*`).join(" & ");
+        searchTrigram = search;
+      }
+    }
 
     // Weight params
     const w_expert = parseWeight(url.searchParams.get("w_expert"));
@@ -71,6 +83,16 @@ export async function GET(req: NextRequest) {
       if (yearMax !== undefined) conditions.push(Prisma.sql`c.year_opened <= ${yearMax}`);
       if (architect) conditions.push(Prisma.sql`c.original_architect ILIKE ${"%" + architect + "%"}`);
       if (listId !== undefined) conditions.push(Prisma.sql`EXISTS (SELECT 1 FROM ranking_entries re WHERE re.course_id = c.course_id AND re.list_id = ${listId})`);
+      if (searchTsquery && searchTrigram) {
+        conditions.push(Prisma.sql`(
+          c.search_vector @@ to_tsquery('english', ${searchTsquery})
+          OR similarity(c.course_name, ${searchTrigram}) > 0.1
+          OR similarity(c.facility_name, ${searchTrigram}) > 0.1
+          OR similarity(c.city, ${searchTrigram}) > 0.15
+          OR similarity(c.state, ${searchTrigram}) > 0.15
+          OR similarity(c.original_architect, ${searchTrigram}) > 0.15
+        )`);
+      }
 
       const whereClause = conditions.reduce((acc, cond) => Prisma.sql`${acc} AND ${cond}`);
       const orderDirection = sortDir === "asc" ? Prisma.sql`ASC` : Prisma.sql`DESC`;
@@ -222,6 +244,16 @@ export async function GET(req: NextRequest) {
       if (yearMax !== undefined) conditions.push(Prisma.sql`c.year_opened <= ${yearMax}`);
       if (architect) conditions.push(Prisma.sql`c.original_architect ILIKE ${"%" + architect + "%"}`);
       if (listId !== undefined) conditions.push(Prisma.sql`EXISTS (SELECT 1 FROM ranking_entries re2 WHERE re2.course_id = c.course_id AND re2.list_id = ${listId})`);
+      if (searchTsquery && searchTrigram) {
+        conditions.push(Prisma.sql`(
+          c.search_vector @@ to_tsquery('english', ${searchTsquery})
+          OR similarity(c.course_name, ${searchTrigram}) > 0.1
+          OR similarity(c.facility_name, ${searchTrigram}) > 0.1
+          OR similarity(c.city, ${searchTrigram}) > 0.15
+          OR similarity(c.state, ${searchTrigram}) > 0.15
+          OR similarity(c.original_architect, ${searchTrigram}) > 0.15
+        )`);
+      }
 
       const whereClause = conditions.reduce((acc, cond) => Prisma.sql`${acc} AND ${cond}`);
 
@@ -383,6 +415,15 @@ export async function GET(req: NextRequest) {
     }
     if (listId !== undefined) {
       where.rankings = { some: { listId } };
+    }
+    if (search) {
+      where.OR = [
+        { courseName: { contains: search, mode: "insensitive" } },
+        { facilityName: { contains: search, mode: "insensitive" } },
+        { city: { contains: search, mode: "insensitive" } },
+        { state: { contains: search, mode: "insensitive" } },
+        { originalArchitect: { contains: search, mode: "insensitive" } },
+      ];
     }
 
     const orderBy: any =
