@@ -404,7 +404,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No valid categories specified" }, { status: 400 });
   }
 
-  const where: any = {};
+  const where: any = {
+    // Only consider courses that have base enrichment (description populated)
+    description: { not: null },
+  };
   if (courseIds && Array.isArray(courseIds) && courseIds.length > 0) {
     if (courseIds.length > MAX_COURSES_PER_REQUEST) {
       return NextResponse.json({ error: `Max ${MAX_COURSES_PER_REQUEST} courseIds per request` }, { status: 400 });
@@ -412,7 +415,10 @@ export async function POST(req: NextRequest) {
     where.courseId = { in: courseIds.map(Number) };
   }
 
-  const courses = await prisma.course.findMany({
+  const targetLimit = Math.min(limit, MAX_COURSES_PER_REQUEST);
+
+  // Overfetch to compensate for courses we'll filter out (already full in all categories)
+  const fetched = await prisma.course.findMany({
     where,
     select: {
       courseId: true,
@@ -429,8 +435,21 @@ export async function POST(req: NextRequest) {
       },
     },
     orderBy: [{ numListsAppeared: "desc" }, { courseId: "asc" }],
-    take: Math.min(limit, MAX_COURSES_PER_REQUEST),
+    take: targetLimit * 3,
   });
+
+  // Filter out courses where ALL requested categories already have >= TARGET_COUNT items
+  const courses = fetched
+    .filter((course) => {
+      const counts: Record<Category, number> = {
+        media: course._count.media,
+        dining: course._count.nearbyDining,
+        lodging: course._count.nearbyLodging,
+      };
+      // Keep the course if ANY requested category still needs items
+      return validCategories.some((cat) => counts[cat] < TARGET_COUNT);
+    })
+    .slice(0, targetLimit);
 
   const results: Array<{
     courseId: number;
@@ -517,6 +536,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     success: true,
     totalCourses: courses.length,
+    skippedAlreadyFull: fetched.length - courses.length,
     categories: validCategories,
     summary: {
       mediaAdded: totalMediaAdded,
