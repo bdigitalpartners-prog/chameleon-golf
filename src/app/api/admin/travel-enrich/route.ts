@@ -17,6 +17,7 @@ interface TravelData {
     rating: number;
     description: string;
     isGolfPackage: boolean;
+    isOnSite: boolean;
     phone?: string;
     address?: string;
   }>;
@@ -27,6 +28,7 @@ interface TravelData {
     priceRange: string;
     rating: number;
     description: string;
+    isOnSite: boolean;
     phone?: string;
     address?: string;
   }>;
@@ -84,6 +86,7 @@ Generate realistic, location-appropriate recommendations. Return a JSON object w
       "rating": 4.5,
       "description": "Brief description",
       "isGolfPackage": false,
+      "isOnSite": false,
       "phone": "(555) 123-4567",
       "address": "123 Main St, City, ST"
     }
@@ -96,6 +99,7 @@ Generate realistic, location-appropriate recommendations. Return a JSON object w
       "priceRange": "$ | $$ | $$$ | $$$$",
       "rating": 4.3,
       "description": "Brief description",
+      "isOnSite": false,
       "phone": "(555) 123-4567",
       "address": "456 Oak Ave, City, ST"
     }
@@ -134,14 +138,16 @@ Generate realistic, location-appropriate recommendations. Return a JSON object w
 }
 
 IMPORTANT REQUIREMENTS:
-1. Include 3-5 lodging options. You MUST include at least one RV Park or Campground where geographically appropriate (this is a specific owner requirement).
-2. Include 3-5 restaurant recommendations with varied cuisine types.
-3. Include 3-5 nearby attractions (mix of golf-related and general tourism).
-4. Include the nearest commercial airport AND the nearest private airport/FBO. If there's an FBO at or near a commercial airport, include that info too. FBO information is a KEY differentiator - be thorough with FBO details.
-5. Include drive times from 3-5 nearest major metro areas.
-6. All distances should be realistic for the location.
-7. For lodging, mark isGolfPackage=true if the property is known to offer golf packages with the course.
-8. Return ONLY valid JSON, no markdown or extra text.`;
+1. Include up to 10 lodging options, sorted by HIGHEST RATED first. You MUST include at least one RV Park or Campground where geographically appropriate (this is a specific owner requirement). Include a variety: hotels, resorts, B&Bs, vacation rentals.
+2. If the golf course has on-site/on-property lodging (resort rooms, cottages, cabins on the property), list them FIRST and mark them as isOnSite=true. Set distanceMiles=0 for on-site lodging. All other lodging should have isOnSite=false.
+3. Include up to 10 restaurant recommendations with varied cuisine types, sorted by HIGHEST RATED first.
+4. If the golf course has on-site/on-property restaurants (at the clubhouse, resort, or facility), list them FIRST and mark them as isOnSite=true. Set distanceMiles=0 for on-site dining. All other dining should have isOnSite=false.
+5. Include 3-5 nearby attractions (mix of golf-related and general tourism).
+6. Include the nearest commercial airport AND the nearest private airport/FBO. If there's an FBO at or near a commercial airport, include that info too. FBO information is a KEY differentiator - be thorough with FBO details.
+7. Include drive times from 3-5 nearest major metro areas.
+8. All distances should be realistic for the location.
+9. For lodging, mark isGolfPackage=true if the property is known to offer golf packages with the course.
+10. Return ONLY valid JSON, no markdown or extra text.`;
 }
 
 function parseTravelResponse(text: string): TravelData | null {
@@ -305,20 +311,34 @@ export async function POST(req: NextRequest) {
         ]);
       }
 
-      // Separate RV Parks from regular lodging
-      const rvParks = travelData.lodging.filter(
-        (l) => l.type === "RV Park" || l.type === "Campground"
-      );
-      const regularLodging = travelData.lodging.filter(
+      // Sort dining: on-site first, then by rating descending
+      const sortedDining = [...travelData.dining].sort((a, b) => {
+        if (a.isOnSite && !b.isOnSite) return -1;
+        if (!a.isOnSite && b.isOnSite) return 1;
+        return (b.rating || 0) - (a.rating || 0);
+      });
+
+      // Sort lodging: on-site first, then by rating descending
+      const sortedLodging = [...travelData.lodging].sort((a, b) => {
+        if (a.isOnSite && !b.isOnSite) return -1;
+        if (!a.isOnSite && b.isOnSite) return 1;
+        return (b.rating || 0) - (a.rating || 0);
+      });
+
+      // Separate RV Parks from regular lodging (after sorting)
+      const sortedRegularLodging = sortedLodging.filter(
         (l) => l.type !== "RV Park" && l.type !== "Campground"
+      );
+      const sortedRvParks = sortedLodging.filter(
+        (l) => l.type === "RV Park" || l.type === "Campground"
       );
 
       // Save all data
       await Promise.all([
         // Dining
-        travelData.dining.length > 0
+        sortedDining.length > 0
           ? prisma.courseNearbyDining.createMany({
-              data: travelData.dining.map((d, i) => ({
+              data: sortedDining.map((d, i) => ({
                 courseId: course.courseId,
                 name: d.name,
                 cuisineType: d.cuisineType || null,
@@ -328,15 +348,16 @@ export async function POST(req: NextRequest) {
                 description: d.description || null,
                 address: d.address || null,
                 phone: d.phone || null,
+                isOnSite: d.isOnSite || false,
                 sortOrder: i,
               })),
             })
           : Promise.resolve(),
 
         // Lodging (non-RV)
-        regularLodging.length > 0
+        sortedRegularLodging.length > 0
           ? prisma.courseNearbyLodging.createMany({
-              data: regularLodging.map((l, i) => ({
+              data: sortedRegularLodging.map((l, i) => ({
                 courseId: course.courseId,
                 name: l.name,
                 lodgingType: lodgingTypeFromType(l.type),
@@ -347,15 +368,16 @@ export async function POST(req: NextRequest) {
                 address: l.address || null,
                 phone: l.phone || null,
                 isGolfPackage: l.isGolfPackage || false,
+                isOnSite: l.isOnSite || false,
                 sortOrder: i,
               })),
             })
           : Promise.resolve(),
 
         // RV Parks
-        rvParks.length > 0
+        sortedRvParks.length > 0
           ? prisma.courseNearbyRvParks.createMany({
-              data: rvParks.map((r, i) => ({
+              data: sortedRvParks.map((r, i) => ({
                 courseId: course.courseId,
                 name: r.name,
                 description: r.description || null,
