@@ -17,8 +17,11 @@ interface TravelData {
     rating: number;
     description: string;
     isGolfPackage: boolean;
+    isOnSite?: boolean;
     phone?: string;
     address?: string;
+    websiteUrl?: string;
+    bookingUrl?: string;
   }>;
   dining: Array<{
     name: string;
@@ -27,8 +30,10 @@ interface TravelData {
     priceRange: string;
     rating: number;
     description: string;
+    isOnSite?: boolean;
     phone?: string;
     address?: string;
+    websiteUrl?: string;
   }>;
   attractions: Array<{
     name: string;
@@ -134,8 +139,8 @@ Generate realistic, location-appropriate recommendations. Return a JSON object w
 }
 
 IMPORTANT REQUIREMENTS:
-1. Include 3-5 lodging options. You MUST include at least one RV Park or Campground where geographically appropriate (this is a specific owner requirement).
-2. Include 3-5 restaurant recommendations with varied cuisine types.
+1. Include up to 10 lodging options, sorted by highest rated first. You MUST include at least one RV Park or Campground where geographically appropriate (this is a specific owner requirement). Include a variety: hotels, resorts, B&Bs, vacation rentals. If the golf course has on-site/on-property lodging (resort rooms, cottages, cabins on the property), list them FIRST and mark them as on-site by adding "isOnSite": true. Pick the highest rated lodging options available.
+2. Include up to 10 restaurant recommendations with varied cuisine types, sorted by highest rated first. If the golf course has on-site/on-property restaurants (at the clubhouse, resort, or facility), list them FIRST and mark them as on-site by adding "isOnSite": true. Pick the highest rated restaurants available.
 3. Include 3-5 nearby attractions (mix of golf-related and general tourism).
 4. Include the nearest commercial airport AND the nearest private airport/FBO. If there's an FBO at or near a commercial airport, include that info too. FBO information is a KEY differentiator - be thorough with FBO details.
 5. Include drive times from 3-5 nearest major metro areas.
@@ -313,12 +318,26 @@ export async function POST(req: NextRequest) {
         (l) => l.type !== "RV Park" && l.type !== "Campground"
       );
 
+      // Sort dining: on-site first, then by rating descending
+      const sortedDining = [...travelData.dining].sort((a, b) => {
+        if (a.isOnSite && !b.isOnSite) return -1;
+        if (!a.isOnSite && b.isOnSite) return 1;
+        return (b.rating || 0) - (a.rating || 0);
+      });
+
+      // Sort regular lodging: on-site first, then by rating descending
+      const sortedRegularLodging = [...regularLodging].sort((a, b) => {
+        if (a.isOnSite && !b.isOnSite) return -1;
+        if (!a.isOnSite && b.isOnSite) return 1;
+        return (b.rating || 0) - (a.rating || 0);
+      });
+
       // Save all data
       await Promise.all([
         // Dining
-        travelData.dining.length > 0
+        sortedDining.length > 0
           ? prisma.courseNearbyDining.createMany({
-              data: travelData.dining.map((d, i) => ({
+              data: sortedDining.map((d, i) => ({
                 courseId: course.courseId,
                 name: d.name,
                 cuisineType: d.cuisineType || null,
@@ -328,15 +347,17 @@ export async function POST(req: NextRequest) {
                 description: d.description || null,
                 address: d.address || null,
                 phone: d.phone || null,
+                websiteUrl: d.websiteUrl || null,
+                isOnSite: d.isOnSite || false,
                 sortOrder: i,
               })),
             })
           : Promise.resolve(),
 
         // Lodging (non-RV)
-        regularLodging.length > 0
+        sortedRegularLodging.length > 0
           ? prisma.courseNearbyLodging.createMany({
-              data: regularLodging.map((l, i) => ({
+              data: sortedRegularLodging.map((l, i) => ({
                 courseId: course.courseId,
                 name: l.name,
                 lodgingType: lodgingTypeFromType(l.type),
@@ -346,6 +367,9 @@ export async function POST(req: NextRequest) {
                 description: l.description || null,
                 address: l.address || null,
                 phone: l.phone || null,
+                websiteUrl: l.websiteUrl || null,
+                bookingUrl: l.bookingUrl || null,
+                isOnSite: l.isOnSite || false,
                 isGolfPackage: l.isGolfPackage || false,
                 sortOrder: i,
               })),
