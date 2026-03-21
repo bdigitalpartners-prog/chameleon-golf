@@ -13,6 +13,7 @@ interface CoursesResponse {
 
 export function useCourses(filters: CourseFilters) {
   const params = new URLSearchParams();
+  if (filters.search) params.set("search", filters.search);
   if (filters.page) params.set("page", String(filters.page));
   if (filters.limit) params.set("limit", String(filters.limit));
   if (filters.country) params.set("country", filters.country);

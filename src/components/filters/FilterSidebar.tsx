@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { SlidersHorizontal, ChevronDown } from "lucide-react";
+import { SlidersHorizontal, ChevronDown, Search } from "lucide-react";
 import type { CourseFilters } from "@/types";
 
 interface RankingList {
@@ -64,6 +64,24 @@ interface ArchitectSuggestion {
 export function FilterSidebar({ filters, onChange, filterOptions }: FilterSidebarProps) {
   const update = (partial: Partial<CourseFilters>) => onChange({ ...filters, ...partial, page: 1 });
 
+  const [searchInput, setSearchInput] = useState(filters.search || "");
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function handleSearchChange(value: string) {
+    setSearchInput(value);
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      update({ search: value || undefined });
+    }, 400);
+  }
+
+  function handleSearchKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter") {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+      update({ search: searchInput || undefined });
+    }
+  }
+
   const [rankingSources, setRankingSources] = useState<RankingSource[]>([]);
   const [architectInput, setArchitectInput] = useState(filters.architect || "");
   const [architectSuggestions, setArchitectSuggestions] = useState<ArchitectSuggestion[]>([]);
@@ -122,13 +140,32 @@ export function FilterSidebar({ filters, onChange, filterOptions }: FilterSideba
           Filters
         </div>
         <button
-          onClick={() => onChange({ page: 1, limit: filters.limit ?? 24, sortBy: "gd100", sortDir: "asc" })}
+          onClick={() => {
+            setSearchInput("");
+            setArchitectInput("");
+            onChange({ page: 1, limit: filters.limit ?? 24, sortBy: "gd100", sortDir: "asc" });
+          }}
           className="text-xs font-medium"
           style={{ color: "var(--cg-accent)" }}
         >
           Reset All
         </button>
       </div>
+
+      <FilterSection title="Search">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5" style={{ color: "var(--cg-text-muted)" }} />
+          <input
+            type="text"
+            placeholder="Course name, city, architect..."
+            value={searchInput}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
+            className="w-full rounded-lg pl-9 pr-3 py-2 text-sm outline-none"
+            style={inputStyle}
+          />
+        </div>
+      </FilterSection>
 
       <FilterSection title="Country">
         <select
