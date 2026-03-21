@@ -1,4 +1,4 @@
-import { resend, FROM_EMAIL, REPLY_TO } from './resend';
+import { getResend, FROM_EMAIL, REPLY_TO } from './resend';
 
 export type EmailResult = {
   success: boolean;
@@ -31,13 +31,13 @@ export async function sendEmail({
       return { success: true, id: 'skipped-no-api-key' };
     }
 
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await getResend().emails.send({
       from: FROM_EMAIL,
       to: Array.isArray(to) ? to : [to],
       subject,
       html,
       text,
-      reply_to: replyTo || REPLY_TO,
+      replyTo: replyTo || REPLY_TO,
       tags,
     });
 
