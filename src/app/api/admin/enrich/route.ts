@@ -123,8 +123,27 @@ export async function GET(req: NextRequest) {
       (SELECT COUNT(DISTINCT course_id) FROM holes) as courses_with_holes
   `;
 
+  // Enrichment gap stats — courses with descriptions that still need data
+  const gapStats = await prisma.$queryRaw<any[]>`
+    SELECT
+      COUNT(CASE WHEN COALESCE(dc.cnt, 0) < 10 THEN 1 END) as dining_needs_enrichment,
+      COUNT(CASE WHEN COALESCE(lc.cnt, 0) < 10 THEN 1 END) as lodging_needs_enrichment,
+      COUNT(CASE WHEN COALESCE(mc.cnt, 0) < 10 THEN 1 END) as media_needs_enrichment,
+      COUNT(DISTINCT CASE
+        WHEN (COALESCE(dc.cnt, 0) < 10 OR COALESCE(lc.cnt, 0) < 10)
+             AND c.city IS NOT NULL AND c.state IS NOT NULL
+        THEN CONCAT(c.city, '|', c.state)
+      END) as unique_locations_needing_enrichment
+    FROM courses c
+    LEFT JOIN (SELECT course_id, COUNT(*) as cnt FROM course_nearby_dining GROUP BY course_id) dc ON dc.course_id = c.course_id
+    LEFT JOIN (SELECT course_id, COUNT(*) as cnt FROM course_nearby_lodging GROUP BY course_id) lc ON lc.course_id = c.course_id
+    LEFT JOIN (SELECT course_id, COUNT(*) as cnt FROM course_media GROUP BY course_id) mc ON mc.course_id = c.course_id
+    WHERE c.description IS NOT NULL
+  `;
+
   return NextResponse.json({
     fieldStats: stats[0],
     relatedStats: relatedStats[0],
+    gapStats: gapStats[0],
   });
 }
