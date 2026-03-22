@@ -10,6 +10,7 @@ const PERPLEXITY_ENDPOINT = "https://api.perplexity.ai/chat/completions";
 const TARGET_COUNT = 10;
 const MAX_COURSES_PER_REQUEST = 20;
 const RATE_LIMIT_MS = 1500;
+const CONCURRENCY = 4;
 
 type Category = "media" | "dining" | "lodging";
 
@@ -53,6 +54,14 @@ function parseJsonResponse<T>(text: string): T | null {
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function chunkArray<T>(arr: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+  return chunks;
 }
 
 // ── Media enrichment ─────────────────────────────────────────────────
@@ -119,14 +128,12 @@ async function enrichMedia(courseId: number, courseName: string, city: string | 
   const parsed = parseJsonResponse<{ media: MediaItem[] }>(content);
   if (!parsed?.media || !Array.isArray(parsed.media)) return { added: 0, error: "Failed to parse response" };
 
-  // Filter valid items and limit to needed count
   const validMedia = parsed.media
     .filter((m) => m.url && m.mediaType && (m.mediaType === "photo" || m.mediaType === "video"))
     .slice(0, needed);
 
   if (validMedia.length === 0) return { added: 0 };
 
-  // Check for existing URLs to avoid duplicates
   const existingUrls = await prisma.courseMedia.findMany({
     where: { courseId },
     select: { url: true },
@@ -136,7 +143,6 @@ async function enrichMedia(courseId: number, courseName: string, city: string | 
 
   if (newMedia.length === 0) return { added: 0 };
 
-  // Determine if we need to set isPrimary (no existing primary photo)
   const hasPrimary = await prisma.courseMedia.findFirst({
     where: { courseId, isPrimary: true },
   });
@@ -223,7 +229,6 @@ async function enrichDining(courseId: number, courseName: string, city: string |
   const parsed = parseJsonResponse<{ dining: DiningItem[] }>(content);
   if (!parsed?.dining || !Array.isArray(parsed.dining)) return { added: 0, error: "Failed to parse response" };
 
-  // Sort: on-site first, then by rating descending
   const sorted = [...parsed.dining].sort((a, b) => {
     if (a.isOnSite && !b.isOnSite) return -1;
     if (!a.isOnSite && b.isOnSite) return 1;
@@ -233,7 +238,6 @@ async function enrichDining(courseId: number, courseName: string, city: string |
   const items = sorted.filter((d) => d.name).slice(0, needed);
   if (items.length === 0) return { added: 0 };
 
-  // Check for duplicates by name
   const existing = await prisma.courseNearbyDining.findMany({
     where: { courseId },
     select: { name: true },
@@ -331,7 +335,6 @@ async function enrichLodging(courseId: number, courseName: string, city: string 
   const parsed = parseJsonResponse<{ lodging: LodgingItem[] }>(content);
   if (!parsed?.lodging || !Array.isArray(parsed.lodging)) return { added: 0, error: "Failed to parse response" };
 
-  // Sort: on-site first, then by rating descending
   const sorted = [...parsed.lodging].sort((a, b) => {
     if (a.isOnSite && !b.isOnSite) return -1;
     if (!a.isOnSite && b.isOnSite) return 1;
@@ -341,7 +344,6 @@ async function enrichLodging(courseId: number, courseName: string, city: string 
   const items = sorted.filter((l) => l.name).slice(0, needed);
   if (items.length === 0) return { added: 0 };
 
-  // Check for duplicates by name
   const existing = await prisma.courseNearbyLodging.findMany({
     where: { courseId },
     select: { name: true },
@@ -374,12 +376,101 @@ async function enrichLodging(courseId: number, courseName: string, city: string 
   return { added: newItems.length };
 }
 
+// ── Enrich all categories for a single course ────────────────────────
+
+interface CourseRow {
+  course_id: number;
+  course_name: string;
+  city: string | null;
+  state: string | null;
+  country: string;
+  media_count: number;
+  dining_count: number;
+  lodging_count: number;
+}
+
+async function enrichAllCategories(
+  course: CourseRow,
+  validCategories: Category[],
+): Promise<{
+  courseId: number;
+  courseName: string;
+  media?: { existing: number; added: number; error?: string };
+  dining?: { existing: number; added: number; error?: string };
+  lodging?: { existing: number; added: number; error?: string };
+}> {
+  const result: {
+    courseId: number;
+    courseName: string;
+    media?: { existing: number; added: number; error?: string };
+    dining?: { existing: number; added: number; error?: string };
+    lodging?: { existing: number; added: number; error?: string };
+  } = {
+    courseId: course.course_id,
+    courseName: course.course_name,
+  };
+
+  try {
+    if (validCategories.includes("media") && course.media_count < TARGET_COUNT) {
+      const mediaResult = await enrichMedia(
+        course.course_id,
+        course.course_name,
+        course.city,
+        course.state,
+        course.country,
+        course.media_count,
+      );
+      result.media = { existing: course.media_count, ...mediaResult };
+      if (validCategories.length > 1) await delay(RATE_LIMIT_MS);
+    }
+
+    if (validCategories.includes("dining") && course.dining_count < TARGET_COUNT) {
+      const diningResult = await enrichDining(
+        course.course_id,
+        course.course_name,
+        course.city,
+        course.state,
+        course.country,
+        course.dining_count,
+      );
+      result.dining = { existing: course.dining_count, ...diningResult };
+      if (validCategories.includes("lodging")) await delay(RATE_LIMIT_MS);
+    }
+
+    if (validCategories.includes("lodging") && course.lodging_count < TARGET_COUNT) {
+      const lodgingResult = await enrichLodging(
+        course.course_id,
+        course.course_name,
+        course.city,
+        course.state,
+        course.country,
+        course.lodging_count,
+      );
+      result.lodging = { existing: course.lodging_count, ...lodgingResult };
+    }
+  } catch (err: any) {
+    const errMsg = err.message || "Unknown error";
+    if (!result.media && validCategories.includes("media")) {
+      result.media = { existing: course.media_count, added: 0, error: errMsg };
+    }
+    if (!result.dining && validCategories.includes("dining")) {
+      result.dining = { existing: course.dining_count, added: 0, error: errMsg };
+    }
+    if (!result.lodging && validCategories.includes("lodging")) {
+      result.lodging = { existing: course.lodging_count, added: 0, error: errMsg };
+    }
+  }
+
+  return result;
+}
+
 // ── Main endpoint ────────────────────────────────────────────────────
 
 /**
  * POST /api/admin/enrich-expand
  * Unified enrichment endpoint — expand media, dining, and lodging to 10 per course.
- * Body: { courseIds?: number[], limit?: number, categories?: ('media' | 'dining' | 'lodging')[] }
+ * Uses raw SQL to find least-enriched courses first, with cursor-based pagination.
+ * Body: { courseIds?: number[], limit?: number, categories?: ('media' | 'dining' | 'lodging')[], afterCourseId?: number }
  */
 export async function POST(req: NextRequest) {
   const authError = await checkAdminAuth(req);
@@ -394,9 +485,9 @@ export async function POST(req: NextRequest) {
     courseIds,
     limit = 10,
     categories = ["media", "dining", "lodging"] as Category[],
+    afterCourseId,
   } = body;
 
-  // Validate
   const validCategories: Category[] = categories.filter((c: string) =>
     ["media", "dining", "lodging"].includes(c),
   );
@@ -404,139 +495,106 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "No valid categories specified" }, { status: 400 });
   }
 
-  const where: any = {
-    // Only consider courses that have base enrichment (description populated)
-    description: { not: null },
-  };
+  const targetLimit = Math.min(limit, MAX_COURSES_PER_REQUEST);
+
+  let courses: CourseRow[];
+
   if (courseIds && Array.isArray(courseIds) && courseIds.length > 0) {
     if (courseIds.length > MAX_COURSES_PER_REQUEST) {
       return NextResponse.json({ error: `Max ${MAX_COURSES_PER_REQUEST} courseIds per request` }, { status: 400 });
     }
-    where.courseId = { in: courseIds.map(Number) };
+    // Specific course IDs requested — use targeted query
+    const ids = courseIds.map(Number);
+    courses = await prisma.$queryRaw<CourseRow[]>`
+      SELECT c.course_id, c.course_name, c.city, c.state, c.country,
+             COALESCE(mc.cnt, 0)::int as media_count,
+             COALESCE(dc.cnt, 0)::int as dining_count,
+             COALESCE(lc.cnt, 0)::int as lodging_count
+      FROM courses c
+      LEFT JOIN (SELECT course_id, COUNT(*) as cnt FROM course_media GROUP BY course_id) mc ON mc.course_id = c.course_id
+      LEFT JOIN (SELECT course_id, COUNT(*) as cnt FROM course_nearby_dining GROUP BY course_id) dc ON dc.course_id = c.course_id
+      LEFT JOIN (SELECT course_id, COUNT(*) as cnt FROM course_nearby_lodging GROUP BY course_id) lc ON lc.course_id = c.course_id
+      WHERE c.course_id = ANY(${ids})
+        AND c.description IS NOT NULL
+        AND (COALESCE(mc.cnt, 0) < ${TARGET_COUNT} OR COALESCE(dc.cnt, 0) < ${TARGET_COUNT} OR COALESCE(lc.cnt, 0) < ${TARGET_COUNT})
+      ORDER BY (COALESCE(mc.cnt, 0) + COALESCE(dc.cnt, 0) + COALESCE(lc.cnt, 0)) ASC,
+               c.num_lists_appeared DESC
+    `;
+  } else {
+    // Least-enriched-first with cursor pagination
+    const cursorId = afterCourseId ? Number(afterCourseId) : 0;
+    courses = await prisma.$queryRaw<CourseRow[]>`
+      SELECT c.course_id, c.course_name, c.city, c.state, c.country,
+             COALESCE(mc.cnt, 0)::int as media_count,
+             COALESCE(dc.cnt, 0)::int as dining_count,
+             COALESCE(lc.cnt, 0)::int as lodging_count
+      FROM courses c
+      LEFT JOIN (SELECT course_id, COUNT(*) as cnt FROM course_media GROUP BY course_id) mc ON mc.course_id = c.course_id
+      LEFT JOIN (SELECT course_id, COUNT(*) as cnt FROM course_nearby_dining GROUP BY course_id) dc ON dc.course_id = c.course_id
+      LEFT JOIN (SELECT course_id, COUNT(*) as cnt FROM course_nearby_lodging GROUP BY course_id) lc ON lc.course_id = c.course_id
+      WHERE c.description IS NOT NULL
+        AND (COALESCE(mc.cnt, 0) < ${TARGET_COUNT} OR COALESCE(dc.cnt, 0) < ${TARGET_COUNT} OR COALESCE(lc.cnt, 0) < ${TARGET_COUNT})
+        AND c.course_id > ${cursorId}
+      ORDER BY (COALESCE(mc.cnt, 0) + COALESCE(dc.cnt, 0) + COALESCE(lc.cnt, 0)) ASC,
+               c.num_lists_appeared DESC,
+               c.course_id ASC
+      LIMIT ${targetLimit}
+    `;
   }
 
-  const targetLimit = Math.min(limit, MAX_COURSES_PER_REQUEST);
+  if (courses.length === 0) {
+    return NextResponse.json({
+      success: true,
+      totalCourses: 0,
+      categories: validCategories,
+      summary: { mediaAdded: 0, diningAdded: 0, lodgingAdded: 0, coursesWithErrors: 0 },
+      nextCursor: null,
+      results: [],
+    });
+  }
 
-  // Overfetch to compensate for courses we'll filter out (already full in all categories)
-  const fetched = await prisma.course.findMany({
-    where,
-    select: {
-      courseId: true,
-      courseName: true,
-      city: true,
-      state: true,
-      country: true,
-      _count: {
-        select: {
-          media: true,
-          nearbyDining: true,
-          nearbyLodging: true,
-        },
-      },
-    },
-    orderBy: [{ numListsAppeared: "desc" }, { courseId: "asc" }],
-    take: targetLimit * 3,
-  });
+  // Process courses in parallel chunks of CONCURRENCY
+  const allResults: Awaited<ReturnType<typeof enrichAllCategories>>[] = [];
+  const chunks = chunkArray(courses, CONCURRENCY);
 
-  // Filter out courses where ALL requested categories already have >= TARGET_COUNT items
-  const courses = fetched
-    .filter((course) => {
-      const counts: Record<Category, number> = {
-        media: course._count.media,
-        dining: course._count.nearbyDining,
-        lodging: course._count.nearbyLodging,
-      };
-      // Keep the course if ANY requested category still needs items
-      return validCategories.some((cat) => counts[cat] < TARGET_COUNT);
-    })
-    .slice(0, targetLimit);
+  for (const chunk of chunks) {
+    const settled = await Promise.allSettled(
+      chunk.map((course) => enrichAllCategories(course, validCategories)),
+    );
 
-  const results: Array<{
-    courseId: number;
-    courseName: string;
-    media?: { existing: number; added: number; error?: string };
-    dining?: { existing: number; added: number; error?: string };
-    lodging?: { existing: number; added: number; error?: string };
-  }> = [];
-
-  for (const course of courses) {
-    const result: (typeof results)[number] = {
-      courseId: course.courseId,
-      courseName: course.courseName,
-    };
-
-    try {
-      if (validCategories.includes("media")) {
-        const mediaResult = await enrichMedia(
-          course.courseId,
-          course.courseName,
-          course.city,
-          course.state,
-          course.country,
-          course._count.media,
-        );
-        result.media = { existing: course._count.media, ...mediaResult };
-        if (validCategories.length > 1) await delay(RATE_LIMIT_MS);
-      }
-
-      if (validCategories.includes("dining")) {
-        const diningResult = await enrichDining(
-          course.courseId,
-          course.courseName,
-          course.city,
-          course.state,
-          course.country,
-          course._count.nearbyDining,
-        );
-        result.dining = { existing: course._count.nearbyDining, ...diningResult };
-        if (validCategories.includes("lodging")) await delay(RATE_LIMIT_MS);
-      }
-
-      if (validCategories.includes("lodging")) {
-        const lodgingResult = await enrichLodging(
-          course.courseId,
-          course.courseName,
-          course.city,
-          course.state,
-          course.country,
-          course._count.nearbyLodging,
-        );
-        result.lodging = { existing: course._count.nearbyLodging, ...lodgingResult };
-      }
-    } catch (err: any) {
-      // Attach error to whichever category was in progress
-      const errMsg = err.message || "Unknown error";
-      if (!result.media && validCategories.includes("media")) {
-        result.media = { existing: course._count.media, added: 0, error: errMsg };
-      }
-      if (!result.dining && validCategories.includes("dining")) {
-        result.dining = { existing: course._count.nearbyDining, added: 0, error: errMsg };
-      }
-      if (!result.lodging && validCategories.includes("lodging")) {
-        result.lodging = { existing: course._count.nearbyLodging, added: 0, error: errMsg };
+    for (const outcome of settled) {
+      if (outcome.status === "fulfilled") {
+        allResults.push(outcome.value);
+      } else {
+        // Should not happen since enrichAllCategories catches internally, but handle gracefully
+        allResults.push({
+          courseId: 0,
+          courseName: "Unknown",
+          media: { existing: 0, added: 0, error: outcome.reason?.message || "Unknown error" },
+        });
       }
     }
 
-    // Rate limit between courses
-    if (courses.indexOf(course) < courses.length - 1) {
+    // Rate limit between chunks
+    if (chunks.indexOf(chunk) < chunks.length - 1) {
       await delay(RATE_LIMIT_MS);
     }
-
-    results.push(result);
   }
 
   // Summary stats
-  const totalMediaAdded = results.reduce((sum, r) => sum + (r.media?.added || 0), 0);
-  const totalDiningAdded = results.reduce((sum, r) => sum + (r.dining?.added || 0), 0);
-  const totalLodgingAdded = results.reduce((sum, r) => sum + (r.lodging?.added || 0), 0);
-  const errCount = results.filter(
+  const totalMediaAdded = allResults.reduce((sum, r) => sum + (r.media?.added || 0), 0);
+  const totalDiningAdded = allResults.reduce((sum, r) => sum + (r.dining?.added || 0), 0);
+  const totalLodgingAdded = allResults.reduce((sum, r) => sum + (r.lodging?.added || 0), 0);
+  const errCount = allResults.filter(
     (r) => r.media?.error || r.dining?.error || r.lodging?.error,
   ).length;
+
+  // Cursor: last courseId processed for pagination
+  const lastCourseId = courses[courses.length - 1].course_id;
 
   return NextResponse.json({
     success: true,
     totalCourses: courses.length,
-    skippedAlreadyFull: fetched.length - courses.length,
     categories: validCategories,
     summary: {
       mediaAdded: totalMediaAdded,
@@ -544,6 +602,7 @@ export async function POST(req: NextRequest) {
       lodgingAdded: totalLodgingAdded,
       coursesWithErrors: errCount,
     },
-    results,
+    nextCursor: courses.length === targetLimit ? lastCourseId : null,
+    results: allResults,
   });
 }
