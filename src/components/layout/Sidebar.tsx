@@ -38,6 +38,7 @@ import {
   Sparkles,
   Target,
   DollarSign,
+  PlayCircle,
 } from "lucide-react";
 
 /* ─── Types ────────────────────────────────────────── */
@@ -89,6 +90,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/feed", label: "Feed", icon: Rss, requiresAuth: true },
       { href: "/circles", label: "Circles", icon: Users, requiresAuth: true },
       { href: "/events", label: "Events", icon: Calendar },
+      { href: "/creators", label: "Creators", icon: PlayCircle },
       { href: "/fairway", label: "The Fairway", icon: Newspaper },
       { href: "/looper-guild", label: "Looper Guild", icon: Flame },
     ],

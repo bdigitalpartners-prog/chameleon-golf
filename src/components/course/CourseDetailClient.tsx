@@ -20,6 +20,7 @@ import { CourseContentSections } from "./CourseContentSections";
 import { WeatherPlayabilityCalendar, BestMonthsBadge } from "@/components/weather/WeatherPlayabilityCalendar";
 import { ReadabilityTab } from "./tabs/ReadabilityTab";
 import { CourseRelatedContent } from "@/app/course/[id]/CourseRelatedContent";
+import { CourseCreatorContent } from "@/components/creators/CourseCreatorContent";
 import { trackCourseView } from "@/lib/analytics";
 
 /* ─── Safe Text Helper ─── */
@@ -2232,6 +2233,11 @@ export function CourseDetailClient({ course }: { course: any }) {
 
           return (
             <div className="max-w-3xl space-y-8">
+              {/* Creator Content */}
+              <section style={cardStyle}>
+                <CourseCreatorContent courseId={course.courseId} courseName={course.courseName} />
+              </section>
+
               {/* Looper Guild Caddies */}
               <CaddyWidget courseId={course.courseId} courseName={course.courseName} />
 
