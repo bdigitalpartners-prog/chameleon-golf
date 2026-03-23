@@ -40,6 +40,8 @@ import {
   DollarSign,
   PlayCircle,
   GitCompareArrows,
+  TrendingUp,
+  ScanLine,
 } from "lucide-react";
 
 /* ─── Types ────────────────────────────────────────── */
@@ -84,6 +86,8 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/performance", label: "Performance", icon: BarChart3 },
       { href: "/academy", label: "Academy", icon: GraduationCap },
       { href: "/walking-guide", label: "Walking Guide", icon: Footprints },
+      { href: "/betting", label: "Betting & DFS", icon: TrendingUp },
+      { href: "/satellite", label: "Satellite Analysis", icon: ScanLine },
     ],
   },
   {
