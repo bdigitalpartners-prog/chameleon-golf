@@ -30,6 +30,9 @@ import {
   GraduationCap,
   Flame,
   FileCheck,
+  Cloud,
+  Sprout,
+  Footprints,
 } from "lucide-react";
 
 /* ─── Types ────────────────────────────────────────── */
@@ -56,6 +59,8 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/rankings", label: "Rankings", icon: Medal },
       { href: "/map", label: "Map", icon: MapPin },
       { href: "/architects", label: "Architects", icon: PenTool },
+      { href: "/conditions", label: "Conditions", icon: Cloud },
+      { href: "/aeration", label: "Aeration Tracker", icon: Sprout },
     ],
   },
   {
@@ -65,6 +70,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/trips", label: "Trip Planner", icon: Plane },
       { href: "/performance", label: "Performance", icon: BarChart3 },
       { href: "/academy", label: "Academy", icon: GraduationCap },
+      { href: "/walking-guide", label: "Walking Guide", icon: Footprints },
     ],
   },
   {
