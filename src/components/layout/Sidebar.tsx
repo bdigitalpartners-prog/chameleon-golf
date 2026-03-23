@@ -35,6 +35,9 @@ import {
   Footprints,
   Trophy,
   Dna,
+  Sparkles,
+  Target,
+  DollarSign,
 } from "lucide-react";
 
 /* ─── Types ────────────────────────────────────────── */
@@ -69,9 +72,12 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "Intelligence",
     items: [
+      { href: "/concierge", label: "AI Concierge", icon: Sparkles },
       { href: "/course-dna", label: "Course DNA", icon: Dna },
       { href: "/settings/chameleon-score", label: "My EQ Score", icon: SlidersHorizontal },
       { href: "/trips", label: "Trip Planner", icon: Plane },
+      { href: "/course-fit", label: "Course-Fit", icon: Target },
+      { href: "/green-fee-index", label: "Green Fee Index", icon: DollarSign },
       { href: "/performance", label: "Performance", icon: BarChart3 },
       { href: "/academy", label: "Academy", icon: GraduationCap },
       { href: "/walking-guide", label: "Walking Guide", icon: Footprints },
