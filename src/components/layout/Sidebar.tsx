@@ -30,6 +30,8 @@ import {
   GraduationCap,
   Flame,
   FileCheck,
+  TrendingUp,
+  ScanLine,
 } from "lucide-react";
 
 /* ─── Types ────────────────────────────────────────── */
@@ -65,6 +67,8 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/trips", label: "Trip Planner", icon: Plane },
       { href: "/performance", label: "Performance", icon: BarChart3 },
       { href: "/academy", label: "Academy", icon: GraduationCap },
+      { href: "/betting", label: "Betting & DFS", icon: TrendingUp },
+      { href: "/satellite", label: "Satellite Analysis", icon: ScanLine },
     ],
   },
   {
