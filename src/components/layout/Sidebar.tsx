@@ -30,7 +30,7 @@ import {
   GraduationCap,
   Flame,
   FileCheck,
-  Cloud,
+  CloudSun,
   Sprout,
   Footprints,
   Trophy,
@@ -41,7 +41,10 @@ import {
   PlayCircle,
   GitCompareArrows,
   TrendingUp,
-  ScanLine,
+  Satellite,
+  Video,
+  Scroll,
+  Star,
   Gift,
 } from "lucide-react";
 
@@ -52,7 +55,8 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
   requiresAuth?: boolean;
   adminOnly?: boolean;
-  badge?: string;
+  badge?: "NEW" | "PRO" | "ELITE";
+  highlight?: boolean;
 }
 
 interface NavGroup {
@@ -70,51 +74,57 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/rankings", label: "Rankings", icon: Medal },
       { href: "/map", label: "Map", icon: MapPin },
       { href: "/architects", label: "Architects", icon: PenTool },
-      { href: "/conditions", label: "Conditions", icon: Cloud },
-      { href: "/tournaments", label: "Tournaments", icon: Trophy },
-      { href: "/aeration", label: "Aeration Tracker", icon: Sprout },
+      { href: "/conditions", label: "Conditions", icon: CloudSun, badge: "NEW" },
+      { href: "/tournaments", label: "Tournaments", icon: Trophy, badge: "NEW" },
+      { href: "/aeration", label: "Aeration Tracker", icon: Sprout, badge: "NEW" },
     ],
   },
   {
     label: "Intelligence",
     items: [
-      { href: "/concierge", label: "AI Concierge", icon: Sparkles },
-      { href: "/course-dna", label: "Course DNA", icon: Dna },
-      { href: "/settings/chameleon-score", label: "My EQ Score", icon: SlidersHorizontal },
+      { href: "/concierge", label: "AI Concierge", icon: Sparkles, badge: "NEW" },
+      { href: "/course-dna", label: "Course DNA", icon: Dna, badge: "NEW" },
+      { href: "/course-fit", label: "Course-Fit", icon: Target, badge: "NEW" },
       { href: "/trips", label: "Trip Planner", icon: Plane, badge: "NEW" },
-      { href: "/course-fit", label: "Course-Fit", icon: Target },
-      { href: "/green-fee-index", label: "Green Fee Index", icon: DollarSign },
+      { href: "/green-fee-index", label: "Green Fee Index", icon: DollarSign, badge: "NEW" },
+      { href: "/walking-guide", label: "Walking Guide", icon: Footprints, badge: "NEW" },
+      { href: "/betting", label: "Betting & DFS", icon: TrendingUp, badge: "PRO" },
+      { href: "/satellite", label: "Satellite Analysis", icon: Satellite, badge: "PRO" },
       { href: "/performance", label: "Performance", icon: BarChart3 },
-      { href: "/academy", label: "Academy", icon: GraduationCap },
-      { href: "/walking-guide", label: "Walking Guide", icon: Footprints },
-      { href: "/betting", label: "Betting & DFS", icon: TrendingUp },
-      { href: "/satellite", label: "Satellite Analysis", icon: ScanLine },
     ],
   },
   {
     label: "Community",
     items: [
-      { href: "/feed", label: "Feed", icon: Rss, requiresAuth: true },
-      { href: "/circles", label: "Circles", icon: Users, requiresAuth: true },
-      { href: "/events", label: "Events", icon: Calendar },
-      { href: "/creators", label: "Creators", icon: PlayCircle },
       { href: "/fairway", label: "The Fairway", icon: Newspaper },
+      { href: "/creators", label: "Creators", icon: Video, badge: "NEW" },
       { href: "/looper-guild", label: "Looper Guild", icon: Flame },
+      { href: "/events", label: "Events", icon: Calendar },
     ],
   },
   {
     label: "My Golf",
     items: [
-      { href: "/settings/handicap", label: "My GHIN", icon: FileCheck, requiresAuth: true },
-      { href: "/bucket-list", label: "My Courses", icon: Heart, requiresAuth: true },
-      { href: "/compare", label: "Compare", icon: GitCompareArrows },
-      { href: "/journal", label: "Score Journal", icon: NotebookPen, requiresAuth: true },
-      { href: "/badges", label: "EQ Tokens", icon: Coins, requiresAuth: true },
-      { href: "/wrapped", label: "EQ Wrapped", icon: Gift },
+      { href: "/eq-wrapped", label: "EQ Wrapped", icon: Scroll, badge: "NEW", requiresAuth: true },
+      { href: "/compare", label: "Compare", icon: GitCompareArrows, badge: "NEW", requiresAuth: true },
       { href: "/shop", label: "Pro Shop", icon: ShoppingBag },
+      { href: "/settings/chameleon-score", label: "My EQ Score", icon: SlidersHorizontal, requiresAuth: true },
+    ],
+  },
+  {
+    label: "Upgrade",
+    items: [
+      { href: "/pricing", label: "Pricing", icon: Star, badge: "NEW", highlight: true },
     ],
   },
 ];
+
+/* ─── Badge Colors ─────────────────────────────── */
+const BADGE_STYLES: Record<string, { bg: string; color: string }> = {
+  NEW: { bg: "#00FF8520", color: "#00FF85" },
+  PRO: { bg: "#3B82F620", color: "#3B82F6" },
+  ELITE: { bg: "#F59E0B20", color: "#F59E0B" },
+};
 
 /* ─── Sidebar Nav Item ───────────────────────────── */
 function SidebarItem({
@@ -127,6 +137,7 @@ function SidebarItem({
   collapsed: boolean;
 }) {
   const Icon = item.icon;
+  const highlight = item.highlight;
   return (
     <Link
       href={item.href}
@@ -135,8 +146,16 @@ function SidebarItem({
         ${collapsed ? "justify-center px-0 py-2.5 mx-1" : "px-3 py-2"}
       `}
       style={{
-        backgroundColor: active ? "var(--cg-accent-bg)" : "transparent",
-        color: active ? "var(--cg-accent)" : "var(--cg-text-secondary)",
+        backgroundColor: active
+          ? "var(--cg-accent-bg)"
+          : highlight
+            ? "#00FF8508"
+            : "transparent",
+        color: active
+          ? "var(--cg-accent)"
+          : highlight
+            ? "#00FF85"
+            : "var(--cg-text-secondary)",
         borderLeft:
           active && !collapsed
             ? "3px solid var(--cg-accent)"
@@ -144,31 +163,42 @@ function SidebarItem({
       }}
       onMouseEnter={(e) => {
         if (!active) {
-          e.currentTarget.style.backgroundColor = "var(--cg-bg-card-hover)";
-          e.currentTarget.style.color = "var(--cg-text-primary)";
+          e.currentTarget.style.backgroundColor = highlight
+            ? "#00FF8515"
+            : "var(--cg-bg-card-hover)";
+          e.currentTarget.style.color = highlight
+            ? "#00FF85"
+            : "var(--cg-text-primary)";
         }
       }}
       onMouseLeave={(e) => {
         if (!active) {
-          e.currentTarget.style.backgroundColor = "transparent";
-          e.currentTarget.style.color = "var(--cg-text-secondary)";
+          e.currentTarget.style.backgroundColor = highlight
+            ? "#00FF8508"
+            : "transparent";
+          e.currentTarget.style.color = highlight
+            ? "#00FF85"
+            : "var(--cg-text-secondary)";
         }
       }}
       title={collapsed ? item.label : undefined}
     >
       <Icon className={`flex-shrink-0 ${collapsed ? "w-5 h-5" : "w-[18px] h-[18px]"}`} />
       {!collapsed && (
-        <span className="text-sm font-medium truncate flex items-center gap-1.5">
-          {item.label}
+        <>
+          <span className="text-sm font-medium truncate">{item.label}</span>
           {item.badge && (
             <span
-              className="rounded-full px-1.5 py-0 text-[8px] font-bold uppercase leading-[16px]"
-              style={{ backgroundColor: "var(--cg-accent)", color: "var(--cg-text-inverse)" }}
+              className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+              style={{
+                backgroundColor: BADGE_STYLES[item.badge]?.bg || "#00FF8520",
+                color: BADGE_STYLES[item.badge]?.color || "#00FF85",
+              }}
             >
               {item.badge}
             </span>
           )}
-        </span>
+        </>
       )}
       {collapsed && (
         <span

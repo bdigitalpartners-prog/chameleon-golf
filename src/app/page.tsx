@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import ContourBackground from "@/components/background/ContourBackground";
+import { HomepageFeatureShowcase } from "@/components/HomepageFeatureShowcase";
 import {
   ArrowRight,
   SlidersHorizontal,
@@ -899,6 +900,9 @@ export default function LandingPage() {
 
       {/* ─── FROM THE FAIRWAY ─── */}
       <FromTheFairway />
+
+      {/* ─── FEATURE SHOWCASE ─── */}
+      <HomepageFeatureShowcase />
 
       {/* ─── CTA ─── */}
       <section
