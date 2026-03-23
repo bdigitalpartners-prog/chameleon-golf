@@ -42,6 +42,7 @@ import {
   GitCompareArrows,
   TrendingUp,
   ScanLine,
+  Gift,
 } from "lucide-react";
 
 /* ─── Types ────────────────────────────────────────── */
@@ -109,6 +110,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/compare", label: "Compare", icon: GitCompareArrows },
       { href: "/journal", label: "Score Journal", icon: NotebookPen, requiresAuth: true },
       { href: "/badges", label: "EQ Tokens", icon: Coins, requiresAuth: true },
+      { href: "/wrapped", label: "EQ Wrapped", icon: Gift },
       { href: "/shop", label: "Pro Shop", icon: ShoppingBag },
     ],
   },
