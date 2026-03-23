@@ -33,6 +33,8 @@ import {
   Cloud,
   Sprout,
   Footprints,
+  Trophy,
+  Dna,
 } from "lucide-react";
 
 /* ─── Types ────────────────────────────────────────── */
@@ -60,12 +62,14 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/map", label: "Map", icon: MapPin },
       { href: "/architects", label: "Architects", icon: PenTool },
       { href: "/conditions", label: "Conditions", icon: Cloud },
+      { href: "/tournaments", label: "Tournaments", icon: Trophy },
       { href: "/aeration", label: "Aeration Tracker", icon: Sprout },
     ],
   },
   {
     label: "Intelligence",
     items: [
+      { href: "/course-dna", label: "Course DNA", icon: Dna },
       { href: "/settings/chameleon-score", label: "My EQ Score", icon: SlidersHorizontal },
       { href: "/trips", label: "Trip Planner", icon: Plane },
       { href: "/performance", label: "Performance", icon: BarChart3 },
