@@ -6,6 +6,7 @@ import { ArchitectContentSections } from "./ArchitectContentSections";
 import { ArchitectPortfolio } from "./ArchitectPortfolio";
 import { ArchitectDesignSignature } from "./ArchitectDesignSignature";
 import { ArchitectFeaturedContent } from "./ArchitectFeaturedContent";
+import { ArchitectLineage } from "./ArchitectLineage";
 
 export const dynamic = "force-dynamic";
 
@@ -399,6 +400,9 @@ export default async function ArchitectDetailPage({ params }: Props) {
           dnaList={serializedDnaList}
           renovations={serializedRenovations}
         />
+
+        {/* Design DNA & Lineage (client component) */}
+        <ArchitectLineage architectId={architect.id} />
 
         <div className="grid gap-6 md:grid-cols-2 mb-6">
           {/* Signature Courses */}

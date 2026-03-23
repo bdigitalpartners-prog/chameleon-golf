@@ -30,6 +30,7 @@ import {
   GraduationCap,
   Flame,
   FileCheck,
+  Gift,
 } from "lucide-react";
 
 /* ─── Types ────────────────────────────────────────── */
@@ -84,6 +85,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/bucket-list", label: "My Courses", icon: Heart, requiresAuth: true },
       { href: "/journal", label: "Score Journal", icon: NotebookPen, requiresAuth: true },
       { href: "/badges", label: "EQ Tokens", icon: Coins, requiresAuth: true },
+      { href: "/wrapped", label: "EQ Wrapped", icon: Gift },
       { href: "/shop", label: "Pro Shop", icon: ShoppingBag },
     ],
   },
