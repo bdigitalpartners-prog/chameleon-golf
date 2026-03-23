@@ -39,6 +39,7 @@ import {
   Target,
   DollarSign,
   PlayCircle,
+  GitCompareArrows,
 } from "lucide-react";
 
 /* ─── Types ────────────────────────────────────────── */
@@ -48,6 +49,7 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
   requiresAuth?: boolean;
   adminOnly?: boolean;
+  badge?: string;
 }
 
 interface NavGroup {
@@ -76,7 +78,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/concierge", label: "AI Concierge", icon: Sparkles },
       { href: "/course-dna", label: "Course DNA", icon: Dna },
       { href: "/settings/chameleon-score", label: "My EQ Score", icon: SlidersHorizontal },
-      { href: "/trips", label: "Trip Planner", icon: Plane },
+      { href: "/trips", label: "Trip Planner", icon: Plane, badge: "NEW" },
       { href: "/course-fit", label: "Course-Fit", icon: Target },
       { href: "/green-fee-index", label: "Green Fee Index", icon: DollarSign },
       { href: "/performance", label: "Performance", icon: BarChart3 },
@@ -100,6 +102,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/settings/handicap", label: "My GHIN", icon: FileCheck, requiresAuth: true },
       { href: "/bucket-list", label: "My Courses", icon: Heart, requiresAuth: true },
+      { href: "/compare", label: "Compare", icon: GitCompareArrows },
       { href: "/journal", label: "Score Journal", icon: NotebookPen, requiresAuth: true },
       { href: "/badges", label: "EQ Tokens", icon: Coins, requiresAuth: true },
       { href: "/shop", label: "Pro Shop", icon: ShoppingBag },
@@ -149,7 +152,17 @@ function SidebarItem({
     >
       <Icon className={`flex-shrink-0 ${collapsed ? "w-5 h-5" : "w-[18px] h-[18px]"}`} />
       {!collapsed && (
-        <span className="text-sm font-medium truncate">{item.label}</span>
+        <span className="text-sm font-medium truncate flex items-center gap-1.5">
+          {item.label}
+          {item.badge && (
+            <span
+              className="rounded-full px-1.5 py-0 text-[8px] font-bold uppercase leading-[16px]"
+              style={{ backgroundColor: "var(--cg-accent)", color: "var(--cg-text-inverse)" }}
+            >
+              {item.badge}
+            </span>
+          )}
+        </span>
       )}
       {collapsed && (
         <span
