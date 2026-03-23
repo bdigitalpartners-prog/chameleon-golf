@@ -157,3 +157,41 @@ export async function PUT(
     );
   }
 }
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const userId = (session.user as any).id;
+
+    const trip = await prisma.trip.findUnique({
+      where: { id: params.id },
+      select: { createdById: true },
+    });
+
+    if (!trip) {
+      return NextResponse.json({ error: "Trip not found" }, { status: 404 });
+    }
+
+    if (trip.createdById !== userId) {
+      return NextResponse.json(
+        { error: "Only the creator can delete this trip" },
+        { status: 403 }
+      );
+    }
+
+    await prisma.trip.delete({ where: { id: params.id } });
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("DELETE /api/trips/[id] error:", error);
+    return NextResponse.json(
+      { error: error.message || "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
